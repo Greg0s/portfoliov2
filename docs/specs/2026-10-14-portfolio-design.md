@@ -79,14 +79,17 @@ On repart d'un repo vide : `Greg0s/portfoliov2`.
 
 **Principe** : le site se comporte comme une caméra. Le contenu sort de l'ombre, les images font leur mise au point, les mouvements sont des travellings lents. **Le texte reste toujours net** : aucun effet WebGL ne touche le texte.
 
+**Maquette de référence** : la maquette Claude Design de l'étape 0 ([lien privé](https://claude.ai/artifact/Wj6dMenazXWimo8dPHnPnb)) fixe le rendu visuel. Une évolution du design se fait d'abord sur la maquette, puis dans le code.
+
 ### 5.1 Couleurs
 
-Valeurs de départ, ajustées à l'étape 2 :
+Valeurs de départ, ajustées sur la maquette (étape 0) :
 
 | Jeton             | Rôle                            | Valeur    |
 | ----------------- | ------------------------------- | --------- |
 | `--color-bg`      | fond, noir chaud                | `#0E0D0C` |
-| `--color-surface` | béton sombre (surfaces, filets) | `#1A1917` |
+| `--color-surface` | béton sombre (surfaces)         | `#1A1917` |
+| `--color-line`    | filets et bordures              | `#2E2B28` |
 | `--color-muted`   | gris béton (texte secondaire)   | `#8A8580` |
 | `--color-text`    | texte principal, blanc cassé    | `#EAE6DF` |
 | `--color-light`   | accent « lumière dorée »        | `#E8B86A` |
@@ -100,7 +103,7 @@ Valeurs de départ, ajustées à l'étape 2 :
 - **Deux familles** :
   - pour les titres, un serif élégant et léger, comme dans un générique de film ;
   - pour le texte et les libellés, un sans-serif neutre. Les libellés (métadonnées, navigation, numéros) sont en petites capitales très espacées.
-- **Candidats** : Cormorant Garamond ou Newsreader pour les titres, Inter ou Geist pour le texte. Le choix final se fait à l'étape 2, en comparant les candidats sur la version en ligne. Critères :
+- **Candidats** : Cormorant Garamond ou Newsreader pour les titres, Inter ou Geist pour le texte. Le choix se fait sur la maquette (étape 0), où chaque planche permet de basculer d'une police à l'autre, puis il est confirmé à l'étape 2 sur la version en ligne. Critères :
   - lisibilité en clair sur fond sombre ;
   - accents français ;
   - licence libre (OFL) ;
@@ -342,10 +345,11 @@ Claude rédige une première version en français et en anglais, à partir de l'
 
 ## 10. Étapes de construction
 
-Chaque étape se termine avec une CI verte et le site à jour sur la prévisualisation.
+À partir de l'étape 1, chaque étape se termine avec une CI verte et le site à jour sur la prévisualisation.
 
 | #   | Étape           | Contenu                                                                                                                                  | Terminée quand                                                                                                   |
 | --- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 0   | Maquette        | Maquette Claude Design : accueil (ordinateur et mobile), étude de cas, À propos, planche système ; choix des polices, ajustement des couleurs et de la mise en page | Grégoire valide la direction sur la maquette                                                                     |
 | 1   | Fondations      | Projet Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement, `README.md`, `CLAUDE.md`, page « bientôt »          | la page « bientôt » est en ligne et la CI est verte                                                              |
 | 2   | Design system   | Jetons CSS, choix des polices, grille, en-tête, pied de page, routage FR/EN, sélecteur de langue, textes d'interface typés               | les pages vides existent en FR et en EN, le sélecteur fonctionne et les tests de routes passent                  |
 | 3   | Contenu         | Schémas, vérifications, page d'étude de cas, import des 8 projets en brouillon, images optimisées                                        | les 8 études de cas s'affichent en FR et en EN, et supprimer un `fr.md` fait échouer le build                    |
