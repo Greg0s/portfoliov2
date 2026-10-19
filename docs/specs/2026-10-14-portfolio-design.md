@@ -64,7 +64,7 @@ La rigueur d'un musée d'art moderne (MoMA, MAM Paris), le calme photographique 
 | Rôle                 | Police                 | Réglages                                                    |
 | -------------------- | ---------------------- | ----------------------------------------------------------- |
 | Titres               | Libre Franklin         | 500, interlettrage -0,035em ; titres de projet en 600, -0,02em |
-| Sous-titres          | à choisir              | le métier animé ; Fraunces écartée, six duos à l'essai sur la maquette : Instrument Serif, Cormorant Garamond, Newsreader ou Bodoni Moda en italique, Libre Franklin italique, Geist Mono |
+| Sous-titres          | à choisir              | le métier animé ; sans empattement uniquement, six propositions à l'essai sur la maquette : Libre Franklin léger, Archivo étendu, DM Mono, Josefin Sans, Syne, Anybody (largeur qui respire pendant la transition) |
 | Texte                | Manrope                | 400 et 500                                                  |
 | Libellés             | Manrope                | 500, 12 px, capitales, interlettrage 0,16em                 |
 | Tags des projets     | Libre Franklin         | 600, 12 px, capitales, interlettrage 0,06em                 |
