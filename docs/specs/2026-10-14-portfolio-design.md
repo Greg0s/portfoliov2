@@ -2,7 +2,7 @@
 
 - **Date** : 14 octobre 2026, révisée le 18 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
-- **Statut** : direction « Musée de nuit » validée par Grégoire sur la maquette ; la police des sous-titres reste à choisir
+- **Statut** : direction « Musée de nuit » et charte graphique validées par Grégoire sur la maquette
 - **Méthode** : la maquette est affinée jusqu'à être parfaite avant d'intégrer quoi que ce soit. Pas de page « bientôt » : le site réel n'est pas prioritaire.
 - **Maquette de référence** : canevas Claude Design ([lien privé](https://claude.ai/artifact/Wj6dMenazXWimo8dPHnPnb)) avec l'accueil (ordinateur et mobile), une étude de cas et la planche de charte. Une évolution du design se fait d'abord sur la maquette, puis dans le code.
 
@@ -64,13 +64,14 @@ La rigueur d'un musée d'art moderne (MoMA, MAM Paris), le calme photographique 
 | Rôle                 | Police                 | Réglages                                                    |
 | -------------------- | ---------------------- | ----------------------------------------------------------- |
 | Titres               | Libre Franklin         | 500, interlettrage -0,035em ; titres de projet en 600, -0,02em |
-| Sous-titres          | à choisir              | le métier animé ; sans empattement uniquement, six propositions à l'essai sur la maquette : Libre Franklin léger, Archivo étendu, DM Mono, Josefin Sans, Syne, Anybody (largeur qui respire pendant la transition) |
+| Sous-titres          | Libre Franklin italique | 300, interlettrage -0,01em ; le métier animé                |
 | Texte                | Manrope                | 400 et 500                                                  |
 | Libellés             | Manrope                | 500, 12 px, capitales, interlettrage 0,16em                 |
 | Tags des projets     | Libre Franklin         | 600, 12 px, capitales, interlettrage 0,06em                 |
 
 - Polices auto-hébergées via Fontsource (fichiers variables, licence OFL), deux fichiers préchargés au plus.
-- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; titre du contact 52 px ; titres de projet 28 px ; « Je code des images. » 28 px ; texte courant 15 à 18 px.
+- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; métier animé 27 px (23 px sur mobile) ; titre du contact 52 px ; titres de projet 28 px ; « Je code des images. » 28 px ; texte courant 15 à 18 px.
+- Deux familles seulement, sans empattement : Libre Franklin et Manrope.
 
 ### 5.2 Couleurs : « Noir musée »
 
