@@ -2,7 +2,8 @@
 
 - **Date** : 14 octobre 2026, révisée le 18 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
-- **Statut** : direction « Musée de nuit » et charte graphique validées par Grégoire sur la maquette
+- **Statut** : direction « Musée de nuit » validée par Grégoire sur la maquette ; la police des sous-titres reste à choisir
+- **Méthode** : la maquette est affinée jusqu'à être parfaite avant d'intégrer quoi que ce soit. Pas de page « bientôt » : le site réel n'est pas prioritaire.
 - **Maquette de référence** : canevas Claude Design ([lien privé](https://claude.ai/artifact/Wj6dMenazXWimo8dPHnPnb)) avec l'accueil (ordinateur et mobile), une étude de cas et la planche de charte. Une évolution du design se fait d'abord sur la maquette, puis dans le code.
 
 ## 1. Contexte
@@ -63,14 +64,13 @@ La rigueur d'un musée d'art moderne (MoMA, MAM Paris), le calme photographique 
 | Rôle                 | Police                 | Réglages                                                    |
 | -------------------- | ---------------------- | ----------------------------------------------------------- |
 | Titres               | Libre Franklin         | 500, interlettrage -0,035em ; titres de projet en 600, -0,02em |
-| Sous-titres          | Fraunces italique      | 300 ; le métier animé et les touches de poésie              |
+| Sous-titres          | à choisir              | le métier animé ; Fraunces écartée, six duos à l'essai sur la maquette : Instrument Serif, Cormorant Garamond, Newsreader ou Bodoni Moda en italique, Libre Franklin italique, Geist Mono |
 | Texte                | Manrope                | 400 et 500                                                  |
 | Libellés             | Manrope                | 500, 12 px, capitales, interlettrage 0,16em                 |
 | Tags des projets     | Libre Franklin         | 600, 12 px, capitales, interlettrage 0,06em                 |
 
 - Polices auto-hébergées via Fontsource (fichiers variables, licence OFL), deux fichiers préchargés au plus.
 - Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; titre du contact 52 px ; titres de projet 28 px ; « Je code des images. » 28 px ; texte courant 15 à 18 px.
-- Fraunces est le seul empattement du site.
 
 ### 5.2 Couleurs : « Noir musée »
 
@@ -302,8 +302,8 @@ Claude rédige une première version des études de cas en français et en angla
 
 | #   | Étape           | Contenu                                                                                                                         | Terminée quand                                                                                  |
 | --- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 0   | Maquette        | Maquette Claude Design et charte « Musée de nuit »                                                                              | fait : charte validée le 18 octobre 2026                                                        |
-| 1   | Fondations      | Projet Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement, `README.md`, `CLAUDE.md`, page « bientôt » | la page « bientôt » est en ligne et la CI est verte                                             |
+| 0   | Maquette        | Maquette Claude Design et charte « Musée de nuit », affinées jusqu'au moindre détail                                            | Grégoire juge la maquette parfaite ; rien n'est intégré avant                                   |
+| 1   | Fondations      | Projet Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement, `README.md`, `CLAUDE.md`                | le squelette se construit et se déploie sur la prévisualisation, et la CI est verte             |
 | 2   | Design system   | Jetons de la charte, polices, en-tête, menu mobile, routage FR/EN, sélecteur de langue, textes d'interface typés                | les pages vides existent en FR et en EN et les tests de routes passent                          |
 | 3   | Contenu         | Schémas, vérifications, page d'étude de cas, import des 8 projets en brouillon, images optimisées                               | les 8 études de cas s'affichent en FR et en EN, et supprimer un `fr.md` fait échouer le build   |
 | 4   | Accueil         | Ouverture avec les images de repli par période, plan des cartes et cartels, contact avec photo au hasard, 404, SEO, redirections | l'accueil est complet et utilisable sans JavaScript                                             |
