@@ -14,32 +14,33 @@ Plus tard, ce même recul finira dans un bureau : la caméra repassera par la fe
 
 ## 2. Décisions
 
-| #   | Sujet                    | Choix                                                                                       |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------- |
-| 1   | Mouvement de caméra      | un seul travelling arrière                                                                  |
-| 2   | Présentation d'un projet | mise au point automatique (profondeur de champ), cartel affiché tant que la carte est nette |
-| 3   | Rythme                   | d'ancre en ancre (l'ouverture, chaque projet, le contact), sur ordinateur comme sur mobile  |
-| 4   | Texte de l'ouverture     | reste net au premier plan, puis s'efface avant le premier projet                            |
-| 5   | Disposition              | alternance gauche/droite irrégulière, centre libre                                          |
-| 6   | Fin                      | le contact dans le vide, sans photo                                                         |
-| 7   | Ouvrir un projet         | plongée dans la carte ; au retour, on retrouve le parcours au même endroit                  |
-| 8   | Mobile                   | le même parcours, adapté ; version allégée automatique si le téléphone peine                |
-| 9   | Repère                   | compteur de distance depuis l'astéroïde B 612                                               |
-| 10  | Maquette                 | un nouveau canevas Claude Design                                                            |
-| 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                  |
-| 12  | Projet suivant           | directement l'étude suivante ; transition à choisir entre Plongée, Voyage et Projecteur     |
-| 13  | Indice de clic           | à choisir entre une pastille sur l'image, un bouton dans le cartel et un curseur « Voir »   |
+| #   | Sujet                    | Choix                                                                                                             |
+| --- | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | Mouvement de caméra      | un seul travelling arrière                                                                                        |
+| 2   | Présentation d'un projet | mise au point automatique (profondeur de champ), cartel affiché tant que la carte est nette                       |
+| 3   | Rythme                   | d'ancre en ancre (l'ouverture, chaque projet, le contact), sur ordinateur comme sur mobile                        |
+| 4   | Texte de l'ouverture     | reste net au premier plan, puis s'efface avant le premier projet                                                  |
+| 5   | Disposition              | alternance gauche/droite irrégulière, centre libre                                                                |
+| 6   | Fin                      | le contact dans le vide, sans photo                                                                               |
+| 7   | Ouvrir un projet         | plongée dans la carte ; au retour, on retrouve le parcours au même endroit                                        |
+| 8   | Mobile                   | le même parcours, adapté ; version allégée automatique si le téléphone peine                                      |
+| 9   | Repère                   | compteur de distance depuis l'astéroïde B 612                                                                     |
+| 10  | Maquette                 | un nouveau canevas Claude Design                                                                                  |
+| 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                                        |
+| 12  | Projet suivant           | directement l'étude suivante, par une plongée dans son image                                                      |
+| 13  | Indice de clic           | sur ordinateur, un curseur « Voir le projet » (dessin à choisir parmi six) ; sur mobile, une pastille sur l'image |
 
 ## 3. Le canevas v3
 
-Un canevas « Maquette portfolio v3 », séparé de celui de la v2, avec six plans de travail :
+Un canevas « Maquette portfolio v3 », séparé de celui de la v2, avec ces plans de travail :
 
-1. **Parcours, ordinateur** (1440 × 900) : on fait défiler à l'intérieur du plan de travail pour faire reculer la caméra. Réglages : « ancre » (pour se placer sur l'une d'elles), « indice » et « projet suivant » (les variantes à choisir, section 5) et « heure ».
-2. **Parcours, mobile** (390 × 844) : le même parcours, adapté, avec les mêmes réglages.
+1. **Parcours, ordinateur** (1440 × 900) : on fait défiler à l'intérieur du plan de travail pour faire reculer la caméra. Réglages : « ancre » (pour se placer sur l'une d'elles), « curseur » (le dessin du curseur « Voir », section 5) et « heure ».
+2. **Parcours, mobile** (390 × 844) : le même parcours, adapté. Réglages : « ancre » et « heure ».
 3. **Storyboard** : huit moments clés côte à côte, lisibles sur téléphone : l'ouverture ; le début du recul ; le premier projet net ; l'entre-deux ; un projet au milieu ; le dernier projet ; le contact dans le vide ; la plongée dans une carte.
 4. **Étude de cas** : la page de la v2, en arrivée de la plongée, avec la carte cliquée comme média d'ouverture.
 5. **Titre animé** : le composant de la v2.
 6. **Charte** : celle de la v2.
+7. **Curseur « Voir » — propositions** : les six dessins du curseur côte à côte, avec le composant « Curseur » qui les dessine.
 
 Les réglages ne s'affichent que dans l'éditeur, sur ordinateur. Sur téléphone, on fait défiler le parcours mobile, et le storyboard montre les moments clés d'un coup d'œil.
 
@@ -74,11 +75,11 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 - **Profondeur de champ** : nette dans une zone d'environ ±10 % autour de la distance de netteté ; au-delà, le flou croît jusqu'à 12 px. La planète suit la même règle : nette sur l'ouverture, floue dès que la caméra s'éloigne. Une carte qui arrive apparaît en fondu ; une carte qui s'éloigne descend jusqu'à une opacité d'environ 0,25.
 - **Carte nette** : anneau blanc de 1 px à 55 % et léger halo blanc, comme le survol de la v2.
 - **Cartel** : du côté du centre, 300 px de large au plus : titre (Libre Franklin 600, 28 px), tag (« 2024 — Three.js · génératif », Libre Franklin 600, 12 px, capitales), description courte (Manrope, 15 px). Il apparaît en 300 ms et s'efface en 200 ms.
-- **Indice de clic** : la carte nette montre qu'on peut l'ouvrir, sans flèche qui oriente vers un côté. Trois variantes à choisir sur la maquette : une pastille « Voir le projet » sur l'image, du côté du cartel ; un bouton « Voir le projet » dans le cartel ; sur ordinateur, un curseur rond « Voir le projet » qui suit la souris sur la carte (remplacé par la pastille sur mobile).
+- **Indice de clic** : sur ordinateur, au survol de la carte nette, la souris devient un curseur « Voir le projet ». Six dessins sont à comparer sur la maquette : disque (choix de départ), orbite, mise au point, loupe, étoile et lumière. Sur mobile, sans survol, une pastille « + Voir le projet » s'affiche sur l'image de la carte nette.
 - **Survol** : la carte nette se soulève à peine (450 ms).
 - **Clavier** : Tab passe d'un projet à l'autre dans l'ordre ; la caméra glisse jusqu'à l'ancre du projet qui reçoit le focus ; Entrée l'ouvre.
 - **Plongée** : au clic, la caméra repart vers l'avant pendant 0,9 s (`cubic-bezier(0.65, 0, 0.35, 1)`) ; la carte grandit jusqu'à couvrir l'écran, tout le reste s'efface en 300 ms, puis l'étude de cas s'ouvre avec la carte comme média d'ouverture. « Retour aux projets » joue l'inverse et rend le parcours à la même progression.
-- **Projet suivant** : depuis une étude de cas, « Projet suivant » mène directement à l'étude suivante, sans repasser par le parcours ; au retour, on retrouve la carte de ce projet. Trois transitions à choisir sur la maquette : « Plongée » (l'image du projet suivant grandit jusqu'à devenir l'image d'ouverture de sa fiche), « Voyage » (on ressort dans l'espace, la caméra file jusqu'à la carte suivante et plonge dedans), « Projecteur » (la lumière se resserre sur le projet suivant, s'éteint, puis se rallume sur sa fiche).
+- **Projet suivant** : depuis une étude de cas, « Projet suivant » mène directement à l'étude suivante, sans repasser par le parcours : l'image du projet suivant grandit jusqu'à devenir l'image d'ouverture de sa fiche (0,9 s), pendant que la page s'efface. Au retour, on retrouve la carte de ce projet dans le parcours.
 - **Médias** : les images actuelles en attendant les vidéos en boucle ; une vidéo se met en pause dès que sa carte s'éloigne de la zone nette.
 
 ## 6. L'ouverture et ce qui reste à l'écran
