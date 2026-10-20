@@ -81,7 +81,7 @@ export function seatFox(doc, { sink = 0.025 } = {}) {
 
 // The ribbon starts in mid-air beside the neck. Carry it on, from its own end edge, once around the neck: same
 // width, same single sheet, rising and tightening a little in front, and ending tucked behind the ribbon's start.
-export function wrapScarf(doc, { turn = 294, gap = 0.01, lean0 = 0.7, steps = 110 } = {}) {
+export function wrapScarf(doc, { turn = 294, gap = 0.006, lean0 = 0.85, pull = 0.35, steps = 110 } = {}) {
   const coatNode = nodeNamed(doc, 'Cube.001');
   const ribbonNode = nodeNamed(doc, 'echarpe');
   const coatMatrix = worldMatrix(coatNode);
@@ -110,7 +110,7 @@ export function wrapScarf(doc, { turn = 294, gap = 0.01, lean0 = 0.7, steps = 11
     return hits.length ? hits[hits.length - 1].distance : 0;
   };
 
-  // The ribbon's end edge: its column of vertices closest to the neck, from bottom to top.
+  // The ribbon, in world space and around the neck axis.
   const ribbonMatrix = worldMatrix(ribbonNode);
   const ribbonNormals = new THREE.Matrix3().getNormalMatrix(ribbonMatrix);
   const ribbonPrim = ribbonNode.getMesh().listPrimitives()[0];
@@ -119,10 +119,45 @@ export function wrapScarf(doc, { turn = 294, gap = 0.01, lean0 = 0.7, steps = 11
   for (let i = 0; i < ribbonPrim.getAttribute('POSITION').getCount(); i++) {
     const p = new THREE.Vector3(...ribbonPrim.getAttribute('POSITION').getElement(i, tmp)).applyMatrix4(ribbonMatrix);
     const n = new THREE.Vector3(...ribbonPrim.getAttribute('NORMAL').getElement(i, tmp)).applyMatrix3(ribbonNormals).normalize();
-    ribbon.push({ p, n, ...polar(p) });
+    const q = polar(p);
+    ribbon.push({ p, n, ...q, r0: q.r });
   }
-  const tip = ribbon.reduce((a, b) => (b.r < a.r ? b : a));
-  const near = ribbon.filter((v) => v.r < tip.r + 0.012 && Math.abs(angle(v.th - tip.th)) < THREE.MathUtils.degToRad(10));
+
+  // Its first stretch floats a hand's width off the neck: bring it in by `pull` towards the coat, fading out before
+  // it leaves on the wind, so the far part is untouched.
+  const end = ribbon.reduce((a, b) => (b.r < a.r ? b : a));
+  const onward = Math.sign(ribbon.filter((v) => v.r > end.r + 0.01 && v.r < end.r + 0.04).reduce((s, v) => s + angle(v.th - end.th), 0));
+  for (const v of ribbon) {
+    v.w = 1 - THREE.MathUtils.smoothstep(angle(v.th - end.th) * onward, THREE.MathUtils.degToRad(30), THREE.MathUtils.degToRad(120));
+    const target = coatRadius(v.th, v.y) + gap;
+    if (v.w <= 0 || v.r <= target) continue;
+    v.r -= pull * v.w * (v.r - target);
+    v.p = point(v.th, v.r, v.y);
+  }
+  // Write it back, with normals rebuilt where it moved (shared by the copies of a vertex on UV seams).
+  const ribbonLocal = ribbonMatrix.clone().invert();
+  const ribbonPos = ribbonPrim.getAttribute('POSITION').clone();
+  ribbon.forEach((v, i) => ribbonPos.setElement(i, v.p.clone().applyMatrix4(ribbonLocal).toArray()));
+  const key = (v) => v.p.toArray().map((x) => x.toFixed(5)).join();
+  const faceSum = new Map();
+  const ribbonIndex = ribbonPrim.getIndices().getArray();
+  for (let i = 0; i < ribbonIndex.length; i += 3) {
+    const [a, b, c] = [0, 1, 2].map((k) => ribbon[ribbonIndex[i + k]]);
+    const n = b.p.clone().sub(a.p).cross(c.p.clone().sub(a.p));
+    for (const v of [a, b, c]) faceSum.set(key(v), (faceSum.get(key(v)) || new THREE.Vector3()).add(n));
+  }
+  const flip = ribbon.reduce((s, v) => s + faceSum.get(key(v)).clone().normalize().dot(v.n), 0) < 0 ? -1 : 1;
+  const ribbonNrm = ribbonPrim.getAttribute('NORMAL').clone();
+  const toRibbonNormals = new THREE.Matrix3().getNormalMatrix(ribbonLocal);
+  ribbon.forEach((v, i) => {
+    if (v.w <= 0) return;
+    v.n.lerp(faceSum.get(key(v)).clone().normalize().multiplyScalar(flip), v.w).normalize();
+    ribbonNrm.setElement(i, v.n.clone().applyMatrix3(toRibbonNormals).normalize().toArray());
+  });
+  ribbonPrim.setAttribute('POSITION', ribbonPos).setAttribute('NORMAL', ribbonNrm);
+
+  // The end edge: the column of vertices that was closest to the neck, from bottom to top.
+  const near = ribbon.filter((v) => v.r0 < end.r0 + 0.012 && Math.abs(angle(v.th - end.th)) < THREE.MathUtils.degToRad(10));
   // The export repeats some vertices (UV seams): keep one per position.
   const edge = [...new Map(near.map((v) => [v.p.toArray().map((x) => x.toFixed(5)).join(), v])).values()].sort((a, b) => a.y - b.y);
   const th0 = edge.reduce((s, v) => s + v.th, 0) / edge.length;
@@ -130,8 +165,7 @@ export function wrapScarf(doc, { turn = 294, gap = 0.01, lean0 = 0.7, steps = 11
   const y0 = (edge[0].y + edge[edge.length - 1].y) / 2;
   const h0 = (edge[edge.length - 1].y - edge[0].y) / 2;
   // The ribbon leaves the neck one way round; the turn goes the other way.
-  const away = ribbon.filter((v) => v.r > tip.r + 0.01 && v.r < tip.r + 0.04);
-  const sign = -Math.sign(away.reduce((s, v) => s + angle(v.th - th0), 0));
+  const sign = -onward;
 
   // Along the turn (s from 0 to 1): height and half-width of the band, and the radius that keeps it off the coat.
   const smooth = (a, b, x) => THREE.MathUtils.smoothstep(x, a, b);
@@ -157,14 +191,14 @@ export function wrapScarf(doc, { turn = 294, gap = 0.01, lean0 = 0.7, steps = 11
   const swell = frame.map((_, k) => Math.max(...[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((d) => at(k + d))));
   frame.forEach((f, k) => {
     const blurred = [-3, -2, -1, 0, 1, 2, 3].reduce((sum, d) => sum + swell[Math.min(Math.max(k + d, 0), steps)] * [1, 6, 15, 20, 15, 6, 1][d + 3], 0) / 64;
-    const r = THREE.MathUtils.lerp(r0, blurred, smooth(0, 0.3, f.s)) + 0.006 * Math.sin(f.s * Math.PI * 6) * smooth(0, 0.15, f.s);
+    const r = THREE.MathUtils.lerp(r0, blurred, smooth(0, 0.2, f.s)) + 0.006 * Math.sin(f.s * Math.PI * 6) * smooth(0, 0.15, f.s);
     f.r = THREE.MathUtils.lerp(r, Math.max(r, f.need), smooth(0, 0.1, f.s));
   });
 
   // Sections: the first one is the ribbon's edge itself; its small offsets fade out along the turn.
   const positions = [];
   for (const f of frame) {
-    const keep = 1 - smooth(0, 0.15, f.s);
+    const keep = 1 - smooth(0, 0.3, f.s);
     for (const v of edge) {
       const dy = ((v.y - y0) / h0) * f.h;
       const p = point(f.th + angle(v.th - th0) * keep, f.r + (v.r - r0) * keep - f.lean * dy, f.yc + dy);

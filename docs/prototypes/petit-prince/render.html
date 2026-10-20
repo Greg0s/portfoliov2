@@ -185,6 +185,54 @@ function petalBall(detail, seed) {
   return geo;
 }
 
+// Hair variants under review (?hair=…), beside the petals above until one is chosen.
+// Crumpled curls: ridged noise creases the surface into folded tufts, like the Blender render up close.
+function crumpledBall(detail, seed) {
+  const noise = new SimplexNoise({ random: rng(seed) });
+  const geo = mergeVertices(new THREE.IcosahedronGeometry(1, detail));
+  const pos = geo.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    let h = 0;
+    let amp = 1;
+    let f = 1.4;
+    for (let o = 0; o < 2; o++) {
+      // Softened ridges (|n| rounded off near 0): folds without sharp, aliasing creases.
+      const n = noise.noise3d(v.x * f + o * 7.1, v.y * f, v.z * f);
+      h += amp * Math.pow(1 - Math.sqrt(n * n + 0.03), 1.4);
+      amp *= 0.4;
+      f *= 2.1;
+    }
+    v.multiplyScalar(0.84 + 0.36 * h);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Locks combed by the wind: longer petals that lean the way the scarf flies (wind: a direction in the hair's space).
+function windBall(detail, seed, wind) {
+  const r = rng(seed);
+  const geo = mergeVertices(new THREE.IcosahedronGeometry(1, detail));
+  const tips = [];
+  for (let i = 0; i < 150; i++) tips.push({ d: randomDir(r), len: 0.24 + r() * 0.34, sharp: 30 + r() * 50 });
+  const pos = geo.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    let s = 0;
+    for (const tip of tips) {
+      const c = v.dot(tip.d);
+      if (c > 0) s = Math.max(s, tip.len * Math.pow(c, tip.sharp));
+    }
+    v.multiplyScalar(0.8 + s).addScaledVector(wind, 1.1 * s * s);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: layer === 'planet', preserveDrawingBuffer: true });
 renderer.setPixelRatio(1);
 renderer.setSize(W, H);
@@ -285,8 +333,24 @@ if (q.get('proc') !== '0') {
   planet.geometry = craterPlanet(Number(q.get('detail') || 110), Number(q.get('seed') || 5), calm);
   planet.material.roughness = 0.93;
   planet.material.color.setRGB(0.135, 0.19, 0.27);
-  hair.geometry = petalBall(56, 21);
-  hair.material.roughness = 0.62;
+  const style = q.get('hair') || 'petales';
+  if (style === 'froisse') hair.geometry = crumpledBall(80, 21);
+  else if (style === 'vent') {
+    // The wind blows where the scarf flies: from the head towards the ribbon's far end, across the prince's up.
+    const head = new THREE.Vector3().setFromMatrixPosition(hair.matrixWorld);
+    const up = new THREE.Vector3().setFromMatrixColumn(byName('Cube.001').matrixWorld, 1).normalize();
+    const ribbon = meshIn(byName('echarpe'));
+    const p = new THREE.Vector3();
+    let far = head.clone();
+    for (let i = 0; i < ribbon.geometry.attributes.position.count; i++) {
+      p.fromBufferAttribute(ribbon.geometry.attributes.position, i).applyMatrix4(ribbon.matrixWorld);
+      if (p.distanceTo(head) > far.distanceTo(head)) far = p.clone();
+    }
+    const wind = far.sub(head).projectOnPlane(up).normalize().transformDirection(hair.matrixWorld.clone().invert());
+    hair.geometry = windBall(64, 21, wind);
+  } else hair.geometry = petalBall(56, 21);
+  hair.material.roughness = Number(q.get('hairrough') || 0.62);
+  if (q.has('haircolor')) hair.material.color.set(q.get('haircolor'));
 }
 
 // Helpers for an export made without Apply Modifiers, where the fox and the coat lose their Mirror and Subdivision.
