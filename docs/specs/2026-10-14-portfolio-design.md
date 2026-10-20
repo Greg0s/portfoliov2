@@ -137,7 +137,8 @@ La planète de l'ouverture est la création Blender de Grégoire, rendue en temp
 ### 6.1 Modèle
 
 - **Source** : l'export glTF Binary de Grégoire (Blender, export glTF 2.0), avec « Apply Modifiers », « Visible Objects » et « Renderable Objects », la caméra et les 26 animations. Draco et Meshopt restent décochés à l'export.
-- **Optimisation** (`docs/prototypes/petit-prince/optimize.mjs`, avec gltf-transform et meshoptimizer) : soudure des sommets, simplification par objet (décor fortement réduit, personnages intacts), normales lisses recalculées, quantification et compression `EXT_meshopt_compression`. Résultat : de 16,3 Mo et 446 000 triangles à 0,53 Mo et 51 000 triangles, sans différence visible. La rose garde ses UV, car son matériau anisotrope en a besoin.
+- **Corrections** (`docs/prototypes/petit-prince/fixes.mjs`, avant l'optimisation) : le renard, dont le corps était à moitié dans la planète, est relevé de 0,18 le long de la verticale du sol pour s'y asseoir (même pose, ses actions déplacées d'autant) ; l'écharpe, un ruban qui passait derrière la nuque sans l'entourer, est prolongée depuis son bord par une nappe de même largeur qui fait le tour du cou en épousant le manteau et finit cachée derrière le départ du ruban.
+- **Optimisation** (`docs/prototypes/petit-prince/optimize.mjs`, avec gltf-transform et meshoptimizer) : soudure des sommets, simplification par objet (décor fortement réduit, personnages intacts), normales lisses recalculées, quantification et compression `EXT_meshopt_compression`. Résultat : de 16,3 Mo et 446 000 triangles à 0,56 Mo et 56 000 triangles, sans différence visible. La rose garde ses UV, car son matériau anisotrope en a besoin.
 - **Chargement** : `GLTFLoader` avec `MeshoptDecoder`. Après quantification, chaque maillage est porté par un nœud enfant sans nom : on le cherche à l'intérieur du nœud nommé.
 
 ### 6.2 Relief généré par le code

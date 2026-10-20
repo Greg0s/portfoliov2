@@ -4,6 +4,7 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, prune, weld, simplifyPrimitive, quantize, meshopt, resample } from '@gltf-transform/functions';
 import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
+import { seatFox, wrapScarf } from './fixes.mjs';
 
 const [input, outSimple, outWeb] = process.argv.slice(2);
 await MeshoptSimplifier.ready;
@@ -12,6 +13,8 @@ await MeshoptEncoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
 const doc = await io.read(input);
 const root = doc.getRoot();
+console.log('fox lifted by', seatFox(doc).toFixed(3));
+wrapScarf(doc);
 
 // Target share of triangles kept, by mesh name. Decor pieces are tiny on screen; the characters keep their detail.
 const ratioFor = (name) => {
