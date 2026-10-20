@@ -2,7 +2,8 @@
 
 - **Date** : 20 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
-- **Statut** : design validé section par section ; spec à relire avant de construire le canevas
+- **Statut** : spec validée par Grégoire ; maquette construite, en cours d'affinage
+- **Maquette** : canevas Claude Design « Maquette portfolio v3 » ([lien privé](https://claude.ai/artifact/Qm7HYAAf7d991WuXECGZue))
 - **Lien avec la spec principale** (`2026-10-14-portfolio-design.md`) : la charte « Musée de nuit » reste valable (typographie, couleurs, mouvement « Poétique », lumière selon l'heure, animations réduites automatiques). La v3 remplace la mise en page de l'accueil : les cartes flottantes à plat et le contact sur photo. La spec principale sera mise à jour quand la maquette v3 sera validée.
 
 ## 1. Intention
@@ -13,26 +14,26 @@ Plus tard, ce même recul finira dans un bureau : la caméra repassera par la fe
 
 ## 2. Décisions
 
-| #   | Sujet                    | Choix                                                                                       |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------- |
-| 1   | Mouvement de caméra      | un seul travelling arrière                                                                  |
-| 2   | Présentation d'un projet | mise au point automatique (profondeur de champ), cartel affiché tant que la carte est nette |
-| 3   | Rythme                   | défilement libre, avec des paliers autour de chaque projet                                  |
-| 4   | Texte de l'ouverture     | reste net au premier plan, puis s'efface avant le premier projet                            |
-| 5   | Disposition              | alternance gauche/droite irrégulière, centre libre                                          |
-| 6   | Fin                      | le contact dans le vide, sans photo                                                         |
-| 7   | Ouvrir un projet         | plongée dans la carte ; au retour, on retrouve le parcours au même endroit                  |
-| 8   | Mobile                   | le même parcours, adapté ; version allégée automatique si le téléphone peine                |
-| 9   | Repère                   | compteur de distance depuis l'astéroïde B 612                                               |
-| 10  | Maquette                 | un nouveau canevas Claude Design                                                            |
-| 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                  |
+| #   | Sujet                    | Choix                                                                                                    |
+| --- | ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| 1   | Mouvement de caméra      | un seul travelling arrière                                                                               |
+| 2   | Présentation d'un projet | mise au point automatique (profondeur de champ), cartel affiché tant que la carte est nette              |
+| 3   | Rythme                   | sur ordinateur, défilement libre avec des paliers autour de chaque projet ; sur mobile, d'ancre en ancre |
+| 4   | Texte de l'ouverture     | reste net au premier plan, puis s'efface avant le premier projet                                         |
+| 5   | Disposition              | alternance gauche/droite irrégulière, centre libre                                                       |
+| 6   | Fin                      | le contact dans le vide, sans photo                                                                      |
+| 7   | Ouvrir un projet         | plongée dans la carte ; au retour, on retrouve le parcours au même endroit                               |
+| 8   | Mobile                   | le même parcours, adapté ; version allégée automatique si le téléphone peine                             |
+| 9   | Repère                   | compteur de distance depuis l'astéroïde B 612                                                            |
+| 10  | Maquette                 | un nouveau canevas Claude Design                                                                         |
+| 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                               |
 
 ## 3. Le canevas v3
 
 Un canevas « Maquette portfolio v3 », séparé de celui de la v2, avec six plans de travail :
 
 1. **Parcours, ordinateur** (1440 × 900) : on fait défiler à l'intérieur du plan de travail pour faire reculer la caméra. Réglages : « progression » (0 à 100 %, pour se placer à un moment précis) et « heure ».
-2. **Parcours, mobile** (390 × 844) : le même parcours, adapté.
+2. **Parcours, mobile** (390 × 844) : le même parcours, adapté, d'ancre en ancre. Réglages : « ancre » (pour se placer sur l'une d'elles) et « heure ».
 3. **Storyboard** : huit moments clés côte à côte, lisibles sur téléphone : l'ouverture ; le début du recul ; le premier projet net ; l'entre-deux ; un projet au milieu ; le dernier projet ; le contact dans le vide ; la plongée dans une carte.
 4. **Étude de cas** : la page de la v2, en arrivée de la plongée, avec la carte cliquée comme média d'ouverture.
 5. **Titre animé** : le composant de la v2.
@@ -45,7 +46,7 @@ La scène (étoiles, planète, cartes, cartels, compteur, textes) est un seul co
 ## 4. La scène et la caméra
 
 - **Espace** : perspective CSS. La planète est l'objet le plus lointain et sert de point de fuite. Les projets sont posés le long du trajet, entre la planète et la position finale de la caméra. Trois couches d'étoiles (environ 60, 40 et 20) remplissent le volume à des profondeurs croissantes.
-- **Recul** : la caméra ne fait que reculer. La planète, posée à gauche sur l'ouverture (600 px) avec son décor d'étoiles et de planètes lumineuses, glisse vers le centre en s'éloignant, jusqu'à n'être plus qu'un point lumineux, comme une étoile. Les étoiles proches défilent plus vite que les lointaines.
+- **Recul** : la caméra ne fait que reculer. La planète, posée à gauche sur l'ouverture (600 px) avec son décor d'étoiles et de planètes lumineuses, glisse vers le centre en s'éloignant, jusqu'à n'être plus qu'une petite lumière floue. Les étoiles proches défilent plus vite que les lointaines.
 - **Vie d'une carte** : elle arrive par-dessus l'épaule, tout près et floue, en fondu ; elle devient nette quand elle occupe environ un tiers de la largeur de l'écran (de 30 à 38 % selon la carte) ; puis elle repart vers la planète en rapetissant, en se floutant et en s'estompant.
 - **Paliers** : sur le tronçon de chaque projet, la position de la caméra suit `f(s) = s + k · sin(2πs) / 2π`, avec `s` la progression dans le tronçon (de 0 à 1) et `k = 0,75`. Le recul tombe à 25 % de sa vitesse moyenne au milieu du tronçon, quand la carte est nette, et monte à 175 % entre deux projets, sans à-coup.
 - **Longueur** : douze écrans et demi de défilement : l'ouverture et l'effacement du texte (un écran), un écran et quart par projet, un écran et demi pour la fin.
@@ -67,7 +68,7 @@ La scène (étoiles, planète, cartes, cartels, compteur, textes) est un seul co
 
 Décalages mesurés au moment où la carte est nette, depuis le centre de l'écran, en % de la largeur et de la hauteur (négatif : à gauche ou en haut). Rotations en convention CSS : un angle Y positif tourne la carte vers la droite, donc chaque carte fait face au centre. Les cartes gardent le format de la v2 (16:9, coins arrondis de 20 px) et son flottement (±12 px, sur 8 à 10,5 s).
 
-- **Profondeur de champ** : nette dans une zone d'environ ±10 % autour de la distance de netteté ; au-delà, le flou croît jusqu'à 12 px. Une carte qui arrive apparaît en fondu ; une carte qui s'éloigne descend jusqu'à une opacité d'environ 0,25.
+- **Profondeur de champ** : nette dans une zone d'environ ±10 % autour de la distance de netteté ; au-delà, le flou croît jusqu'à 12 px. La planète suit la même règle : nette sur l'ouverture, floue dès que la caméra s'éloigne. Une carte qui arrive apparaît en fondu ; une carte qui s'éloigne descend jusqu'à une opacité d'environ 0,25.
 - **Carte nette** : anneau blanc de 1 px à 55 % et léger halo blanc, comme le survol de la v2.
 - **Cartel** : du côté du centre, 300 px de large au plus : titre (Libre Franklin 600, 28 px), tag (« 2024 — Three.js · génératif », Libre Franklin 600, 12 px, capitales), description courte (Manrope, 15 px), « Voir l'étude de cas → ». Il apparaît en 300 ms et s'efface en 200 ms.
 - **Survol** : la carte nette se soulève à peine (450 ms).
@@ -84,16 +85,17 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 
 ## 7. La fin : le contact dans le vide
 
-- Après le dernier projet, la caméra continue de reculer ; les cartes passées s'éloignent vers la planète, devenue un point lumineux au centre ; les étoiles se raréfient.
+- Après le dernier projet, la caméra continue de reculer ; les cartes passées s'éloignent vers la planète, devenue une petite lumière floue au centre ; les étoiles se raréfient.
 - Le contact apparaît en fondu au centre-gauche : le libellé « Contact », « Vous recrutez, ou vous avez un projet ? » (Libre Franklin 500), l'email avec « Copier », LinkedIn, GitHub, CV, Instagram, puis « © 2026 Grégoire Tinnes ».
 - Plus de photo, donc plus de crédit photo.
-- À côté du point lumineux, un minuscule libellé « B 612 », relié par un trait fin.
+- À côté de cette lumière, un minuscule libellé « B 612 », relié par un trait fin.
 - Le compteur s'arrête sur sa valeur finale (environ 100 millions de km). C'est un point d'arrivée stable : on ne défile pas plus loin ; en remontant, on refait le trajet jusqu'à la planète.
 - La scène du bureau remplacera plus tard cette fin.
 
 ## 8. Mobile
 
 - Le même parcours au doigt, sur 390 × 844 : la planète en haut de l'ouverture, le texte en dessous.
+- **D'ancre en ancre** : le défilement s'arrête toujours sur une ancre : l'ouverture, chacun des huit projets (carte nette), puis le contact. Un geste mène à l'ancre suivante ou précédente ; on ne peut pas rester entre deux.
 - Les projets passent près du centre avec une alternance légère (5 à 8 % de décalage) ; la carte nette fait environ 78 % de la largeur, avec son cartel en dessous.
 - Le compteur en plus petit, le menu plein écran de la v2, la même plongée, le contact empilé dans le vide.
 - Si la cadence reste sous 40 images par seconde pendant les 3 premières secondes (le seuil de la spec principale), le site bascule sur une version allégée : la planète s'éloigne au début, puis les projets défilent en liste, sans 3D. Cette version n'est pas prototypée dans la maquette.
