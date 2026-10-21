@@ -46,7 +46,7 @@ export const SCREEN = { w: 0.7, h: 0.4375 };
 const PLACES = {
   monitor: [0.62, -0.98, -0.15],
   keyboard: [0.3, -0.72, -0.06],
-  mouse: [0.63, -0.7, -0.12],
+  mouse: [0.6, -0.78, -0.2],
   lamp: [-0.8, -1.05, 0],
   plant: [-0.62, -0.6, 0.4],
   rose: [-0.44, -0.9, 5.4],
@@ -156,8 +156,9 @@ function buildRoom() {
   // A slim stone sill under the frame.
   g.add(box(W + 0.06, 0.022, 0.05, std(0xcfc6b8, 0.7), cx, win.y0 - 0.011, wallZ + 0.012, 0.004));
 
-  // Seven pictures stuck straight onto the wall with tape, laid out as on the composition sketch (fractions of the
-  // desktop frame), as plain swatches until their content is chosen. The sketch's lowest prints are lifted above the desk.
+  // Seven pictures stuck straight onto the wall with blu-tack (nothing shows), laid out as on the composition sketch
+  // (fractions of the desktop frame), as plain swatches until their content is chosen. The sketch's lowest prints are
+  // lifted above the desk.
   const cam = makeCamera('desktop');
   const frames = [
     { r: [-0.06, 0.02, 0.089, 0.14], kind: 'print', color: 0x7b8da2 },
@@ -169,13 +170,6 @@ function buildRoom() {
     { r: [0.075, 0.63, 0.145, 0.74], kind: 'print', color: 0x6c5b7b },
   ];
   const paper = std(0xf3efe7, 0.9);
-  const tape = std(0xfbf8f1, 0.8, 0, { transparent: true, opacity: 0.4 });
-  const strip = (x, y, angle) => {
-    const t = box(0.04, 0.012, 0.001, tape, x, y, wallZ + 0.0045);
-    t.rotation.z = angle;
-    t.userData.noShadow = true;
-    g.add(t);
-  };
   frames.forEach((f, i) => {
     const a = wallPoint(cam, f.r[0], f.r[1]);
     const b = wallPoint(cam, f.r[2], f.r[3]);
@@ -185,20 +179,18 @@ function buildRoom() {
     const y = (a.y + b.y) / 2;
     const tilt = (i % 2 ? 1 : -1) * (f.kind === 'poster' ? 0.006 : 0.014);
     if (f.kind === 'poster') {
-      // A poster printed to the edge, taped at its four corners.
+      // A poster printed to the edge.
       const sheet = box(w, h, 0.0015, std(f.color, 0.9), x, y, wallZ + 0.002);
       sheet.rotation.z = tilt;
       g.add(sheet);
-      for (const [sx, sy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) strip(x + sx * (w / 2 - 0.012), y + sy * (h / 2 - 0.01), -sx * sy * 0.75);
     } else {
-      // A photo print with its thin white border, held by one strip of tape.
+      // A photo print with its thin white border.
       const print = box(w, h, 0.0015, paper, x, y, wallZ + 0.002);
       print.rotation.z = tilt;
       g.add(print);
       const img = box(w - 0.012, h - 0.012, 0.0015, std(f.color, 0.85), x, y, wallZ + 0.0032);
       img.rotation.z = tilt;
       g.add(img);
-      strip(x, a.y - 0.002, (i % 2 ? -1 : 1) * 0.08);
     }
   });
   return onLayer(g, LAYERS.room);
@@ -292,20 +284,98 @@ function buildKeyboard() {
 }
 
 // A sculpted mouse: a low dome, higher toward the back, with a thin line between the two buttons.
+// A gaming mouse in the spirit of Grégoire's Logitech G502: a long body that rises toward the back, a wide thumb rest
+// on the left, side buttons, a metal wheel, a glossy black trim and small blue lights. Its front points toward -z.
 function buildMouse() {
-  const geo = new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2);
+  const L = 0.132;
+  const g = new THREE.Group();
+  // Height of the back and half width of the body along the length (s = 0 at the front, 1 at the back).
+  const curve1d = (pts) => (s) => {
+    for (let i = 1; i < pts.length; i++) {
+      if (s <= pts[i][0]) {
+        const [s0, v0] = pts[i - 1];
+        const [s1, v1] = pts[i];
+        const t = (s - s0) / (s1 - s0);
+        return v0 + (v1 - v0) * t * t * (3 - 2 * t);
+      }
+    }
+    return pts[pts.length - 1][1];
+  };
+  const close = (s) => Math.pow(Math.max(0, 1 - Math.pow(Math.abs(2 * s - 1), 5)), 1 / 5);
+  const top = (s) => curve1d([[0, 0.02], [0.3, 0.029], [0.66, 0.04], [0.9, 0.035], [1, 0.03]])(s) * close(s);
+  const half = (s) => curve1d([[0, 0.024], [0.35, 0.03], [0.7, 0.031], [1, 0.027]])(s) * close(s);
+  const thumb = (s) => 0.01 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, (s - 0.22) / 0.62))), 0.8);
+  const surface = (s, u, side) => {
+    // u from 0 (bottom edge) to 1 (crest of the back), on the left (side = -1) or right (side = 1).
+    const y = top(s) * Math.sin((u * Math.PI) / 2) ** 0.85;
+    let x = half(s) * Math.cos((u * Math.PI) / 2) ** 0.7;
+    if (side < 0) x += thumb(s) * Math.pow(Math.max(0, 1 - y / 0.015), 2);
+    else x -= 0.004 * Math.sin(Math.PI * s) * Math.min(1, Math.max(0, (y - 0.01) / 0.012));
+    return new THREE.Vector3(side * x, y, (s - 0.5) * L);
+  };
+  const geo = new THREE.SphereGeometry(1, 96, 48);
   const p = geo.attributes.position;
   for (let i = 0; i < p.count; i++) {
-    const z = p.getZ(i);
-    p.setY(i, p.getY(i) * (0.75 + 0.25 * Math.max(0, -z)));
+    const vx = p.getX(i);
+    const vy = p.getY(i);
+    const vz = p.getZ(i);
+    const s = (vz + 1) / 2;
+    const ring = Math.max(1e-6, Math.sqrt(Math.max(0, 1 - vz * vz)));
+    const ang = Math.atan2(vy / ring, vx / ring);
+    if (vy >= 0) {
+      const side = ang < Math.PI / 2 ? 1 : -1;
+      const u = side > 0 ? ang / (Math.PI / 2) : (Math.PI - ang) / (Math.PI / 2);
+      const q = surface(s, u, side);
+      p.setXYZ(i, q.x, q.y + 0.002, q.z);
+    } else {
+      const side = vx >= 0 ? 1 : -1;
+      const q = surface(s, 0, side);
+      p.setXYZ(i, q.x * Math.abs(vx / ring) ** 0.3, 0.002 + vy * 0.002, q.z);
+    }
   }
   geo.computeVertexNormals();
-  const shell = new THREE.Mesh(geo, std(0x2b2c30, 0.45, 0.15));
-  shell.scale.set(0.033, 0.036, 0.06);
-  const line = box(0.0012, 0.004, 0.03, std(0x111214, 0.6), 0, 0.03, 0.03);
-  line.rotation.x = -0.6;
-  const g = new THREE.Group();
-  g.add(shell, line);
+  const body = std(0x121315, 0.7, 0.08);
+  const gloss = std(0x0c0c0e, 0.16, 0.45);
+  const metal = std(0xb0b3b8, 0.22, 0.9);
+  const led = new THREE.MeshStandardMaterial({ color: 0x0a6cc0, emissive: 0x1fb8ff, emissiveIntensity: 1.5 });
+  g.add(new THREE.Mesh(geo, body));
+  const onTop = (s, x, lift = 0.0006) => new THREE.Vector3(x, top(s) + 0.002 + lift, (s - 0.5) * L);
+  // The groove between the two buttons, and the wheel in it.
+  const groove = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([0.02, 0.12, 0.24, 0.34].map((s) => onTop(s, 0, 0.0002))), 16, 0.0011, 6, false), gloss);
+  g.add(groove);
+  const wheel = new THREE.Group();
+  const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.0105, 0.0105, 0.0072, 32), std(0x1a1a1c, 0.7));
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.0098, 0.0098, 0.0082, 32), metal);
+  tire.rotation.z = rim.rotation.z = Math.PI / 2;
+  wheel.add(rim, tire);
+  wheel.position.copy(onTop(0.2, 0, -0.0045));
+  g.add(wheel);
+  // A glossy black trim along the upper edge of the left side, from the front to the back.
+  const trimPts = [0.12, 0.3, 0.5, 0.7, 0.86].map((s) => surface(s, 0.62, -1).add(new THREE.Vector3(0, 0.002, 0)));
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(trimPts), 32, 0.0019, 8, false), gloss));
+  // Two side buttons above the thumb rest, and a sniper button in front of them.
+  [
+    [0.3, 0.016, 0.017],
+    [0.43, 0.016, 0.017],
+    [0.19, 0.012, 0.011],
+  ].forEach(([s, len, y]) => {
+    const q = surface(s, 0.42, -1);
+    const b = new THREE.Mesh(new RoundedBoxGeometry(0.004, 0.0065, len, 2, 0.0015), gloss);
+    b.position.set(q.x - 0.0012, y + 0.002, q.z);
+    b.rotation.z = 0.35;
+    g.add(b);
+  });
+  // The three blue lights of the sensitivity, on the left button, and the light on the palm.
+  [0.25, 0.28, 0.31].forEach((s) => {
+    const q = surface(s, 0.86, -1);
+    const dot = new THREE.Mesh(new THREE.BoxGeometry(0.0022, 0.0008, 0.0016), led);
+    dot.position.set(q.x, q.y + 0.0022, q.z);
+    g.add(dot);
+  });
+  const palm = new THREE.Mesh(new THREE.TorusGeometry(0.0075, 0.0014, 8, 32, Math.PI * 1.55), led);
+  palm.position.copy(onTop(0.72, 0, 0.0004));
+  palm.rotation.set(-Math.PI / 2, 0, 0.6);
+  g.add(palm);
   return g;
 }
 
@@ -400,6 +470,10 @@ function buildPlant() {
     if (p.y > 0.135 && rr < 0.074) return true;
     return rr > potR(Math.max(0, p.y)) + 0.006;
   };
+  // Where the camera is, seen from the plant (in the plant's own frame).
+  const [px, pz, turn] = PLACES.plant;
+  const w = new THREE.Vector3(-px, 1.2 - ROOM.deskY - 0.2, -pz).normalize();
+  const toViewer = new THREE.Vector3(w.x * Math.cos(turn) - w.z * Math.sin(turn), w.y + 0.5, w.x * Math.sin(turn) + w.z * Math.cos(turn)).normalize();
   const vines = 18;
   for (let v = 0; v < vines; v++) {
     const a = (v / vines) * Math.PI * 2 + r() * 0.4;
@@ -418,10 +492,45 @@ function buildPlant() {
       curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(c * 0.02, 0.14, sn * 0.02), new THREE.Vector3(c * reach * 0.45, 0.14 + up * 0.7, sn * reach * 0.45), new THREE.Vector3(c * reach, 0.14 + up, sn * reach));
     }
     if (!curve.getPoints(24).every(clear)) continue;
-    g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.0025, 6, false), stemMat));
+    const fits = (leaf, kind) => {
+      leaf.updateMatrix();
+      const [len, wid] = leafSizes[kind];
+      return [
+        [0, len],
+        [wid * 0.5, len * 0.42],
+        [-wid * 0.5, len * 0.42],
+        [0, len * 0.06],
+      ].every(([x, y]) => clear(new THREE.Vector3(x, y, 0).applyMatrix4(leaf.matrix)));
+    };
+    // A stem always ends on a leaf that carries it on, its face turned toward the viewer so that it never shows as a
+    // bare spike; if that leaf would touch the pot, the stem is cut back.
+    let tip = 0;
+    let tipLeaf = null;
+    for (let tt = 1; tt > 0.35 && !tipLeaf; tt -= 0.07) {
+      const kind = v % 3;
+      const leaf = new THREE.Mesh(leafGeos[kind], leafMats[v % 3]);
+      const T = curve.getTangent(tt);
+      const P = curve.getPoint(tt);
+      const up = toViewer.clone().addScaledVector(T, -toViewer.dot(T));
+      if (up.lengthSq() < 0.04) up.set(P.x, 0, P.z);
+      up.normalize();
+      const side = new THREE.Vector3().crossVectors(T, up).normalize();
+      leaf.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(side, T, up.crossVectors(side, T)));
+      leaf.position.copy(P);
+      leaf.scale.setScalar(0.85 + r() * 0.25);
+      if (fits(leaf, kind)) {
+        tip = tt;
+        tipLeaf = leaf;
+      }
+    }
+    if (!tipLeaf) continue;
+    const stemPts = [];
+    for (let i = 0; i <= 20; i++) stemPts.push(curve.getPoint((i / 20) * tip));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stemPts), 20, 0.0025, 6, false), stemMat));
+    g.add(tipLeaf);
     const n = 4 + Math.floor(r() * 3);
     for (let k = 0; k < n; k++) {
-      const t = 0.25 + (k / n) * 0.75;
+      const t = (0.25 + (k / n) * 0.65) * tip;
       const p = curve.getPoint(t);
       const tan = curve.getTangent(t);
       const kind = (v + k) % 3;
@@ -432,15 +541,7 @@ function buildPlant() {
       const yaw = Math.atan2(out.x, out.z) + side * (0.6 + r() * 0.5);
       leaf.rotation.set(-0.9 + r() * 0.7 + (trailing ? 0.9 : 0), yaw, side * (0.3 + r() * 0.3), 'YXZ');
       leaf.scale.setScalar(0.8 + r() * 0.5);
-      leaf.updateMatrix();
-      const [len, wid] = leafSizes[kind];
-      const edge = [
-        [0, len],
-        [wid * 0.5, len * 0.42],
-        [-wid * 0.5, len * 0.42],
-        [0, len * 0.06],
-      ];
-      if (edge.every(([x, y]) => clear(new THREE.Vector3(x, y, 0).applyMatrix4(leaf.matrix)))) g.add(leaf);
+      if (fits(leaf, kind)) g.add(leaf);
     }
   }
   return g;
