@@ -14,7 +14,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 | #   | Sujet                    | Choix                                                                                                                |
 | --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| 1   | Fabrication              | une première version en code (Three.js), que Grégoire pourra reprendre dans Blender                                  |
+| 1   | Fabrication              | une scène en code (Three.js), qui est la version finale : pas de reprise dans Blender                                |
 | 2   | Texte du contact         | toujours visible, centré dans le ciel de la fenêtre, sous la planète                                                 |
 | 3   | Ville                    | une ville française imaginaire inspirée de Lyon, à la manière de l'image d'ambiance                                  |
 | 4   | Lumière                  | tout le site passe à deux moments : l'aube avant midi, le crépuscule après midi                                      |
@@ -30,7 +30,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 - **Point de vue** : les yeux d'une personne assise, à 1,20 m du sol et 70 cm du bord du bureau, la tête légèrement levée vers la fenêtre (environ 5°), avec un champ de vision proche de l'œil (environ 60° en largeur sur ordinateur). On ne voit ni mains ni corps.
 - **Composition sur ordinateur** :
-  - à gauche, le mur du fond porte sept cadres : posters, photos tirées, images collées, disposés comme sur le schéma. Ce sont des cadres vides numérotés en attendant leur contenu ;
+  - à gauche, le mur du fond porte sept cadres : posters, photos tirées, images collées, disposés comme sur le schéma. En attendant leur contenu, ce sont de simples aplats ; leurs formes et leur disposition suivront le contenu final ;
   - au centre, une grande fenêtre d'un seul tenant, au cadre fin et sombre, sans montant au milieu ; son appui est juste au-dessus du plateau du bureau. Le ciel occupe le haut, la ville le bas ;
   - à droite, au premier plan, l'écran sur son pied, légèrement tourné vers nous, et le MX Keys devant lui ;
   - le bureau est en bois sombre. La lampe allumée est à gauche, devant le mur ; la plante au coin gauche ; la rose sous son globe entre la lampe et le clavier ; le pot à crayons à droite de l'écran.
@@ -99,7 +99,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 - **Les rendus** : pour chaque moment (aube, crépuscule) et chaque cadrage (ordinateur 1440 × 900, mobile 390 × 844), trois couches détourées en WebP : la ville, la pièce (mur, posters, cadre de fenêtre, ouverture transparente) et le bureau avec ses objets. Soit douze images légères. Le ciel, les étoiles et la planète restent en direct, pour que le parcours continue à travers la fenêtre.
 - **Le calage de l'écran** : les quatre coins de l'écran de l'ordinateur sont relevés dans le rendu ; l'écran de verrouillage et le navigateur, en HTML, s'y calent par une transformation en perspective.
 - **Les couches animées** : les fenêtres allumées de la ville et les nuages sont des couches à part.
-- **Blender** : si Grégoire modélise la pièce, son fichier glTF remplace les formes en code dans la même chaîne de rendu.
+- **Version finale** : la scène en code est la version définitive, avec le niveau de finition d'une vraie scène (matières, lumière, détails) ; les formes organiques (plante, rose) sont générées dans le style de la planète, sans modèle extérieur. Le site final la reprendra telle quelle pour le rendu en temps réel.
 
 ## 10. Sur le canevas
 
@@ -110,9 +110,8 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 11. Hors périmètre
 
-- Le contenu des posters et des photos.
+- Le contenu des posters et des photos, et donc leurs formes définitives.
 - Les vraies captures des pages LinkedIn, GitHub, CV et Instagram.
-- La version Blender de la pièce.
 - Le rendu en temps réel du site final, qui reprendra la scène en code.
 
 ## 12. Ordre de construction
