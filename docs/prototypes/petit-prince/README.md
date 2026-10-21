@@ -9,11 +9,13 @@ Ce dossier a servi à valider la scène de l'ouverture avant l'implémentation (
 
 ## Mise en route
 
+`models/petit-prince.glb`, la version web corrigée et compressée, est versionné : `npm install` puis `npm run serve` suffisent pour faire des rendus. Pour le refaire après un nouvel export Blender (l'export, 16 Mo, n'est pas versionné) :
+
 ```sh
 npm install
-mkdir models renders
-cp /chemin/vers/projet2.glb models/   # l'export Blender de Grégoire (non versionné)
-npm run optimize                       # écrit models/petit-prince.glb (version web)
+mkdir -p renders
+cp /chemin/vers/projet2.glb models/   # l'export Blender de Grégoire
+npm run optimize                       # réécrit models/petit-prince.glb, à committer
 npm run serve                          # sert ce dossier sur le port 8765
 ```
 
