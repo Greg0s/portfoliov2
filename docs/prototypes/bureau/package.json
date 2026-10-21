@@ -3,7 +3,7 @@
   "private": true,
   "description": "Prototype de la scène 3D du bureau (section Contact) : rendu Three.js headless en couches détourées.",
   "scripts": {
-    "serve": "python3 -m http.server 8766",
+    "serve": "python3 -m http.server 8766 --directory ..",
     "layers": "node layers.mjs"
   },
   "dependencies": {

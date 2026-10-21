@@ -1,10 +1,10 @@
 // Renders render.html variants with headless Chromium and saves each picture, with its placement data alongside.
 // Usage: node shoot.cjs <outDir> <name>:<query> [<name>:<query> ...]
-// Serve this folder first (`npm run serve`). BASE_URL and CHROMIUM_PATH are optional.
+// Serve docs/prototypes first (`npm run serve`, so that the planet model is in reach). BASE_URL and CHROMIUM_PATH are optional.
 const fs = require('fs');
 const { chromium } = require('playwright');
 
-const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:8766/render.html';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:8766/bureau/render.html';
 
 (async () => {
   const [outDir, ...jobs] = process.argv.slice(2);

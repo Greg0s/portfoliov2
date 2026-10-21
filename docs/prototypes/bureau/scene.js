@@ -12,13 +12,13 @@ export const MOMENTS = {
     sky: ['#101834', '#27366a', '#6c68a0', '#cb94a2', '#eec29f'],
     glow: { azimuth: -15, color: '#ffe4b8', strength: 0.5 },
     city: { hemi: ['#8f9bd2', '#2a2734', 1.2], sun: ['#ffc6a6', 0.5], fill: ['#a3b2ea', 0.45], lit: 0.12, litGlow: 0.85, lamps: 2.2, fog: '#c9a3b3', hills: '#6f6f9c' },
-    room: { hemi: ['#8c92c6', '#2a2430', 0.4], window: ['#c8b8ea', 5], bounce: ['#bdb9dc', 1.2], lamp: ['#ffb46a', 7], screen: ['#ffb07a', 0.8], exposure: 1 },
+    room: { hemi: ['#8c92c6', '#2a2430', 0.4], window: ['#c8b8ea', 3.4], bounce: ['#bdb9dc', 1.2], lamp: ['#ffb46a', 7], screen: ['#ffb07a', 0.8], exposure: 1 },
   },
   crepuscule: {
     sky: ['#121538', '#3b3172', '#a2567b', '#e7845a', '#f8b26b'],
     glow: { azimuth: 6, color: '#ffd38c', strength: 0.7 },
     city: { hemi: ['#b391b6', '#2d1d23', 1.1], sun: ['#ff9a5a', 0.85], fill: ['#ab9cdb', 0.38], lit: 0.38, litGlow: 1.2, lamps: 3.5, fog: '#e09a7c', hills: '#9b6377' },
-    room: { hemi: ['#a67f99', '#2c1e1c', 0.4], window: ['#ffa47c', 6], bounce: ['#dcb9a8', 1.2], lamp: ['#ffae60', 8], screen: ['#ffa868', 0.9], exposure: 1 },
+    room: { hemi: ['#a67f99', '#2c1e1c', 0.4], window: ['#ffa47c', 4.1], bounce: ['#dcb9a8', 1.2], lamp: ['#ffae60', 8], screen: ['#ffa868', 0.9], exposure: 1 },
   },
 };
 
@@ -32,7 +32,7 @@ export const FRAMINGS = {
 export const ROOM = {
   wallZ: -1.2,
   wallT: 0.24,
-  win: { x0: -0.47, x1: 0.5, y0: 0.78, y1: 2.5 },
+  win: { x0: -0.47, x1: 1.6, y0: 0.78, y1: 2.5 },
   height: 2.7,
   deskY: 0.74,
   deskFront: -0.36,
@@ -49,7 +49,7 @@ const PLACES = {
   mouse: [0.63, -0.7, -0.12],
   lamp: [-0.8, -1.05, 0],
   plant: [-0.62, -0.6, 0.4],
-  rose: [-0.27, -0.96, 0],
+  rose: [-0.44, -0.9, 5.4],
   pencils: [0.8, -0.86, 0],
 };
 
@@ -135,8 +135,9 @@ function buildRoom() {
   g.add(wall);
   g.add(box(6.8, 0.05, 3, std(0xb9b0a4, 0.95), 0, height + 0.025, wallZ + 1.5));
 
-  // A single large pane in a slim dark frame, set against the inner face of the wall. There is no glass to render.
-  const joinery = std(0x26272c, 0.55, 0.25);
+  // A wide single pane that runs out of the frame on the right, in a slim white frame set against the inner face of
+  // the wall. There is no glass to render.
+  const joinery = std(0xf2f0eb, 0.45);
   const fz = wallZ - 0.04;
   const W = win.x1 - win.x0;
   const H = win.y1 - win.y0;
@@ -155,8 +156,8 @@ function buildRoom() {
   // A slim stone sill under the frame.
   g.add(box(W + 0.06, 0.022, 0.05, std(0xcfc6b8, 0.7), cx, win.y0 - 0.011, wallZ + 0.012, 0.004));
 
-  // Seven frames, laid out as on the composition sketch (fractions of the desktop frame), as plain swatches
-  // until their content is chosen. The sketch's lowest prints are lifted above the desk.
+  // Seven pictures stuck straight onto the wall with tape, laid out as on the composition sketch (fractions of the
+  // desktop frame), as plain swatches until their content is chosen. The sketch's lowest prints are lifted above the desk.
   const cam = makeCamera('desktop');
   const frames = [
     { r: [-0.06, 0.02, 0.089, 0.14], kind: 'print', color: 0x7b8da2 },
@@ -167,9 +168,14 @@ function buildRoom() {
     { r: [-0.06, 0.63, 0.061, 0.74], kind: 'print', color: 0xd5c2a0 },
     { r: [0.075, 0.63, 0.145, 0.74], kind: 'print', color: 0x6c5b7b },
   ];
-  const black = std(0x1c1c1f, 0.5);
-  const mat = std(0xf1ede5, 0.9);
-  const tape = std(0xf3ead6, 0.8, 0, { transparent: true, opacity: 0.8 });
+  const paper = std(0xf3efe7, 0.9);
+  const tape = std(0xfbf8f1, 0.8, 0, { transparent: true, opacity: 0.4 });
+  const strip = (x, y, angle) => {
+    const t = box(0.04, 0.012, 0.001, tape, x, y, wallZ + 0.0045);
+    t.rotation.z = angle;
+    t.userData.noShadow = true;
+    g.add(t);
+  };
   frames.forEach((f, i) => {
     const a = wallPoint(cam, f.r[0], f.r[1]);
     const b = wallPoint(cam, f.r[2], f.r[3]);
@@ -177,21 +183,22 @@ function buildRoom() {
     const h = a.y - b.y;
     const x = (a.x + b.x) / 2;
     const y = (a.y + b.y) / 2;
+    const tilt = (i % 2 ? 1 : -1) * (f.kind === 'poster' ? 0.006 : 0.014);
     if (f.kind === 'poster') {
-      g.add(box(w, h, 0.02, black, x, y, wallZ + 0.01, 0.003));
-      g.add(box(w - 0.024, h - 0.024, 0.004, mat, x, y, wallZ + 0.021));
-      g.add(box(w - 0.07, h - 0.07, 0.004, std(f.color, 0.9), x, y, wallZ + 0.0225));
+      // A poster printed to the edge, taped at its four corners.
+      const sheet = box(w, h, 0.0015, std(f.color, 0.9), x, y, wallZ + 0.002);
+      sheet.rotation.z = tilt;
+      g.add(sheet);
+      for (const [sx, sy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) strip(x + sx * (w / 2 - 0.012), y + sy * (h / 2 - 0.01), -sx * sy * 0.75);
     } else {
-      const print = box(w, h, 0.002, mat, x, y, wallZ + 0.002);
-      print.rotation.z = (i % 2 ? 1 : -1) * 0.012;
+      // A photo print with its thin white border, held by one strip of tape.
+      const print = box(w, h, 0.0015, paper, x, y, wallZ + 0.002);
+      print.rotation.z = tilt;
       g.add(print);
-      const img = box(w - 0.018, h - 0.03, 0.002, std(f.color, 0.85), x, y + 0.004, wallZ + 0.0035);
-      img.rotation.z = print.rotation.z;
+      const img = box(w - 0.012, h - 0.012, 0.0015, std(f.color, 0.85), x, y, wallZ + 0.0032);
+      img.rotation.z = tilt;
       g.add(img);
-      const t = box(0.05, 0.016, 0.001, tape, x, a.y - 0.004, wallZ + 0.005);
-      t.rotation.z = (i % 2 ? -1 : 1) * 0.09;
-      t.userData.noShadow = true;
-      g.add(t);
+      strip(x, a.y - 0.002, (i % 2 ? -1 : 1) * 0.08);
     }
   });
   return onLayer(g, LAYERS.room);
@@ -378,42 +385,119 @@ function buildPlant() {
   g.add(soil);
   const stemMat = std(0x3e6a33, 0.7);
   const leafMats = [0x264d25, 0x33612e, 0x416f34].map((c) => std(c, 0.75, 0, { side: THREE.DoubleSide }));
-  const leafGeos = [leafGeometry(0.055, 0.048), leafGeometry(0.068, 0.058), leafGeometry(0.047, 0.04)];
+  const leafSizes = [
+    [0.055, 0.048],
+    [0.068, 0.058],
+    [0.047, 0.04],
+  ];
+  const leafGeos = leafSizes.map(([len, wid]) => leafGeometry(len, wid));
+  // Nothing may go through the pot: below the soil a point stays outside it; between the soil and the rim it is
+  // either well inside or outside.
+  const potR = (y) => (y < 0.01 ? 0.07 + y : y < 0.13 ? 0.08 + ((y - 0.01) / 0.12) * 0.012 : 0.092 + ((y - 0.13) / 0.02) * 0.006);
+  const clear = (p) => {
+    const rr = Math.hypot(p.x, p.z);
+    if (p.y > 0.16) return true;
+    if (p.y > 0.135 && rr < 0.074) return true;
+    return rr > potR(Math.max(0, p.y)) + 0.006;
+  };
   const vines = 18;
   for (let v = 0; v < vines; v++) {
     const a = (v / vines) * Math.PI * 2 + r() * 0.4;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
     const trailing = v % 3 === 0;
-    const reach = 0.12 + r() * 0.12;
-    const up = trailing ? -0.08 - r() * 0.12 : 0.12 + r() * 0.16;
-    const p0 = new THREE.Vector3(Math.cos(a) * 0.02, 0.14, Math.sin(a) * 0.02);
-    const p1 = new THREE.Vector3(Math.cos(a) * reach * 0.45, 0.14 + Math.max(0.05, up * 0.7), Math.sin(a) * reach * 0.45);
-    const p2 = new THREE.Vector3(Math.cos(a) * reach, 0.14 + up, Math.sin(a) * reach);
-    const curve = new THREE.QuadraticBezierCurve3(p0, p1, p2);
+    let curve;
+    if (trailing) {
+      // Trailing stems climb over the rim before they hang down outside the pot.
+      const out = 0.16 + r() * 0.08;
+      const drop = 0.04 + r() * 0.1;
+      curve = new THREE.CubicBezierCurve3(new THREE.Vector3(c * 0.03, 0.14, sn * 0.03), new THREE.Vector3(c * 0.075, 0.215, sn * 0.075), new THREE.Vector3(c * 0.15, 0.205, sn * 0.15), new THREE.Vector3(c * out, 0.15 - drop, sn * out));
+    } else {
+      const reach = 0.12 + r() * 0.12;
+      const up = 0.12 + r() * 0.16;
+      curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(c * 0.02, 0.14, sn * 0.02), new THREE.Vector3(c * reach * 0.45, 0.14 + up * 0.7, sn * reach * 0.45), new THREE.Vector3(c * reach, 0.14 + up, sn * reach));
+    }
+    if (!curve.getPoints(24).every(clear)) continue;
     g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.0025, 6, false), stemMat));
     const n = 4 + Math.floor(r() * 3);
     for (let k = 0; k < n; k++) {
       const t = 0.25 + (k / n) * 0.75;
       const p = curve.getPoint(t);
       const tan = curve.getTangent(t);
-      const leaf = new THREE.Mesh(leafGeos[(v + k) % 3], leafMats[(v * 2 + k) % 3]);
+      const kind = (v + k) % 3;
+      const leaf = new THREE.Mesh(leafGeos[kind], leafMats[(v * 2 + k) % 3]);
       leaf.position.copy(p);
       const side = k % 2 ? 1 : -1;
       const out = new THREE.Vector3(tan.x, 0, tan.z).normalize();
       const yaw = Math.atan2(out.x, out.z) + side * (0.6 + r() * 0.5);
       leaf.rotation.set(-0.9 + r() * 0.7 + (trailing ? 0.9 : 0), yaw, side * (0.3 + r() * 0.3), 'YXZ');
       leaf.scale.setScalar(0.8 + r() * 0.5);
-      g.add(leaf);
+      leaf.updateMatrix();
+      const [len, wid] = leafSizes[kind];
+      const edge = [
+        [0, len],
+        [wid * 0.5, len * 0.42],
+        [-wid * 0.5, len * 0.42],
+        [0, len * 0.06],
+      ];
+      if (edge.every(([x, y]) => clear(new THREE.Vector3(x, y, 0).applyMatrix4(leaf.matrix)))) g.add(leaf);
     }
   }
   return g;
 }
 
-// The rose under its glass globe, a nod to the Little Prince.
-function buildRose() {
+// Stands the rose of the planet upright, from the foot of its stem toward its bloom, at the given height.
+function standRose(model, height, y0) {
+  const rose = model.clone(true);
+  rose.position.set(0, 0, 0);
+  rose.scale.set(1, 1, 1);
+  rose.quaternion.setFromUnitVectors(new THREE.Vector3(0.013, -0.701, -0.713).normalize(), new THREE.Vector3(0, 1, 0));
+  rose.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(rose);
+  rose.scale.setScalar(height / (bounds.max.y - bounds.min.y));
+  rose.updateMatrixWorld(true);
+  bounds.setFromObject(rose);
+  rose.position.set(-(bounds.min.x + bounds.max.x) / 2, y0 - bounds.min.y, -(bounds.min.z + bounds.max.z) / 2);
+  // Opaque petals sort well under the glass; softer highlights under the desk lamp, which is much closer than the
+  // planet's sun.
+  rose.traverse((o) => {
+    if (o.isMesh) {
+      o.material = o.material.clone();
+      o.material.transparent = false;
+      o.material.opacity = 1;
+      o.material.depthWrite = true;
+      if ('specularIntensity' in o.material) o.material.specularIntensity *= 0.5;
+    }
+  });
   const g = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.066, 0.07, 0.024, 48), std(0x6b4a33, 0.55));
+  g.add(rose);
+  return g;
+}
+
+// The rose under its glass globe. With Grégoire's Blender model of the planet, it is the rose of the planet itself;
+// without it, a simplified one.
+function buildRose(model) {
+  const g = new THREE.Group();
+  const R = 0.064;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.01, R + 0.014, 0.024, 48), std(0x6b4a33, 0.55));
   base.position.y = 0.012;
   g.add(base);
+  if (model) g.add(standRose(model, 0.2, 0.024));
+  else g.add(simpleRose());
+  // The globe: a cylinder of glass capped by a half sphere.
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.04, transparent: true, opacity: 0.16, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.6, side: THREE.DoubleSide, depthWrite: false });
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.17, 64, 1, true), glass);
+  tube.position.y = 0.024 + 0.085;
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 24, 0, Math.PI * 2, 0, Math.PI / 2), glass);
+  dome.position.y = 0.024 + 0.17;
+  tube.userData.noShadow = dome.userData.noShadow = true;
+  tube.renderOrder = dome.renderOrder = 1;
+  g.add(tube, dome);
+  return g;
+}
+
+function simpleRose() {
+  const g = new THREE.Group();
   const stemCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.024, 0), new THREE.Vector3(0.004, 0.07, 0.002), new THREE.Vector3(-0.003, 0.12, -0.002), new THREE.Vector3(0, 0.15, 0)]);
   g.add(new THREE.Mesh(new THREE.TubeGeometry(stemCurve, 24, 0.0022, 8, false), std(0x3b6630, 0.7)));
   const leafGeo = leafGeometry(0.03, 0.018);
@@ -450,14 +534,6 @@ function buildRose() {
     }
   });
   g.add(bloom);
-  // The globe: a cylinder of glass capped by a half sphere.
-  const glass = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.04, transparent: true, opacity: 0.16, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.6, side: THREE.DoubleSide, depthWrite: false });
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.056, 0.15, 64, 1, true), glass);
-  tube.position.y = 0.024 + 0.075;
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.056, 64, 24, 0, Math.PI * 2, 0, Math.PI / 2), glass);
-  dome.position.y = 0.024 + 0.15;
-  tube.userData.noShadow = dome.userData.noShadow = true;
-  g.add(tube, dome);
   return g;
 }
 
@@ -496,7 +572,7 @@ function buildPencils() {
   return g;
 }
 
-function buildDesk() {
+function buildDesk(roseModel) {
   const g = new THREE.Group();
   const { deskY, deskFront, wallZ } = ROOM;
   const wood = woodTexture();
@@ -508,7 +584,7 @@ function buildDesk() {
     mouse: buildMouse(),
     lamp: buildLamp(),
     plant: buildPlant(),
-    rose: buildRose(),
+    rose: buildRose(roseModel),
     pencils: buildPencils(),
   };
   for (const [name, o] of Object.entries(objects)) {
@@ -663,7 +739,7 @@ function buildCity(moment) {
   const r = rng(2024);
   const parts = { walls: [], roofs: [], chimneys: [] };
   // Only what can be seen through the window, with a margin for the movements of the head, is built.
-  const inView = (p, margin = 40) => p.y < 0 && p.length() < 3500 && Math.abs(p.x) < -p.y * Math.tan(34 * DEG) + margin;
+  const inView = (p, margin = 40) => p.y < 0 && p.length() < 3500 && Math.abs(p.x) < -p.y * Math.tan(50 * DEG) + margin;
 
   // Neighbours on the slope of our hill, at the bottom corners of the window: mostly their roofs show.
   // Each is placed by the azimuths of its sides, its distance, and the angle at which its ridge is seen.
@@ -682,10 +758,9 @@ function buildCity(moment) {
     addBuilding(parts, r, { x: (x0 + x1) / 2, z: -n.d - n.depth / 2, w: x1 - x0, d: n.depth, h: ridgeY - rh - ground, y0: ground, roof: n.roof, rh, dormers: n.dormers, color: n.color, chimneys: true });
   }
   // The town, in rows parallel to the river. Near bank: from the quay back to the foot of our hill.
-  const vCamera = acrossOf(new THREE.Vector2(0, 0));
-  for (let v = -(HALF + 24), row = 0; v > vCamera; row++) {
+  for (let v = -(HALF + 24), row = 0; v > -900; row++) {
     const depth = 11 + r() * 5;
-    for (let u = -600; u < 1800; ) {
+    for (let u = -600; u < 3200; ) {
       const w = 10 + r() * 9;
       const p = at(u + w / 2, v - depth / 2);
       if (p.length() > CITY.hill.foot + 8 && inView(p)) {
@@ -842,9 +917,9 @@ function buildCity(moment) {
     const ph = [rr() * 6, rr() * 6, rr() * 6, rr() * 6];
     rg.dist = (az) => rg.d + Math.sin(az * 0.05 + ph[3]) * 300;
     const pos = [];
-    const steps = 240;
+    const steps = 320;
     for (let i = 0; i <= steps; i++) {
-      const az = -46 + (92 * i) / steps;
+      const az = -62 + (124 * i) / steps;
       const k = 0.5 + 0.28 * Math.sin(az * 0.07 + ph[0]) + 0.16 * Math.sin(az * 0.19 + ph[1]) + 0.07 * Math.sin(az * 0.47 + ph[2]);
       const p = polar(az, rg.dist(az));
       pos.push(p.x, CITY.land + rg.base + rg.amp * k, p.y, p.x, CITY.land - 60, p.y);
@@ -857,7 +932,7 @@ function buildCity(moment) {
     const range = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(M.hills).lerp(fog, rg.haze), fog: false, toneMapped: false, side: THREE.DoubleSide }));
     g.add(range);
     rg.top = (az) => {
-      const i = Math.round(((az + 46) / 92) * steps);
+      const i = Math.round(((az + 62) / 124) * steps);
       return pos[i * 6 + 1];
     };
   });
@@ -1007,10 +1082,10 @@ function buildLights(moment, desk) {
 
 // ---------- Assembly ----------
 
-export function createOffice(moment) {
+export function createOffice(moment, { rose } = {}) {
   const scene = new THREE.Scene();
   const room = buildRoom();
-  const desk = buildDesk();
+  const desk = buildDesk(rose);
   const city = buildCity(moment);
   scene.add(room, desk.group, city);
   const lights = buildLights(moment, desk);

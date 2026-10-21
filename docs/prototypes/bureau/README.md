@@ -11,7 +11,7 @@ Ce dossier fabrique la scène du bureau qui termine le parcours (voir la spec `d
 
 ```sh
 npm install
-npm run serve        # sert ce dossier sur le port 8766
+npm run serve        # sert docs/prototypes sur le port 8766, pour atteindre aussi le modèle de la planète
 ```
 
 Puis, dans un autre terminal (les navigateurs de Playwright doivent être installés, ou `CHROMIUM_PATH` renseigné) :
@@ -21,6 +21,8 @@ mkdir -p renders
 node shoot.cjs renders "apercu:moment=crepuscule&framing=desktop&layer=preview"
 npm run layers       # les couches finales, dans renders/layers
 ```
+
+La rose posée sur le bureau est celle de la planète : la scène la prend dans l'export Blender de Grégoire, `../petit-prince/models/projet2.glb` (non versionné, voir le README du prototype de la planète). Sans ce fichier, une rose simplifiée la remplace.
 
 Pour voir le fond d'écran sur le moniteur dans les aperçus, copier la photo de Grégoire dans `renders/wallpaper.jpg` (non versionnée).
 
