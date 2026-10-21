@@ -146,7 +146,7 @@ La planète de l'ouverture est la création Blender de Grégoire, rendue en temp
 Le relief de la planète et les cheveux du prince viennent du matériau dans Blender, et un glTF ne peut pas l'exporter. Ils sont donc générés au chargement, avec un tirage fixe pour que la planète soit toujours la même :
 
 - **Planète** : icosphère (détail 110, réduit sur mobile), surface bosselée (bruit simplex, 5 octaves) et 46 cratères (cuvette et rebord), atténués là où se tiennent le prince, le renard et la rose.
-- **Cheveux** : icosphère hérissée de 150 pétales.
+- **Cheveux** : boucles froissées, comme sur le rendu Blender : icosphère (détail 64) plissée par un bruit simplex « en crêtes » adouci, sur 2 octaves. Leur matière est un or plus vif et plus brillant que celui du fichier (`#F5CB3A`, rugosité 0,4).
 
 ### 6.3 Lumière et caméra
 

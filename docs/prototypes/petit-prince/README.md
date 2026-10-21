@@ -33,8 +33,6 @@ node shoot.cjs renders "nuit:layer=planet&w=1200&h=1200" "aube:layer=planet&w=12
 | `w`, `h`       | pixels                                     | taille de l'image                                                    |
 | `model`        | nom de fichier dans `models/`              | `petit-prince.glb` par défaut                                        |
 | `proc`         | `0`                                        | garde la planète et les cheveux lisses du fichier, sans relief généré |
-| `hair`         | `petales` (défaut), `froisse`, `vent`      | cheveux générés : pétales, boucles froissées, mèches couchées par le vent (en cours de choix) |
-| `hairrough`, `haircolor` | nombre, couleur (`%23F5CB3A`)    | matière des cheveux (0,62 et la couleur du fichier par défaut)       |
 | `detail`, `seed` | nombres                                  | finesse de la planète (110) et tirage des cratères (5)               |
 | `t`            | secondes                                   | instant des animations                                               |
 | `fov`, `cy`    | degrés, unités                             | champ (20) et hauteur (15,5) de la caméra                            |
