@@ -334,7 +334,8 @@ function buildMouse() {
     }
   }
   geo.computeVertexNormals();
-  const body = std(0x121315, 0.7, 0.08);
+  // Black plastic with a weak sheen, so that the warm light of the screen right behind it does not turn it brown.
+  const body = new THREE.MeshPhysicalMaterial({ color: 0x0b0b0c, roughness: 0.55, specularIntensity: 0.22 });
   const gloss = std(0x0c0c0e, 0.16, 0.45);
   const metal = std(0xb0b3b8, 0.22, 0.9);
   const led = new THREE.MeshStandardMaterial({ color: 0x0a6cc0, emissive: 0x1fb8ff, emissiveIntensity: 1.5 });
