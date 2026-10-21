@@ -32,7 +32,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 - **Composition sur ordinateur** :
   - à gauche, le mur du fond porte sept cadres : posters, photos tirées, images collées, disposés comme sur le schéma. En attendant leur contenu, ce sont de simples aplats ; leurs formes et leur disposition suivront le contenu final ;
   - au centre, une grande fenêtre d'un seul tenant, au cadre fin et sombre, sans montant au milieu ; son appui est juste au-dessus du plateau du bureau. Le ciel occupe le haut, la ville le bas ;
-  - à droite, au premier plan, l'écran sur son pied, légèrement tourné vers nous, et le MX Keys devant lui ;
+  - à droite, au premier plan, l'écran sur son pied, au format 16:10 d'un écran de bureau classique (un 32 pouces), à peine tourné vers nous (tourné davantage, il paraîtrait étiré au bord d'une vue aussi large), et le MX Keys devant lui ;
   - le bureau est en bois sombre. La lampe allumée est à gauche, devant le mur ; la plante au coin gauche ; la rose sous son globe entre la lampe et le clavier ; le pot à crayons à droite de l'écran.
 - **Style** : celui de la planète, sans photoréalisme : formes simples aux arêtes adoucies, matières mates, couleurs feutrées, ombres douces, même rendu (tone mapping ACES, ombres adoucies).
 - **Mobile** : cadrage vertical. La caméra recule un peu et lève les yeux (10°, champ de 80° en hauteur) : la fenêtre occupe les deux tiers du haut (le ciel, la planète, le texte), l'écran et le bureau le tiers du bas ; un coin du mur aux posters dépasse sur la gauche.
@@ -68,7 +68,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 ## 6. Le contact et l'écran
 
 - **Le texte**, toujours visible, est centré dans le haut du ciel de la fenêtre, là où il est le plus sombre, sous la planète : le libellé « Contact », « Vous recrutez, ou vous avez un projet ? » (Libre Franklin 500, 40 px sur ordinateur, 30 px sur mobile), l'email avec « Copier », LinkedIn, GitHub, CV et Instagram ; « © 2026 Grégoire Tinnes » en bas de la page. Un léger halo sombre le garde lisible devant l'horizon.
-- **L'écran de verrouillage** (par défaut) : le fond d'écran est la photo de Grégoire ; une grande horloge à l'heure du visiteur, centrée en haut, avec la date en dessous (« 18:42 », « mardi 21 octobre ») ; les icônes du réseau et de la batterie en bas à droite. Horloge et date en Manrope (600 et 500), à défaut de la police de Windows.
+- **L'écran de verrouillage** (par défaut) : le fond d'écran est la photo de Grégoire, recadrée au format de l'écran ; une grande horloge à l'heure du visiteur, centrée en haut, avec la date en dessous (« 18:42 », « mardi 21 octobre ») ; les icônes du réseau et de la batterie en bas à droite. Horloge et date en Manrope (600 et 500), à défaut de la police de Windows.
 - **Au survol d'un lien** (ordinateur) : le volet se lève comme sous Windows, l'écran de verrouillage glisse vers le haut en environ 0,5 s (départ vif, arrivée douce), sur le bureau de Windows : la barre des tâches centrée en bas, le navigateur ouvert en grand sur la page du lien, avec le bon onglet et la bonne adresse :
   - LinkedIn : le profil de Grégoire ;
   - GitHub : son profil et ses dépôts ;

@@ -38,9 +38,13 @@ export const ROOM = {
   deskFront: -0.36,
 };
 
-// Where each object stands on the desk: [x, z] and a turn around the vertical axis.
+// The picture of the monitor, in the 16:10 format of a classic desk screen (a 32-inch panel).
+export const SCREEN = { w: 0.7, h: 0.4375 };
+
+// Where each object stands on the desk: [x, z] and a turn around the vertical axis. The monitor is only slightly
+// turned toward us: at the edge of a wide view, a screen facing the eye looks stretched.
 const PLACES = {
-  monitor: [0.6, -0.98, -0.42],
+  monitor: [0.62, -0.98, -0.15],
   keyboard: [0.3, -0.72, -0.06],
   mouse: [0.63, -0.7, -0.12],
   lamp: [-0.8, -1.05, 0],
@@ -216,18 +220,19 @@ function woodTexture() {
   });
 }
 
-// A 32-inch screen on an aluminium stand. Its picture is drawn over the render in HTML.
+// The screen on its aluminium stand. Its picture is drawn over the render in HTML.
 function buildMonitor() {
   const g = new THREE.Group();
   const alu = std(0x9a9da3, 0.35, 0.8);
   const shell = std(0x141518, 0.45, 0.1);
+  const cy = 0.257 + SCREEN.h / 2;
   g.add(box(0.27, 0.012, 0.2, alu, 0, 0.006, 0.02, 0.005));
-  const neck = box(0.056, 0.31, 0.024, alu, 0, 0.165, -0.04, 0.006);
+  const neck = box(0.056, cy - 0.08, 0.024, alu, 0, (cy - 0.08) / 2 + 0.01, -0.04, 0.006);
   neck.rotation.x = -0.07;
   g.add(neck);
-  g.add(box(0.724, 0.424, 0.03, shell, 0, 0.45, -0.002, 0.008));
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.394), std(0x07080b, 0.25, 0.1));
-  screen.position.set(0, 0.454, 0.0135);
+  g.add(box(SCREEN.w + 0.024, SCREEN.h + 0.03, 0.03, shell, 0, cy - 0.004, -0.002, 0.008));
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(SCREEN.w, SCREEN.h), std(0x07080b, 0.25, 0.1));
+  screen.position.set(0, cy, 0.0135);
   screen.name = 'screen';
   g.add(screen);
   return g;
@@ -456,15 +461,21 @@ function buildRose() {
   return g;
 }
 
+// A ceramic cup with a real wall, and pencils that lean against the inside of it without going through.
 function buildPencils() {
   const g = new THREE.Group();
-  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.037, 0.105, 40, 1, true), std(0x8ea18b, 0.75, 0, { side: THREE.DoubleSide }));
-  cup.position.y = 0.0525;
-  g.add(cup);
-  const bottom = new THREE.Mesh(new THREE.CircleGeometry(0.037, 32), std(0x7c8f79, 0.8));
-  bottom.rotation.x = -Math.PI / 2;
-  bottom.position.y = 0.004;
-  g.add(bottom);
+  const profile = [
+    [0, 0],
+    [0.036, 0],
+    [0.037, 0.003],
+    [0.0395, 0.103],
+    [0.0392, 0.1055],
+    [0.0365, 0.1055],
+    [0.0362, 0.103],
+    [0.0338, 0.006],
+    [0, 0.006],
+  ].map(([x, y]) => new THREE.Vector2(x, y));
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(profile, 48), std(0x8ea18b, 0.75)));
   const r = rng(9);
   const colors = [0xe9b44c, 0x1d1d20, 0xc0392b, 0x2f5d8a, 0xe9b44c, 0x3c3c40];
   colors.forEach((c, i) => {
@@ -475,9 +486,11 @@ function buildPencils() {
     const tip = new THREE.Mesh(new THREE.ConeGeometry(0.0036, 0.014, 6), std(0xd9b38c, 0.8));
     tip.position.y = len + 0.007;
     p.add(body, tip);
+    // From near the middle of the bottom, each pencil leans outward and stays clear of the rim.
     const a = (i / colors.length) * Math.PI * 2;
-    p.position.set(Math.cos(a) * 0.018, 0.01, Math.sin(a) * 0.018);
-    p.rotation.set(Math.sin(a) * 0.22, 0, -Math.cos(a) * 0.22);
+    const lean = 0.16 + r() * 0.06;
+    p.position.set(Math.cos(a) * 0.008, 0.012, Math.sin(a) * 0.008);
+    p.rotation.set(Math.sin(a) * lean, 0, -Math.cos(a) * lean);
     g.add(p);
   });
   return g;
@@ -984,7 +997,7 @@ function buildLights(moment, desk) {
   interior.add(back, back.target);
 
   const screen = desk.monitor.getObjectByName('screen');
-  const screenLight = all(new THREE.RectAreaLight(M.room.screen[0], M.room.screen[1], 0.7, 0.394));
+  const screenLight = all(new THREE.RectAreaLight(M.room.screen[0], M.room.screen[1], SCREEN.w, SCREEN.h));
   screen.getWorldPosition(screenLight.position);
   const n = new THREE.Vector3(0, 0, 1).applyQuaternion(screen.getWorldQuaternion(new THREE.Quaternion()));
   screenLight.lookAt(screenLight.position.clone().add(n));
@@ -1018,10 +1031,11 @@ export function toPixels(points, camera, w, h) {
 export function screenCorners(monitor) {
   const screen = monitor.getObjectByName('screen');
   screen.updateMatrixWorld(true);
+  const [x, y] = [SCREEN.w / 2, SCREEN.h / 2];
   return [
-    [-0.35, 0.197],
-    [0.35, 0.197],
-    [0.35, -0.197],
-    [-0.35, -0.197],
-  ].map(([x, y]) => new THREE.Vector3(x, y, 0).applyMatrix4(screen.matrixWorld));
+    [-x, y],
+    [x, y],
+    [x, -y],
+    [-x, -y],
+  ].map(([cx, cy]) => new THREE.Vector3(cx, cy, 0).applyMatrix4(screen.matrixWorld));
 }
