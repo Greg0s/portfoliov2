@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rendu du bureau</title>
+<style>html,body{margin:0;background:transparent;overflow:hidden}</style>
+<script type="importmap">
+{ "imports": {
+  "three": "./node_modules/three/build/three.module.js",
+  "three/addons/": "./node_modules/three/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { createOffice, makeCamera, skyTexture, roomEnvironmentScene, screenCorners, toPixels, LAYERS, FRAMINGS, ROOM } from './scene.js';
+
+const q = new URLSearchParams(location.search);
+const moment = q.get('moment') || 'crepuscule';
+const framing = q.get('framing') || 'desktop';
+const layer = q.get('layer') || 'preview'; // city | room | desk | windows | preview
+const scale = Number(q.get('scale') || 1);
+const overscan = Number(q.get('overscan') || 0);
+// Camera overrides while looking for the framing.
+const overrides = { overscan };
+for (const k of ['fov', 'pitch', 'yaw']) if (q.has(k)) overrides[k] = Number(q.get(k));
+if (q.has('cx') || q.has('cy') || q.has('cz')) {
+  const p = FRAMINGS[framing].pos;
+  overrides.pos = [Number(q.get('cx') ?? p[0]), Number(q.get('cy') ?? p[1]), Number(q.get('cz') ?? p[2])];
+}
+
+const f = FRAMINGS[framing];
+const W = Math.round(f.w * (1 + 2 * overscan));
+const H = Math.round(f.h * (1 + 2 * overscan));
+
+RectAreaLightUniformsLib.init();
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(scale);
+renderer.setSize(W, H, false);
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+
+const office = createOffice(moment);
+const { scene } = office;
+renderer.toneMappingExposure = office.moment.room.exposure;
+const camera = makeCamera(framing, overrides);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const skyEnv = pmrem.fromEquirectangular(skyTexture(moment)).texture;
+const roomEnv = pmrem.fromScene(roomEnvironmentScene(moment), 0.04, 0.05, 20, { position: new THREE.Vector3(0, 1.2, -0.4) }).texture;
+
+// Preview only: the wallpaper on the screen, as the lock screen will show it in HTML.
+async function dressScreen() {
+  const img = new Image();
+  img.src = 'renders/wallpaper.jpg';
+  try {
+    await img.decode();
+  } catch {
+    return;
+  }
+  const c = document.createElement('canvas');
+  c.width = 1400;
+  c.height = 788;
+  const ctx = c.getContext('2d');
+  const k = Math.max(c.width / img.width, c.height / img.height);
+  ctx.drawImage(img, (c.width - img.width * k) / 2, (c.height - img.height * k) / 2, img.width * k, img.height * k);
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.font = '600 150px Manrope, sans-serif';
+  ctx.fillText('18:42', c.width / 2, 250);
+  ctx.font = '500 40px Manrope, sans-serif';
+  ctx.fillText('mardi 21 octobre', c.width / 2, 320);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  office.desk.monitor.getObjectByName('screen').material = new THREE.MeshBasicMaterial({ map: t, toneMapped: false });
+}
+
+function renderLayer(name) {
+  camera.layers.set(LAYERS[name]);
+  office.lights.exterior.visible = name === 'city';
+  office.lights.interior.visible = name !== 'city';
+  scene.environment = name === 'city' ? skyEnv : roomEnv;
+  scene.environmentIntensity = name === 'city' ? 1 : 0.7;
+  renderer.render(scene, camera);
+}
+
+// Every window of the city lit and nothing else, on black, fading with distance: the source of the windows that
+// light up now and then over the city layer.
+function renderWindows() {
+  camera.layers.set(LAYERS.city);
+  office.lights.exterior.visible = office.lights.interior.visible = false;
+  const black = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  office.city.traverse((o) => {
+    if (o.isMesh) o.material = o.userData.allLit ?? black;
+  });
+  scene.fog = new THREE.Fog(0x000000, scene.fog.near, scene.fog.far);
+  renderer.setClearColor(0x000000, 1);
+  renderer.render(scene, camera);
+}
+
+// Where things land in the picture, for the HTML that goes over it.
+function meta() {
+  const px = (pts) => toPixels(pts, camera, W, H);
+  const far = (az) => new THREE.Vector3(Math.sin(az) * 1e5, camera.position.y, camera.position.z - Math.cos(az) * 1e5);
+  const { win, wallZ } = ROOM;
+  const bulb = new THREE.Vector3();
+  office.desk.lamp.getObjectByName('bulb').getWorldPosition(bulb);
+  return {
+    moment, framing, w: W, h: H, overscan, scale,
+    horizon: px([far(0)])[0][1],
+    glow: px([far((office.moment.glow.azimuth * Math.PI) / 180)])[0],
+    screen: px(screenCorners(office.desk.monitor)),
+    window: px([new THREE.Vector3(win.x0, win.y1, wallZ), new THREE.Vector3(win.x1, win.y1, wallZ), new THREE.Vector3(win.x1, win.y0, wallZ), new THREE.Vector3(win.x0, win.y0, wallZ)]),
+    bulb: px([bulb])[0],
+    camera: { fov: camera.fov, position: camera.position.toArray(), rotation: [camera.rotation.x, camera.rotation.y] },
+  };
+}
+
+(async () => {
+  if (layer === 'windows') {
+    renderWindows();
+    window.__image = renderer.domElement.toDataURL('image/png');
+  } else if (layer !== 'preview') {
+    renderLayer(layer);
+    window.__image = renderer.domElement.toDataURL('image/png');
+  } else {
+    if (q.get('screen') !== '0') await dressScreen();
+    const out = document.createElement('canvas');
+    out.width = W * scale;
+    out.height = H * scale;
+    const ctx = out.getContext('2d');
+    const m = meta();
+    // The sky goes from the top of the frame to the horizon, with the glow of the sun behind the hills.
+    const sky = office.moment.sky;
+    const grad = ctx.createLinearGradient(0, 0, 0, m.horizon * scale);
+    sky.forEach((c, i) => grad.addColorStop(i / (sky.length - 1), c));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, out.width, out.height);
+    const glow = ctx.createRadialGradient(m.glow[0] * scale, m.horizon * scale, 0, m.glow[0] * scale, m.horizon * scale, W * 0.32 * scale);
+    glow.addColorStop(0, office.moment.glow.color);
+    glow.addColorStop(1, 'rgba(255,220,170,0)');
+    ctx.globalAlpha = office.moment.glow.strength;
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.globalAlpha = 1;
+    for (const name of ['city', 'room', 'desk']) {
+      renderLayer(name);
+      ctx.drawImage(renderer.domElement, 0, 0);
+    }
+    window.__image = out.toDataURL('image/png');
+  }
+  window.__meta = meta();
+  window.__done = true;
+})();
+</script>
+</body>
+</html>

@@ -28,18 +28,18 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 3. La pièce et le cadrage
 
-- **Point de vue** : les yeux d'une personne assise, à 1,20 m du sol et 70 cm du bord du bureau, la tête légèrement levée vers la fenêtre (environ 5°), avec un champ de vision proche de l'œil (environ 60° en largeur sur ordinateur). On ne voit ni mains ni corps.
+- **Point de vue** : les yeux d'une personne assise, à 1,20 m du sol, juste derrière le bord du bureau, la tête droite (baissée de 3°), avec un champ large (62° en hauteur, environ 88° en largeur sur ordinateur) pour voir à la fois le bureau et la fenêtre, comme sur l'image d'ambiance. On ne voit ni mains ni corps.
 - **Composition sur ordinateur** :
   - à gauche, le mur du fond porte sept cadres : posters, photos tirées, images collées, disposés comme sur le schéma. En attendant leur contenu, ce sont de simples aplats ; leurs formes et leur disposition suivront le contenu final ;
   - au centre, une grande fenêtre d'un seul tenant, au cadre fin et sombre, sans montant au milieu ; son appui est juste au-dessus du plateau du bureau. Le ciel occupe le haut, la ville le bas ;
   - à droite, au premier plan, l'écran sur son pied, légèrement tourné vers nous, et le MX Keys devant lui ;
   - le bureau est en bois sombre. La lampe allumée est à gauche, devant le mur ; la plante au coin gauche ; la rose sous son globe entre la lampe et le clavier ; le pot à crayons à droite de l'écran.
 - **Style** : celui de la planète, sans photoréalisme : formes simples aux arêtes adoucies, matières mates, couleurs feutrées, ombres douces, même rendu (tone mapping ACES, ombres adoucies).
-- **Mobile** : cadrage vertical. La caméra lève les yeux : la fenêtre occupe les deux tiers du haut (le ciel, la planète, le texte), l'écran et le bureau le tiers du bas ; un coin du mur aux posters dépasse sur la gauche.
+- **Mobile** : cadrage vertical. La caméra recule un peu et lève les yeux (10°, champ de 80° en hauteur) : la fenêtre occupe les deux tiers du haut (le ciel, la planète, le texte), l'écran et le bureau le tiers du bas ; un coin du mur aux posters dépasse sur la gauche.
 
 ## 4. La ville et le ciel
 
-- **La ville**, vue du septième étage :
+- **La ville**, vue d'un septième étage, sur les pentes d'une colline qui domine la ville d'environ 80 m :
 
   - juste sous la fenêtre, les toits voisins : tuiles de terre cuite, cheminées, quelques lucarnes ;
   - plus loin, une rivière qui traverse la vue en diagonale, deux ponts en arc, des quais plantés d'arbres ;
@@ -96,15 +96,15 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 ## 9. Fabrication
 
 - **La scène** : une scène Three.js en code dans `docs/prototypes/bureau/`, avec le même rendu que le prototype de la planète. Les objets sont des formes simples aux arêtes adoucies ; le MX Keys est simplifié (un socle plat graphite et une grille de touches plates) ; la ville est générée (blocs et toits en pente, rivière, ponts, quais, collines, petite tour).
-- **Les rendus** : pour chaque moment (aube, crépuscule) et chaque cadrage (ordinateur 1440 × 900, mobile 390 × 844), trois couches détourées en WebP : la ville, la pièce (mur, posters, cadre de fenêtre, ouverture transparente) et le bureau avec ses objets. Soit douze images légères. Le ciel, les étoiles et la planète restent en direct, pour que le parcours continue à travers la fenêtre.
+- **Les rendus** : pour chaque moment (aube, crépuscule) et chaque cadrage (ordinateur 1440 × 900, mobile 390 × 844), trois couches détourées en WebP : la ville, la pièce (mur, posters, cadre de fenêtre, ouverture transparente) et le bureau avec ses objets, avec une marge de 4 % autour du cadre pour les mouvements de tête, en densité 1,5 (ordinateur) et 2 (mobile). Soit douze images légères (20 à 180 Ko). Le ciel, les étoiles et la planète restent en direct, pour que le parcours continue à travers la fenêtre.
 - **Le calage de l'écran** : les quatre coins de l'écran de l'ordinateur sont relevés dans le rendu ; l'écran de verrouillage et le navigateur, en HTML, s'y calent par une transformation en perspective.
-- **Les couches animées** : les fenêtres allumées de la ville et les nuages sont des couches à part.
+- **Les couches animées** : deux images de plus montrent toutes les fenêtres de la ville allumées, sur noir (une par cadrage, la même pour les deux moments) ; de petites pastilles qui s'en éclairent tour à tour allument et éteignent des fenêtres. Les nuages sont dessinés en direct.
 - **Version finale** : la scène en code est la version définitive, avec le niveau de finition d'une vraie scène (matières, lumière, détails) ; les formes organiques (plante, rose) sont générées dans le style de la planète, sans modèle extérieur. Le site final la reprendra telle quelle pour le rendu en temps réel.
 
 ## 10. Sur le canevas
 
 - La scène du parcours finit dans le bureau, sur ordinateur et sur mobile.
-- Un nouveau plan de travail, « Bureau — aube et crépuscule », montre les deux moments côte à côte, sur ordinateur et sur mobile, lisibles sur téléphone.
+- Un nouveau plan de travail, « Bureau — aube et crépuscule », montre les deux moments côte à côte, sur ordinateur et sur mobile, lisibles sur téléphone. Le composant « Bureau » (la scène en HTML sur les couches rendues) sert à ce plan et à la fin du parcours.
 - Storyboard : l'image 7 devient l'arrivée au bureau ; une image s'ajoute avec le volet levé sur un aperçu.
 - La charte passe à deux lumières.
 
