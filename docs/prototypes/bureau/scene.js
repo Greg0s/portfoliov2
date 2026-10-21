@@ -41,15 +41,18 @@ export const ROOM = {
 // The picture of the monitor, in the 16:10 format of a classic desk screen (a 32-inch panel).
 export const SCREEN = { w: 0.7, h: 0.4375 };
 
-// Where each object stands on the desk: [x, z] and a turn around the vertical axis. The monitor is only slightly
-// turned toward us: at the edge of a wide view, a screen facing the eye looks stretched.
+// Where each object stands on the desk: [x, z], a turn around the vertical axis and, for the mouse on its pad, a lift.
+// The monitor is only slightly turned toward us: at the edge of a wide view, a screen facing the eye looks stretched.
+// The lamp stands between the posters and the window, its arm reaching back over the plant; the rose stands at the back,
+// under the raised monitor, between its foot and the pencil cup.
 const PLACES = {
   monitor: [0.62, -0.98, -0.15],
   keyboard: [0.3, -0.72, -0.06],
-  mouse: [0.6, -0.78, -0.2],
-  lamp: [-0.8, -1.05, 0],
+  pad: [0.67, -0.745, -0.15],
+  mouse: [0.67, -0.775, -0.2, 0.0036],
+  lamp: [-0.46, -1.06, -1.82],
   plant: [-0.62, -0.6, 0.4],
-  rose: [-0.44, -0.9, 5.4],
+  rose: [0.85, -1.04, 4.26],
   pencils: [0.8, -0.86, 0],
 };
 
@@ -283,7 +286,6 @@ function buildKeyboard() {
   return tilted;
 }
 
-// A sculpted mouse: a low dome, higher toward the back, with a thin line between the two buttons.
 // A gaming mouse in the spirit of Grégoire's Logitech G502: a long body that rises toward the back, a wide thumb rest
 // on the left, side buttons, a metal wheel, a glossy black trim and small blue lights. Its front points toward -z.
 function buildMouse() {
@@ -366,21 +368,39 @@ function buildMouse() {
     b.rotation.z = 0.35;
     g.add(b);
   });
-  // The three blue lights of the sensitivity, on the left button, and the light on the palm.
+  // The three small blue lights of the sensitivity, on the left button.
   [0.25, 0.28, 0.31].forEach((s) => {
     const q = surface(s, 0.86, -1);
     const dot = new THREE.Mesh(new THREE.BoxGeometry(0.0022, 0.0008, 0.0016), led);
     dot.position.set(q.x, q.y + 0.0022, q.z);
     g.add(dot);
   });
-  const palm = new THREE.Mesh(new THREE.TorusGeometry(0.0075, 0.0014, 8, 32, Math.PI * 1.55), led);
-  palm.position.copy(onTop(0.72, 0, 0.0004));
-  palm.rotation.set(-Math.PI / 2, 0, 0.6);
-  g.add(palm);
   return g;
 }
 
-function buildLamp() {
+// A small mouse pad of pastel blue cloth, with rounded corners. Its blue is stronger than it looks: the warm light of
+// dusk greys it.
+function buildPad() {
+  const w = 0.22;
+  const d = 0.19;
+  const r = 0.014;
+  const s = new THREE.Shape();
+  s.moveTo(-w / 2 + r, -d / 2);
+  s.lineTo(w / 2 - r, -d / 2);
+  s.quadraticCurveTo(w / 2, -d / 2, w / 2, -d / 2 + r);
+  s.lineTo(w / 2, d / 2 - r);
+  s.quadraticCurveTo(w / 2, d / 2, w / 2 - r, d / 2);
+  s.lineTo(-w / 2 + r, d / 2);
+  s.quadraticCurveTo(-w / 2, d / 2, -w / 2, d / 2 - r);
+  s.lineTo(-w / 2, -d / 2 + r);
+  s.quadraticCurveTo(-w / 2, -d / 2, -w / 2 + r, -d / 2);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.0024, bevelEnabled: true, bevelThickness: 0.0006, bevelSize: 0.0008, bevelSegments: 2, curveSegments: 6 });
+  geo.rotateX(-Math.PI / 2).translate(0, 0.0006, 0);
+  return new THREE.Mesh(geo, std(0x6b9ee0, 0.95));
+}
+
+// A dome lamp on a curved arm. Whichever way the lamp is turned, its shade keeps the same tilt in the room.
+function buildLamp(turn = 0) {
   const g = new THREE.Group();
   const metal = std(0x1b1b1e, 0.42, 0.6);
   const base = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.08, 0.018, 48), metal);
@@ -388,17 +408,17 @@ function buildLamp() {
   g.add(base);
   const curve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, 0.015, 0),
-    new THREE.Vector3(0, 0.26, -0.01),
-    new THREE.Vector3(0.03, 0.43, 0.02),
-    new THREE.Vector3(0.12, 0.48, 0.09),
-    new THREE.Vector3(0.18, 0.455, 0.14),
+    new THREE.Vector3(0, 0.26, -0.011),
+    new THREE.Vector3(0.034, 0.43, 0.023),
+    new THREE.Vector3(0.136, 0.48, 0.102),
+    new THREE.Vector3(0.203, 0.455, 0.168),
   ]);
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.008, 12, false), metal));
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.007, 12, false), metal));
   // Dome shade, open downward and tilted toward the desk.
   const pts = [];
   for (let i = 24; i >= 0; i--) {
     const a = (i / 24) * (Math.PI / 2);
-    pts.push(new THREE.Vector2(0.012 + Math.sin(a) * 0.085, Math.cos(a) * 0.075));
+    pts.push(new THREE.Vector2(0.01 + Math.sin(a) * 0.072, Math.cos(a) * 0.064));
   }
   const shadeGeo = new THREE.LatheGeometry(pts, 64);
   const outer = new THREE.Mesh(shadeGeo, std(0x18181a, 0.45, 0.5, { side: THREE.FrontSide }));
@@ -406,13 +426,13 @@ function buildLamp() {
   inner.userData.noShadow = true;
   const shade = new THREE.Group();
   shade.add(outer, inner);
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.022, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff6e2 }));
-  bulb.position.y = 0.012;
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.02, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff6e2 }));
+  bulb.position.y = 0.011;
   bulb.userData.noShadow = true;
   bulb.name = 'bulb';
   shade.add(bulb);
-  shade.position.set(0.19, 0.44, 0.15);
-  shade.rotation.set(0.42, 0, -0.18);
+  shade.position.set(0.211, 0.44, 0.178);
+  shade.quaternion.setFromEuler(new THREE.Euler(0.42, 0, -0.18)).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -turn));
   g.add(shade);
   g.userData.shade = shade;
   return g;
@@ -584,7 +604,7 @@ function buildRose(model) {
   const base = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.01, R + 0.014, 0.024, 48), std(0x6b4a33, 0.55));
   base.position.y = 0.012;
   g.add(base);
-  if (model) g.add(standRose(model, 0.2, 0.024));
+  if (model) g.add(standRose(model, 0.18, 0.024));
   else g.add(simpleRose());
   // The globe: a cylinder of glass capped by a half sphere.
   const glass = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.04, transparent: true, opacity: 0.16, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.6, side: THREE.DoubleSide, depthWrite: false });
@@ -683,15 +703,16 @@ function buildDesk(roseModel) {
   const objects = {
     monitor: buildMonitor(),
     keyboard: buildKeyboard(),
+    pad: buildPad(),
     mouse: buildMouse(),
-    lamp: buildLamp(),
+    lamp: buildLamp(PLACES.lamp[2]),
     plant: buildPlant(),
     rose: buildRose(roseModel),
     pencils: buildPencils(),
   };
   for (const [name, o] of Object.entries(objects)) {
-    const [x, z, ry] = PLACES[name];
-    o.position.set(x, deskY, z);
+    const [x, z, ry, lift = 0] = PLACES[name];
+    o.position.set(x, deskY + lift, z);
     o.rotation.y = ry;
     g.add(o);
   }
@@ -729,31 +750,42 @@ const hillY = (d) => {
 const FACADES = [0xece0c8, 0xe6c79c, 0xe9bba4, 0xdccbb5, 0xd2bb9f, 0xf1e5d0, 0xe3d2b0, 0xd9b48f];
 const TILES = [0xa06a58, 0x94614f, 0xaa7563, 0x8b5b4c, 0xa2705d];
 
-function facadeTextures(seed, litRatio) {
+// The windows of the facades, 8 x 8 cells of one bay and one floor each: classic windows with a sill, the ribbon windows
+// of modern blocks, or the glass of a tower.
+const WINDOWS = {
+  classic: { x: 0.3, y: 0.24, w: 0.4, h: 0.52, glass: 'rgba(64,66,80,0.86)', sill: true },
+  ribbon: { x: 0.02, y: 0.3, w: 0.96, h: 0.42, glass: 'rgba(58,66,82,0.9)' },
+  curtain: { x: 0.05, y: 0.1, w: 0.9, h: 0.8, glass: 'rgba(40,50,70,0.7)' },
+};
+
+function facadeTextures(seed, litRatio, style = 'classic') {
   const cols = 8;
   const rows = 8;
   const r = rng(seed);
   const lit = [];
   for (let i = 0; i < cols * rows; i++) lit.push(r() < litRatio ? (r() < 0.7 ? '#ffcf86' : '#ffe6b8') : null);
   const cell = 64;
+  const win = WINDOWS[style];
   const draw = (emissive) => (ctx, w, h) => {
     ctx.fillStyle = emissive ? '#000' : '#fff';
     ctx.fillRect(0, 0, w, h);
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
-        const px = x * cell + cell * 0.3;
-        const py = (rows - 1 - y) * cell + cell * 0.24;
+        const px = x * cell + cell * win.x;
+        const py = (rows - 1 - y) * cell + cell * win.y;
         const on = lit[y * cols + x];
         if (emissive) {
           if (on) {
             ctx.fillStyle = on;
-            ctx.fillRect(px, py, cell * 0.4, cell * 0.52);
+            ctx.fillRect(px, py, cell * win.w, cell * win.h);
           }
         } else {
-          ctx.fillStyle = 'rgba(64,66,80,0.86)';
-          ctx.fillRect(px, py, cell * 0.4, cell * 0.52);
-          ctx.fillStyle = 'rgba(255,255,255,0.4)';
-          ctx.fillRect(px - 2, py + cell * 0.52, cell * 0.4 + 4, 3);
+          ctx.fillStyle = win.glass;
+          ctx.fillRect(px, py, cell * win.w, cell * win.h);
+          if (win.sill) {
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fillRect(px - 2, py + cell * win.h, cell * win.w + 4, 3);
+          }
         }
       }
     }
@@ -788,6 +820,43 @@ function pitchedRoof(w, d, h, gable = false) {
   return g;
 }
 
+// Triangles turned so that each faces away from a point inside the solid.
+function outward(tris, inside) {
+  const pos = [];
+  const [A, B, C, n, m] = [0, 0, 0, 0, 0].map(() => new THREE.Vector3());
+  for (const [a, b, c] of tris) {
+    A.fromArray(a);
+    B.fromArray(b);
+    C.fromArray(c);
+    n.subVectors(B, A).cross(m.subVectors(C, A));
+    const out = n.dot(A.add(B).add(C).divideScalar(3).sub(inside)) >= 0;
+    pos.push(...a, ...(out ? b : c), ...(out ? c : b));
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+// A mansard: steep slopes all around up to a flat top.
+function mansardRoof(w, d, h) {
+  const i = h * 0.38;
+  const b = [
+    [-w / 2, 0, -d / 2],
+    [w / 2, 0, -d / 2],
+    [w / 2, 0, d / 2],
+    [-w / 2, 0, d / 2],
+  ];
+  const t = b.map(([x, , z]) => [x - Math.sign(x) * i, h, z - Math.sign(z) * i]);
+  const tris = [];
+  for (let k = 0; k < 4; k++) {
+    const k1 = (k + 1) % 4;
+    tris.push([b[k], b[k1], t[k1]], [b[k], t[k1], t[k]]);
+  }
+  tris.push([t[0], t[1], t[2]], [t[0], t[2], t[3]]);
+  return outward(tris, new THREE.Vector3(0, h / 2, 0));
+}
+
 function flatRoof(w, d) {
   const g = new THREE.BoxGeometry(w + 0.3, 0.7, d + 0.3).translate(0, 0.35, 0).toNonIndexed();
   g.deleteAttribute('uv');
@@ -795,7 +864,7 @@ function flatRoof(w, d) {
 }
 
 // One building: walls with a grid of windows in world units (a bay is 3.2 m, a floor 3 m), and its roof.
-function addBuilding(parts, r, { x, z, w, d, h, y0, turn = 0, roof = 'hip', rh, color, tiles, chimneys = r() < 0.55, dormers = 0 }) {
+function addBuilding(parts, r, { x, z, w, d, h, y0, turn = 0, roof = 'hip', rh, color, tiles, chimneys = r() < 0.55, dormers = 0, into = 'walls' }) {
   const place = new THREE.Matrix4().makeRotationY(turn).setPosition(x, y0, z);
   const walls = new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0);
   const pos = walls.attributes.position;
@@ -808,10 +877,10 @@ function addBuilding(parts, r, { x, z, w, d, h, y0, turn = 0, roof = 'hip', rh, 
     const along = Math.abs(nrm.getX(i)) > 0.5 ? pos.getZ(i) : pos.getX(i);
     uv.setXY(i, top ? 0 : along / 3.2 / 8 + ou, top ? 0 : pos.getY(i) / 3 / 8 + ov);
   }
-  parts.walls.push(colorize(walls, color ?? FACADES[Math.floor(r() * FACADES.length)]).applyMatrix4(place));
+  parts[into].push(colorize(walls, color ?? FACADES[Math.floor(r() * FACADES.length)]).applyMatrix4(place));
 
   rh ??= roof === 'flat' ? 0.7 : Math.min(w, d) * (0.18 + r() * 0.06);
-  const roofGeo = roof === 'flat' ? flatRoof(w, d) : pitchedRoof(w * 1.05, d * 1.05, rh, roof === 'gable');
+  const roofGeo = roof === 'flat' ? flatRoof(w, d) : roof === 'mansard' ? mansardRoof(w * 1.04, d * 1.04, rh) : pitchedRoof(w * 1.05, d * 1.05, rh, roof === 'gable');
   roofGeo.translate(0, h, 0);
   parts.roofs.push(colorize(roofGeo, roof === 'flat' ? 0x8d8f95 : (tiles ?? TILES[Math.floor(r() * TILES.length)])).applyMatrix4(place));
 
@@ -836,10 +905,200 @@ function addBuilding(parts, r, { x, z, w, d, h, y0, turn = 0, roof = 'hip', rh, 
   }
 }
 
-function buildCity(moment) {
+// ---------- A proposal for the town: varied districts, a business district, a park ----------
+
+const OLD_FACADES = [0xefdcbc, 0xe8c393, 0xe2a77f, 0xd99c84, 0xf1e3c8, 0xd8b088, 0xeacca2, 0xcf9673, 0xe6d2b0, 0xdcb59a, 0xe9b98d, 0xd7a07a];
+const HOUSE_FACADES = [0xf0e6d4, 0xe8d6b8, 0xeedcc4, 0xe2c8a6, 0xf2e9dc];
+const BLOCK_FACADES = [0xe6ddd0, 0xd8d2c8, 0xe0d4c0, 0xcfc8bd, 0xe9e2d6];
+const OLD_TILES = [0xa8644e, 0x96553f, 0xb0725a, 0x8c5141, 0x9e6a58, 0x7f4a3d, 0xb47a5f];
+const ZINC = [0x7b828c, 0x6d747e, 0x858b93];
+const GLASS = [0x56627a, 0x5f6b80, 0x4f5a70, 0x687388];
+
+const smoothstep = (a, b, x) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+// Smooth noise on the ground, between 0 and 1, with features about `scale` metres across.
+function valueNoise(seed, scale) {
+  const r = rng(seed);
+  const N = 64;
+  const grid = Array.from({ length: N * N }, () => r());
+  const at = (i, j) => grid[(((i % N) + N) % N) + (((j % N) + N) % N) * N];
+  return (x, z) => {
+    const fx = x / scale;
+    const fz = z / scale;
+    const i = Math.floor(fx);
+    const j = Math.floor(fz);
+    const sx = smoothstep(0, 1, fx - i);
+    const sz = smoothstep(0, 1, fz - j);
+    const a = at(i, j) + (at(i + 1, j) - at(i, j)) * sx;
+    const b = at(i, j + 1) + (at(i + 1, j + 1) - at(i, j + 1)) * sx;
+    return a + (b - a) * sz;
+  };
+}
+
+// A box of glass with the window grid in world units; its top can slope.
+function towerBox(w, d, h, slope = 0) {
+  const g = new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0);
+  const pos = g.attributes.position;
+  const nrm = g.attributes.normal;
+  const uv = g.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    if (pos.getY(i) > h - 0.01) pos.setY(i, h + (pos.getX(i) / w + 0.5) * slope);
+    const top = Math.abs(nrm.getY(i)) > 0.5;
+    const along = Math.abs(nrm.getX(i)) > 0.5 ? pos.getZ(i) : pos.getX(i);
+    uv.setXY(i, top ? 0 : along / 3.2 / 8, top ? 0 : pos.getY(i) / 3.6 / 8);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+const bareRoof = (g) => {
+  const n = g.toNonIndexed();
+  n.deleteAttribute('uv');
+  return n;
+};
+
+// The town in districts: an old town of tall houses with tiled or zinc roofs, quieter streets of small houses, a few
+// modern blocks further away, small squares, a park with a pond on the far quay, and the towers of a business district
+// far away.
+function townProposal(parts, r, inView) {
+  const district = valueNoise(13, 420);
+  const pick = (list) => list[Math.floor(r() * list.length)];
+  const tree = (x, y, z, s) => new THREE.IcosahedronGeometry(1, 1).scale(s, s * 1.12, s).translate(x, y + s, z);
+  const trees = [];
+  const towers = [
+    { az: 4.4, d: 2150, kind: 'pencil', w: 26, h: 142, top: 26 },
+    { az: 7.8, d: 2280, kind: 'spire', w: 30, h: 168, top: 34 },
+    { az: 6.2, d: 1990, kind: 'slant', w: 26, dd: 40, h: 96, top: 20 },
+    { az: 9.9, d: 2080, kind: 'box', w: 24, dd: 34, h: 118 },
+    { az: 2.4, d: 2350, kind: 'box', w: 22, dd: 30, h: 72 },
+  ].map((t) => ({ ...t, p: polar(t.az, t.d) }));
+  const park = { u: [40, 180], v: [75, 245] };
+  const pond = { u: 112, v: 166, ru: 44, rv: 26 };
+  const riverUV = (p) => {
+    const q = p.clone().sub(R0);
+    return [q.dot(ALONG), q.dot(ACROSS)];
+  };
+  const inPark = (p) => {
+    const [u, v] = riverUV(p);
+    return u > park.u[0] - 6 && u < park.u[1] + 6 && v > park.v[0] - 6 && v < park.v[1] + 6;
+  };
+  const nearTower = (p) => towers.some((t) => p.distanceTo(t.p) < 55);
+
+  const kindAt = (p, row) => {
+    if (row === 0) return 'old';
+    const n = district(p.x, p.y);
+    const x = r();
+    if (p.length() > 900 && x < 0.015 + 0.15 * smoothstep(0.56, 0.86, n)) return 'block';
+    if (row > 1 && x < 0.5 * (1 - smoothstep(0.18, 0.44, n))) return 'house';
+    if (x > 0.97) return 'square';
+    return 'old';
+  };
+  const widthOf = (kind, row) => (kind === 'block' ? 28 + r() * 22 : kind === 'house' ? 7 + r() * 4 : kind === 'square' ? 16 + r() * 10 : (row === 0 ? 12 : 9) + r() * 10);
+  const addKind = (kind, p, w, depth, row) => {
+    if (inPark(p) || nearTower(p)) return;
+    const base = { x: p.x, z: p.y, w, d: depth, y0: CITY.land - 1, turn: RIVER_TURN };
+    const place = new THREE.Matrix4().makeRotationY(RIVER_TURN).setPosition(p.x, CITY.land - 1, p.y);
+    if (kind === 'block') {
+      const h = 21 + Math.floor(r() * 5) * 3;
+      addBuilding(parts, r, { ...base, h, roof: 'flat', color: pick(BLOCK_FACADES), into: 'blocks' });
+      const room = bareRoof(new THREE.BoxGeometry(6, 2.6, 4.5)).translate((r() - 0.5) * w * 0.5, h + 2, (r() - 0.5) * depth * 0.3);
+      parts.roofs.push(colorize(room, 0x9a9ca2).applyMatrix4(place));
+    } else if (kind === 'house') {
+      addBuilding(parts, r, { ...base, d: depth * 0.7, h: 6.5 + r() * 3.5, roof: r() < 0.6 ? 'gable' : 'hip', color: pick(HOUSE_FACADES), tiles: pick(OLD_TILES) });
+      if (r() < 0.5) {
+        const g = new THREE.Vector3(w / 2 + 1.5, 0, depth * 0.3).applyMatrix4(place);
+        trees.push(tree(g.x, CITY.land, g.z, 2.2 + r() * 1.4));
+      }
+    } else if (kind === 'square') {
+      for (let k = 0; k < 3; k++) {
+        const g = new THREE.Vector3((r() - 0.5) * w * 0.7, 0, (r() - 0.5) * depth * 0.6).applyMatrix4(place);
+        trees.push(tree(g.x, CITY.land, g.z, 2.4 + r() * 1.6));
+      }
+    } else {
+      const n = district(p.x, p.y);
+      const x = r();
+      const roof = row === 0 ? (x < 0.55 ? 'hip' : 'mansard') : x < 0.5 ? 'hip' : x < 0.78 ? 'mansard' : x < 0.92 ? 'gable' : 'flat';
+      const zinc = roof === 'mansard';
+      addBuilding(parts, r, {
+        ...base,
+        h: (row === 0 ? 15 : 11) + r() * 6 + n * 5,
+        roof,
+        rh: zinc ? 2.6 + r() * 0.8 : undefined,
+        color: pick(OLD_FACADES),
+        tiles: zinc ? pick(ZINC) : pick(OLD_TILES),
+        dormers: !zinc && roof !== 'flat' && r() < 0.18 ? 2 : 0,
+      });
+    }
+  };
+
+  // Near bank: from the quay back to the foot of our hill.
+  for (let v = -(HALF + 24), row = 0; v > -900; row++) {
+    const depth = 11 + r() * 5;
+    for (let u = -600; u < 3200; ) {
+      const kind = kindAt(at(u + 8, v - depth / 2), row);
+      const w = widthOf(kind, row);
+      const p = at(u + w / 2, v - depth / 2);
+      if (p.length() > CITY.hill.foot + 8 && inView(p)) addKind(kind, p, w, depth, row);
+      u += w + (row === 0 ? 0.4 : kind === 'house' ? 2.5 + r() * 4 : 0.8 + r() * 3);
+    }
+    v -= depth + (row === 0 ? 12 : 8 + r() * 6);
+  }
+  // Far bank: a continuous row of facades along the quay, then the districts toward the hills.
+  for (let v = HALF + 24, row = 0; v < 3200; row++) {
+    const depth = 12 + r() * 5 + v * 0.004;
+    for (let u = -1500; u < 3500; ) {
+      const kind = kindAt(at(u + 8, v + depth / 2), row);
+      const w = widthOf(kind, row) * (1 + v * 0.0005);
+      const p = at(u + w / 2, v + depth / 2);
+      if (inView(p, 60)) addKind(kind, p, w, depth, row);
+      u += w + (row === 0 ? 0.4 : kind === 'house' ? 2.5 + r() * 4 : 0.6 + r() * 3 + v * 0.002);
+    }
+    v += depth + (row === 0 ? 14 : 8 + r() * 6 + v * 0.004);
+  }
+
+  // The towers: a round one with a pointed top, a glass one with a spire, one with a sloping roof, and plainer ones.
+  for (const t of towers) {
+    const place = new THREE.Matrix4().makeRotationY(RIVER_TURN + (t.kind === 'slant' ? 0.3 : 0)).setPosition(t.p.x, CITY.land - 1, t.p.y);
+    if (t.kind === 'pencil') {
+      const body = new THREE.CylinderGeometry(t.w / 2, t.w / 2, t.h, 28, 1, true).translate(0, t.h / 2, 0);
+      const uv = body.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * Math.PI * t.w) / 3.2 / 8, (uv.getY(i) * t.h) / 3.6 / 8);
+      parts.glass.push(colorize(body, 0x8a5f58).applyMatrix4(place));
+      parts.tops.push(colorize(bareRoof(new THREE.ConeGeometry(t.w / 2, t.top, 28)).translate(0, t.h + t.top / 2, 0), 0x7a514b).applyMatrix4(place));
+      continue;
+    }
+    const dd = t.dd ?? t.w;
+    parts.glass.push(colorize(towerBox(t.w, dd, t.h, t.kind === 'slant' ? t.top : 0), pick(GLASS)).applyMatrix4(place));
+    if (t.kind === 'spire') {
+      parts.tops.push(colorize(bareRoof(new THREE.ConeGeometry(t.w / Math.SQRT2, t.top, 4)).rotateY(Math.PI / 4).translate(0, t.h + t.top / 2, 0), 0x6f7d92).applyMatrix4(place));
+      parts.tops.push(colorize(bareRoof(new THREE.CylinderGeometry(0.4, 0.6, 22, 6)).translate(0, t.h + t.top + 9, 0), 0x5a6070).applyMatrix4(place));
+    } else if (t.kind === 'box') {
+      parts.tops.push(colorize(flatRoof(t.w - 1, dd - 1).translate(0, t.h, 0), 0x50555f).applyMatrix4(place));
+    }
+  }
+
+  // The park: groves around lawns, and the pond in a clearing.
+  const lawn = valueNoise(29, 60);
+  for (let u = park.u[0] + 5; u < park.u[1] - 5; u += 7.5) {
+    for (let v = park.v[0] + 5; v < park.v[1] - 5; v += 7.5) {
+      if (((u - pond.u) / (pond.ru + 16)) ** 2 + ((v - pond.v) / (pond.rv + 16)) ** 2 < 1) continue;
+      const p = at(u + (r() - 0.5) * 5, v + (r() - 0.5) * 5);
+      if (lawn(p.x, p.y) < 0.42) continue;
+      trees.push(tree(p.x, CITY.land, p.y, 3 + r() * 2.2));
+    }
+  }
+  const corners = [at(park.u[0], park.v[0]), at(park.u[1], park.v[0]), at(park.u[1], park.v[1]), at(park.u[0], park.v[1])];
+  return { trees, pond: { center: at(pond.u, pond.v), ru: pond.ru, rv: pond.rv }, lawn: corners };
+}
+
+function buildCity(moment, variant = 'current') {
   const M = MOMENTS[moment].city;
   const r = rng(2024);
-  const parts = { walls: [], roofs: [], chimneys: [] };
+  const proposal = variant === 'proposal';
+  const parts = { walls: [], roofs: [], chimneys: [], blocks: [], glass: [], tops: [] };
   // Only what can be seen through the window, with a margin for the movements of the head, is built.
   const inView = (p, margin = 40) => p.y < 0 && p.length() < 3500 && Math.abs(p.x) < -p.y * Math.tan(50 * DEG) + margin;
 
@@ -859,8 +1118,9 @@ function buildCity(moment) {
     const ground = hillY(n.d) - 2;
     addBuilding(parts, r, { x: (x0 + x1) / 2, z: -n.d - n.depth / 2, w: x1 - x0, d: n.depth, h: ridgeY - rh - ground, y0: ground, roof: n.roof, rh, dormers: n.dormers, color: n.color, chimneys: true });
   }
+  const town = proposal ? townProposal(parts, r, inView) : null;
   // The town, in rows parallel to the river. Near bank: from the quay back to the foot of our hill.
-  for (let v = -(HALF + 24), row = 0; v > -900; row++) {
+  for (let v = -(HALF + 24), row = 0; !proposal && v > -900; row++) {
     const depth = 11 + r() * 5;
     for (let u = -600; u < 3200; ) {
       const w = 10 + r() * 9;
@@ -873,7 +1133,7 @@ function buildCity(moment) {
     v -= depth + (row === 0 ? 12 : 8 + r() * 6);
   }
   // Far bank: a continuous row of facades along the quay, then the town receding toward the hills.
-  for (let v = HALF + 24, row = 0; v < 3200; row++) {
+  for (let v = HALF + 24, row = 0; !proposal && v < 3200; row++) {
     const depth = 12 + r() * 5 + v * 0.004;
     for (let u = -1500; u < 3500; ) {
       const w = (row === 0 ? 12 : 10) + r() * 9 + v * 0.005;
@@ -893,6 +1153,24 @@ function buildCity(moment) {
   // Every window lit, for the layer from which windows light up now and then.
   walls.userData.allLit = new THREE.MeshBasicMaterial({ map: facadeTextures(5, 1).emissive });
   g.add(walls);
+  if (proposal) {
+    // Modern blocks with ribbon windows, and towers of glass that mirror the sky.
+    const ribbon = facadeTextures(6, M.lit * 0.8, 'ribbon');
+    const blocks = new THREE.Mesh(mergeGeometries(parts.blocks), new THREE.MeshStandardMaterial({ vertexColors: true, map: ribbon.map, emissiveMap: ribbon.emissive, emissive: 0xffffff, emissiveIntensity: M.litGlow, roughness: 0.9 }));
+    blocks.userData.allLit = new THREE.MeshBasicMaterial({ map: facadeTextures(6, 1, 'ribbon').emissive });
+    // The towers rise out of the mist that lies over the town: they take only half of it.
+    const halfFog = (m) => {
+      m.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n  gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(fogNear, fogFar, vFogDepth) * 0.5);\n#endif');
+      };
+      return m;
+    };
+    const curtain = facadeTextures(7, M.lit * 0.45, 'curtain');
+    const glass = new THREE.Mesh(mergeGeometries(parts.glass), halfFog(new THREE.MeshStandardMaterial({ vertexColors: true, map: curtain.map, emissiveMap: curtain.emissive, emissive: 0xffffff, emissiveIntensity: M.litGlow, roughness: 0.3, metalness: 0.5 })));
+    glass.userData.allLit = new THREE.MeshBasicMaterial({ map: facadeTextures(7, 1, 'curtain').emissive });
+    const tops = new THREE.Mesh(mergeGeometries(parts.tops), halfFog(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.4, flatShading: true })));
+    g.add(blocks, glass, tops);
+  }
   g.add(new THREE.Mesh(mergeGeometries(parts.roofs), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, flatShading: true })));
   g.add(new THREE.Mesh(mergeGeometries(parts.chimneys), std(0xb9a58f, 0.9)));
 
@@ -922,6 +1200,27 @@ function buildCity(moment) {
     spire.position.set(p.x, CITY.land + h + 7.5, p.y);
     g.add(spire);
   });
+  if (proposal) {
+    // Two more bell towers, and a small dome of green copper.
+    [
+      [-14, 1050, 34],
+      [1.5, 980, 30],
+    ].forEach(([az, d, h]) => {
+      const p = polar(az, d);
+      g.add(box(7, h, 7, stone, p.x, CITY.land + h / 2, p.y));
+      const spire = new THREE.Mesh(new THREE.ConeGeometry(4.9, 13, 4), slate);
+      spire.rotation.y = Math.PI / 4 + RIVER_TURN;
+      spire.position.set(p.x, CITY.land + h + 6.5, p.y);
+      g.add(spire);
+    });
+    const p = polar(-8.5, 1350);
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 9, 28), stone);
+    drum.position.set(p.x, CITY.land + 20, p.y);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(7.3, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), std(0x6f9a8a, 0.55, 0.3));
+    dome.position.set(p.x, CITY.land + 24.5, p.y);
+    dome.scale.y = 1.2;
+    g.add(drum, dome);
+  }
 
   // Ground: the town with the river cut out of it, and our hill.
   const land = new THREE.Shape([new THREE.Vector2(-7000, -300), new THREE.Vector2(7000, -300), new THREE.Vector2(7000, 9000), new THREE.Vector2(-7000, 9000)]);
@@ -971,6 +1270,18 @@ function buildCity(moment) {
     const s = 2.6 + r() * 2;
     trees.push(new THREE.IcosahedronGeometry(1, 1).scale(s, s * 1.15, s).translate(p.x, hillY(d) + s, p.y));
   }
+  if (town) {
+    trees.push(...town.trees);
+    const pond = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), water.material);
+    pond.scale.set(town.pond.ru, 1, town.pond.rv);
+    pond.rotation.y = RIVER_TURN;
+    // Raised a little above the lawn, itself above the ground, so that the depth buffer still tells them apart from
+    // this far away.
+    pond.position.set(town.pond.center.x, CITY.land + 1.2, town.pond.center.y);
+    const lawn = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(town.lawn.map((p) => new THREE.Vector2(p.x, -p.y)))).rotateX(-Math.PI / 2), std(0x7d9a5a, 0.95));
+    lawn.position.y = CITY.land + 0.6;
+    g.add(pond, lawn);
+  }
   g.add(new THREE.Mesh(mergeGeometries(trees), std(0x3a4a31, 0.95, 0, { flatShading: true })));
   g.add(new THREE.Mesh(mergeGeometries(lamps), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc472).multiplyScalar(M.lamps) })));
 
@@ -1007,9 +1318,14 @@ function buildCity(moment) {
     g.add(m);
   }
 
+  const fog = new THREE.Color(M.fog);
+  if (proposal) {
+    g.add(hillPlanes(moment));
+    onLayer(g, LAYERS.city, false);
+    return g;
+  }
   // Hills on the horizon: rolling ranges as flat silhouettes, paler with distance. The middle range carries a slender
   // metal tower.
-  const fog = new THREE.Color(M.fog);
   const ranges = [
     { d: 5600, base: 150, amp: 330, seed: 3, haze: 0.62 },
     { d: 4200, base: 80, amp: 270, seed: 8, haze: 0.22 },
@@ -1045,6 +1361,64 @@ function buildCity(moment) {
   g.add(tower);
 
   onLayer(g, LAYERS.city, false);
+  return g;
+}
+
+// Hills on five planes, each paler than the one in front, lost at its foot in the mist that lies over the town; the
+// farthest nearly melt into the sky. Each silhouette is set by the angle at which it rises above the eye. The second
+// plane carries a slender metal tower.
+function hillPlanes(moment) {
+  const M = MOMENTS[moment];
+  const fog = new THREE.Color(M.city.fog);
+  const haze = fog.clone().lerp(new THREE.Color(M.sky[M.sky.length - 1]), 0.35);
+  const eye = 1.2;
+  const g = new THREE.Group();
+  const planes = [
+    { d: 3000, lo: -0.8, hi: 1.6, seed: 31, haze: 0.04, freq: 1.4 },
+    { d: 3900, lo: 0, hi: 2.4, seed: 8, haze: 0.22, freq: 1.2 },
+    { d: 5000, lo: 0.6, hi: 3.1, seed: 3, haze: 0.4, freq: 1.1 },
+    { d: 6300, lo: 1, hi: 3.7, seed: 17, haze: 0.56, freq: 1 },
+    { d: 8000, lo: 1.4, hi: 4.3, seed: 23, haze: 0.72, freq: 0.9 },
+  ];
+  const steps = 360;
+  planes.forEach((pl) => {
+    const rr = rng(pl.seed);
+    const ph = [rr() * 6, rr() * 6, rr() * 6, rr() * 6];
+    const f = pl.freq;
+    const top = new THREE.Color(M.city.hills).lerp(haze, pl.haze);
+    const low = top.clone().lerp(fog, 0.6);
+    const pos = [];
+    const col = [];
+    pl.tops = [];
+    for (let i = 0; i <= steps; i++) {
+      const az = -62 + (124 * i) / steps;
+      const k = 0.5 + 0.32 * Math.sin(az * 0.09 * f + ph[0]) + 0.14 * Math.sin(az * 0.23 * f + ph[1]) + 0.05 * Math.sin(az * 0.61 * f + ph[2]);
+      const d = pl.d * (1 + 0.06 * Math.sin(az * 0.05 + ph[3]));
+      const p = polar(az, d);
+      const y = eye + Math.tan((pl.lo + (pl.hi - pl.lo) * k) * DEG) * d;
+      const mist = Math.tan(0.9 * DEG) * d;
+      pos.push(p.x, y, p.y, p.x, y - mist, p.y, p.x, CITY.land - 60, p.y);
+      col.push(...top.toArray(), ...low.toArray(), ...fog.toArray());
+      pl.tops.push([p, y]);
+    }
+    const index = [];
+    for (let i = 0; i < steps; i++) {
+      for (let k = 0; k < 2; k++) {
+        const a = i * 3 + k;
+        const b = (i + 1) * 3 + k;
+        index.push(a, a + 1, b, a + 1, b + 1, b);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setIndex(index);
+    g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, toneMapped: false, side: THREE.DoubleSide })));
+  });
+  const [p, y] = planes[1].tops[Math.round(((-12 + 62) / 124) * steps)];
+  const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 5, 90, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(M.city.hills).lerp(haze, 0.22), fog: false, toneMapped: false }));
+  tower.position.set(p.x * 0.995, y + 40, p.y * 0.995);
+  g.add(tower);
   return g;
 }
 
@@ -1184,11 +1558,11 @@ function buildLights(moment, desk) {
 
 // ---------- Assembly ----------
 
-export function createOffice(moment, { rose } = {}) {
+export function createOffice(moment, { rose, city: variant = 'current' } = {}) {
   const scene = new THREE.Scene();
   const room = buildRoom();
   const desk = buildDesk(rose);
-  const city = buildCity(moment);
+  const city = buildCity(moment, variant);
   scene.add(room, desk.group, city);
   const lights = buildLights(moment, desk);
   scene.add(lights.exterior, lights.interior);

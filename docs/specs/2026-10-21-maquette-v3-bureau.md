@@ -12,19 +12,19 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 2. Décisions
 
-| #   | Sujet                    | Choix                                                                                                                                                                           |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Fabrication              | une scène en code (Three.js), qui est la version finale : pas de reprise dans Blender                                                                                           |
-| 2   | Texte du contact         | toujours visible, centré dans le ciel de la fenêtre, sous la planète                                                                                                            |
-| 3   | Ville                    | une ville française imaginaire inspirée de Lyon, à la manière de l'image d'ambiance                                                                                             |
-| 4   | Lumière                  | tout le site passe à deux moments : l'aube avant midi, le crépuscule après midi                                                                                                 |
-| 5   | Arrivée                  | un seul plan : on passe par la fenêtre                                                                                                                                          |
-| 6   | Interaction              | sur ordinateur, la tête suit doucement la souris                                                                                                                                |
-| 7   | Mobile                   | cadrage vertical : la fenêtre en haut, le bureau en bas                                                                                                                         |
-| 8   | Aperçus sur mobile       | aucun : la scène sert de fond et les liens s'ouvrent directement                                                                                                                |
-| 9   | Objets                   | l'ordinateur, un Logitech MX Keys, une souris dans l'esprit de la Logitech G502, une lampe allumée, une plante, un pot à crayons, la rose de la planète sous son globe de verre |
-| 10  | Écran                    | le bureau de Windows 11, sans icônes ; au survol d'un lien, Firefox s'ouvre en grand depuis la barre des tâches                                                                 |
-| 11  | Technique de la maquette | rendus 3D en couches détourées, posées à leur profondeur dans la scène CSS 3D du parcours                                                                                       |
+| #   | Sujet                    | Choix                                                                                                                                                                                                          |
+| --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Fabrication              | une scène en code (Three.js), qui est la version finale : pas de reprise dans Blender                                                                                                                          |
+| 2   | Texte du contact         | toujours visible, centré dans le ciel de la fenêtre, sous la planète                                                                                                                                           |
+| 3   | Ville                    | une ville française imaginaire inspirée de Lyon, à la manière de l'image d'ambiance                                                                                                                            |
+| 4   | Lumière                  | tout le site passe à deux moments : l'aube avant midi, le crépuscule après midi                                                                                                                                |
+| 5   | Arrivée                  | un seul plan : on passe par la fenêtre                                                                                                                                                                         |
+| 6   | Interaction              | sur ordinateur, la tête suit doucement la souris                                                                                                                                                               |
+| 7   | Mobile                   | cadrage vertical : la fenêtre en haut, le bureau en bas                                                                                                                                                        |
+| 8   | Aperçus sur mobile       | aucun : la scène sert de fond et les liens s'ouvrent directement                                                                                                                                               |
+| 9   | Objets                   | l'ordinateur, un Logitech MX Keys, une souris dans l'esprit de la Logitech G502 sur un petit tapis bleu pastel, une lampe allumée, une plante, un pot à crayons, la rose de la planète sous son globe de verre |
+| 10  | Écran                    | le bureau de Windows 11, sans icônes ; au survol d'un lien, Firefox s'ouvre en grand depuis la barre des tâches, ou l'application de messagerie pour l'email                                                   |
+| 11  | Technique de la maquette | rendus 3D en couches détourées, posées à leur profondeur dans la scène CSS 3D du parcours                                                                                                                      |
 
 ## 3. La pièce et le cadrage
 
@@ -32,8 +32,8 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 - **Composition sur ordinateur** :
   - à gauche, sept images collées directement au mur avec de la Patafix, invisible : des posters imprimés à fond perdu, des photos tirées avec leur liseré blanc, disposés comme sur le schéma. En attendant leur contenu, ce sont de simples aplats ; leurs formes et leur disposition suivront le contenu final ;
   - à partir du centre, une grande baie d'un seul tenant, au cadre fin et blanc, sans montant, qui s'étend vers la droite jusqu'à sortir du cadre, derrière l'écran ; son appui est juste au-dessus du plateau du bureau. Le ciel occupe le haut, la ville le bas ;
-  - à droite, au premier plan, l'écran sur son pied, au format 16:10 d'un écran de bureau classique (un 32 pouces), à peine tourné vers nous (tourné davantage, il paraîtrait étiré au bord d'une vue aussi large), le MX Keys devant lui et, à sa droite, une souris dans l'esprit de la Logitech G502 de Grégoire (dos haut, large repose-pouce, boutons latéraux, molette cerclée de métal, petites lumières bleues) ;
-  - le bureau est en bois sombre. La lampe allumée est à gauche, devant le mur ; la plante au coin gauche, dont chaque tige finit sur une feuille ; la rose sous son globe vers le coin gauche, entre la plante et la fenêtre ; le pot à crayons à droite de l'écran.
+  - à droite, au premier plan, l'écran sur son pied, au format 16:10 d'un écran de bureau classique (un 32 pouces), à peine tourné vers nous (tourné davantage, il paraîtrait étiré au bord d'une vue aussi large), le MX Keys devant lui et, à sa droite, une souris dans l'esprit de la Logitech G502 de Grégoire (dos haut, large repose-pouce, boutons latéraux, molette cerclée de métal, trois petites lumières bleues), posée sur un petit tapis de souris bleu pastel ;
+  - le bureau est en bois sombre. La lampe allumée est à gauche, son pied entre les posters et la fenêtre, son bras courbé qui ramène l'abat-jour au-dessus de la plante (elle ne cache pas plus les posters qu'avant) ; la plante au coin gauche, dont chaque tige finit sur une feuille ; la rose sous son globe au fond à droite, sous l'écran surélevé, entre son pied et le pot à crayons ; le pot à crayons à droite de l'écran.
 - **Style** : celui de la planète, sans photoréalisme : formes simples aux arêtes adoucies, matières mates, couleurs feutrées, ombres douces, même rendu (tone mapping ACES, ombres adoucies).
 - **Mobile** : cadrage vertical. La caméra recule un peu et lève les yeux (10°, champ de 80° en hauteur) : la fenêtre occupe les deux tiers du haut (le ciel, la planète, le texte), l'écran et le bureau le tiers du bas ; un coin du mur aux posters dépasse sur la gauche.
 
@@ -47,6 +47,8 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
   - au loin, des collines douces, l'une coiffée d'une petite tour.
 
   Tout est en volumes simples ; les fenêtres sont de petits rectangles ; la ville se fond dans la couleur du ciel avec la distance.
+
+- **Proposition à valider** (réglage « Ville » du composant Bureau, gros plans comparés sur le plan de travail) : des quartiers plus contrastés, avec la vieille ville aux toits de tuiles et de zinc (toits à la Mansart), des rues de petites maisons, quelques immeubles modernes au loin, de petites places plantées et un parc avec un étang sur le quai d'en face ; les tours d'un quartier d'affaires au loin, qui sortent de la brume (dont une tour ronde à pointe et une tour à flèche, à la manière de la Part-Dieu) ; deux clochers et un petit dôme de cuivre de plus ; derrière, cinq plans de collines de plus en plus pâles, chacun perdu à son pied dans la brume, les derniers se fondant dans le ciel. Retenue, elle remplacerait la ville décrite ci-dessus.
 
 - **Aube** (avant midi) : ciel du bleu nuit au rose pâle, puis à un orangé doux sur l'horizon ; le soleil n'est pas encore levé, une lueur se devine derrière les collines ; la ville est dans l'ombre bleutée, avec quelques fenêtres allumées.
 - **Crépuscule** (après midi) : ciel de l'indigo à l'orange profond sur l'horizon ; le soleil vient de passer derrière les collines ; beaucoup de fenêtres allumées et les réverbères des quais.
@@ -74,9 +76,9 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
   - GitHub : son profil et ses dépôts ;
   - CV : le PDF ouvert dans le navigateur ;
   - Instagram : sa grille de photos ;
-  - l'email (ou « Copier ») : un nouveau message adressé à son email.
+  - l'email (ou « Copier ») : c'est l'application de messagerie qui s'ouvre, de la même façon depuis sa propre icône, sur une fenêtre « Nouveau message » adressée à son email, plus petite que l'écran ; si Firefox était ouvert, il se réduit en même temps.
 - **D'un lien à l'autre**, la fenêtre reste ouverte et seul l'onglet change. **Quand la souris quitte les liens**, elle se réduit dans la barre des tâches après 0,6 s.
-- **Les pages** sont des aperçus simplifiés (la mise en page de chaque site avec le nom, le portrait et des photos de Grégoire, sans reproduire les logos), en attendant les vraies captures ; Firefox est en thème sombre, comme la barre des tâches.
+- **Les pages** sont des aperçus simplifiés (la mise en page de chaque site avec le nom, le portrait et des photos de Grégoire, sans reproduire les logos), en attendant les vraies captures ; Firefox est en thème sombre, comme la barre des tâches. Les captures que fournira Grégoire prendront la place de la page dans la fenêtre de Firefox, dont la zone visible mesure 1280 × 670 px : capturées à l'échelle 2 (2560 px de large, 1340 px de haut ou la page entière), au zoom 100 %, sans notification ni contenu d'autres personnes ; le CV vient directement du PDF.
 - **Mobile** : le bureau de Windows seul ; les liens s'ouvrent directement.
 
 ## 7. Le mouvement et la vie dans la pièce
@@ -95,7 +97,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 9. Fabrication
 
-- **La scène** : une scène Three.js en code dans `docs/prototypes/bureau/`, avec le même rendu que le prototype de la planète. Les objets sont des formes simples aux arêtes adoucies ; le MX Keys est simplifié (un socle plat graphite et une grille de touches plates) ; la ville est générée (blocs et toits en pente, rivière, ponts, quais, collines, petite tour).
+- **La scène** : une scène Three.js en code dans `docs/prototypes/bureau/`, avec le même rendu que le prototype de la planète. Les objets sont des formes simples aux arêtes adoucies ; le MX Keys est simplifié (un socle plat graphite et une grille de touches plates) ; la ville est générée (blocs et toits en pente, rivière, ponts, quais, collines, petite tour) ; la ville proposée est une variante de la même génération (`city=proposal`).
 - **Les rendus** : pour chaque moment (aube, crépuscule) et chaque cadrage (ordinateur 1440 × 900, mobile 390 × 844), trois couches détourées en WebP : la ville, la pièce (mur, posters, cadre de fenêtre, ouverture transparente) et le bureau avec ses objets, avec une marge de 4 % autour du cadre pour les mouvements de tête, en densité 1,5 (ordinateur) et 2 (mobile). Soit douze images légères (20 à 180 Ko). Le ciel, les étoiles et la planète restent en direct, pour que le parcours continue à travers la fenêtre.
 - **Le calage de l'écran** : les quatre coins de l'écran de l'ordinateur sont relevés dans le rendu ; le bureau de Windows et le navigateur, en HTML, s'y calent par une transformation en perspective.
 - **Les couches animées** : deux images de plus montrent toutes les fenêtres de la ville allumées, sur noir (une par cadrage, la même pour les deux moments) ; de petites pastilles qui s'en éclairent tour à tour allument et éteignent des fenêtres. Les nuages sont dessinés en direct.
