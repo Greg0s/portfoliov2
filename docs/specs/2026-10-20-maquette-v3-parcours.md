@@ -3,6 +3,7 @@
 - **Date** : 20 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
 - **Statut** : spec validée par Grégoire ; maquette construite, en cours d'affinage
+- **Fin du parcours** : le bureau de la section Contact a sa propre spec (`2026-10-21-maquette-v3-bureau.md`).
 - **Maquette** : canevas Claude Design « Maquette portfolio v3 » ([lien privé](https://claude.ai/artifact/Qm7HYAAf7d991WuXECGZue))
 - **Lien avec la spec principale** (`2026-10-14-portfolio-design.md`) : la charte « Musée de nuit » reste valable (typographie, couleurs, mouvement « Poétique », lumière selon l'heure, animations réduites automatiques). La v3 remplace la mise en page de l'accueil : les cartes flottantes à plat et le contact sur photo. La spec principale sera mise à jour quand la maquette v3 sera validée.
 
@@ -10,7 +11,7 @@
 
 Un seul travelling arrière. On part de la planète du Petit Prince ; en faisant défiler, la caméra recule, les projets passent un par un et font leur mise au point, puis on se retrouve dans le vide, où apparaît le contact.
 
-Plus tard, ce même recul finira dans un bureau : la caméra repassera par la fenêtre et s'arrêtera dans les yeux de la personne assise, face à la fenêtre et à son écran. Le site devient un seul plan, de la planète rêvée jusqu'au rêveur qui la regarde. Cette fin est hors périmètre de la v3.
+Ce même recul finit dans un bureau : la caméra repasse par la fenêtre et s'arrête dans les yeux de la personne assise, face à la fenêtre et à son écran. Le site devient un seul plan, de la planète rêvée jusqu'au rêveur qui la regarde. Cette fin est décrite dans la spec du bureau.
 
 ## 2. Décisions
 
@@ -90,6 +91,8 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 
 ## 7. La fin : le contact dans le vide
 
+Cette fin est remplacée par le bureau (`2026-10-21-maquette-v3-bureau.md`) ; elle reste décrite ici pour mémoire.
+
 - Après le dernier projet, la caméra continue de reculer ; les cartes passées s'éloignent vers la planète, devenue une petite lumière floue au centre ; les étoiles se raréfient.
 - Le contact apparaît en fondu au centre-gauche : le libellé « Contact », « Vous recrutez, ou vous avez un projet ? » (Libre Franklin 500), l'email avec « Copier », LinkedIn, GitHub, CV, Instagram, puis « © 2026 Grégoire Tinnes ».
 - Plus de photo, donc plus de crédit photo.
@@ -112,7 +115,6 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 
 ## 10. Hors périmètre
 
-- La scène du bureau en vue subjective.
 - Le vrai rendu WebGL : la maquette simule la 3D en CSS, avec les rendus de la planète ; le site, lui, utilisera Three.js.
 - Les vidéos des projets, à fournir par Grégoire.
 - La version allégée pour les téléphones lents.
