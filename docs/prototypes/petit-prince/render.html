@@ -163,22 +163,25 @@ function craterPlanet(detail, seed, calm) {
   return geo;
 }
 
-// Hair rebuilt as a cluster of petals around a core.
-function petalBall(detail, seed) {
-  const r = rng(seed);
+// Hair rebuilt as crumpled curls: ridged noise creases the surface into folded tufts, like the Blender render.
+function crumpledBall(detail, seed) {
+  const noise = new SimplexNoise({ random: rng(seed) });
   const geo = mergeVertices(new THREE.IcosahedronGeometry(1, detail));
-  const tips = [];
-  for (let i = 0; i < 150; i++) tips.push({ d: randomDir(r), len: 0.22 + r() * 0.3, sharp: 40 + r() * 70 });
   const pos = geo.attributes.position;
   const v = new THREE.Vector3();
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i).normalize();
-    let s = 0;
-    for (const tip of tips) {
-      const c = v.dot(tip.d);
-      if (c > 0) s = Math.max(s, tip.len * Math.pow(c, tip.sharp));
+    let h = 0;
+    let amp = 1;
+    let f = 1.4;
+    for (let o = 0; o < 2; o++) {
+      // Softened ridges (|n| rounded off near 0): folds without sharp, aliasing creases.
+      const n = noise.noise3d(v.x * f + o * 7.1, v.y * f, v.z * f);
+      h += amp * Math.pow(1 - Math.sqrt(n * n + 0.03), 1.4);
+      amp *= 0.4;
+      f *= 2.1;
     }
-    v.multiplyScalar(0.8 + s);
+    v.multiplyScalar(0.84 + 0.36 * h);
     pos.setXYZ(i, v.x, v.y, v.z);
   }
   geo.computeVertexNormals();
@@ -285,8 +288,10 @@ if (q.get('proc') !== '0') {
   planet.geometry = craterPlanet(Number(q.get('detail') || 110), Number(q.get('seed') || 5), calm);
   planet.material.roughness = 0.93;
   planet.material.color.setRGB(0.135, 0.19, 0.27);
-  hair.geometry = petalBall(56, 21);
-  hair.material.roughness = 0.62;
+  hair.geometry = crumpledBall(64, 21);
+  // A brighter, glossier gold than the file's, as in the Blender render.
+  hair.material.roughness = 0.4;
+  hair.material.color.set(0xf5cb3a);
 }
 
 // Helpers for an export made without Apply Modifiers, where the fox and the coat lose their Mirror and Subdivision.

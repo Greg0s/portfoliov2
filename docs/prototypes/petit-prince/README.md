@@ -4,15 +4,18 @@ Ce dossier a servi à valider la scène de l'ouverture avant l'implémentation (
 
 - `render.html` : la scène en Three.js (relief généré, éclairages, variantes de l'heure), rendue dans une page et récupérée en image.
 - `shoot.cjs` : ouvre `render.html` dans Chromium sans interface et enregistre une image par variante.
-- `optimize.mjs` : réduit l'export Blender pour le web (simplification par objet, quantification, compression meshopt).
+- `optimize.mjs` : réduit l'export Blender pour le web (corrections de `fixes.mjs`, simplification par objet, quantification, compression meshopt).
+- `fixes.mjs` : corrige deux défauts de l'export avant l'optimisation. Le renard, enfoncé à moitié dans la planète, est relevé le long de la verticale du sol jusqu'à s'y asseoir, sans changer de pose. L'écharpe, un simple ruban qui passait derrière la nuque, est un peu rapprochée du cou puis prolongée depuis son bord pour en faire le tour. Le fichier Blender n'est pas modifié ; les deux corrections se refont à chaque export, et le renard n'est plus déplacé si l'export est déjà juste.
 
 ## Mise en route
 
+`models/petit-prince.glb`, la version web corrigée et compressée, est versionné : `npm install` puis `npm run serve` suffisent pour faire des rendus. Pour le refaire après un nouvel export Blender (l'export, 16 Mo, n'est pas versionné) :
+
 ```sh
 npm install
-mkdir models renders
-cp /chemin/vers/projet2.glb models/   # l'export Blender de Grégoire (non versionné)
-npm run optimize                       # écrit models/petit-prince.glb (version web)
+mkdir -p renders
+cp /chemin/vers/projet2.glb models/   # l'export Blender de Grégoire
+npm run optimize                       # réécrit models/petit-prince.glb, à committer
 npm run serve                          # sert ce dossier sur le port 8765
 ```
 
