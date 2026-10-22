@@ -43,8 +43,8 @@ canvas, and the site itself (not started yet) will be built from the specs in `d
 - When a design decision changes, update the spec that holds it in the same change.
 - Never commit Grégoire's photos (keep them in `.design-assets/`, which is gitignored) or the Blender export
   `projet2.glb`.
-- Never write a real email address: the contact email stays the placeholder « [ton email] » until Grégoire gives
-  the address to publish.
+- The contact email is contact@gregoiretinn.es. Never write any other address of Grégoire's (his personal ones
+  included), and keep his phone number out of everything published.
 
 ## Working with Grégoire
 

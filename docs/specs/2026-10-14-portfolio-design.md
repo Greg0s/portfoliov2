@@ -245,7 +245,7 @@ Claude rédige une première version des études de cas en français et en angla
 
 - les vidéos en boucle des 8 projets ;
 - les trois photos du contact en haute définition (2 400 px de large au moins) ;
-- l'adresse email à afficher, l'URL LinkedIn à jour, le CV en français et en anglais ;
+- l'URL LinkedIn à jour, le CV en français et en anglais, sans numéro de téléphone (l'adresse email à afficher est fournie : contact@gregoiretinn.es) ;
 - les années et rôles à confirmer, en particulier pour Le Petit Prince et Obaine, et l'adresse en ligne de Lyrix.
 
 ## 9. Qualité
