@@ -2,7 +2,7 @@
 
 - **Date** : 21 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
-- **Statut** : design validé section par section ; spec à relire avant de construire
+- **Statut** : design validé section par section ; maquette en construction (avancement en section 12)
 - **Lien avec la spec du parcours** (`2026-10-20-maquette-v3-parcours.md`) : le bureau remplace la fin « contact dans le vide » (section 7 de cette spec). Le reste du parcours ne change pas.
 - **Références partagées par Grégoire** : un schéma de composition (posters à gauche, fenêtre au centre, écran à droite au premier plan), une image d'ambiance (un bureau devant une fenêtre au coucher du soleil, sur une ville au bord d'une rivière), la photo qui servira de fond d'écran (une ville en silhouette au coucher du soleil) et le clavier Logitech MX Keys.
 
@@ -119,10 +119,10 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 12. Ordre de construction
 
-1. La scène Three.js du bureau (pièce, objets, ville), ses deux lumières et les rendus en couches, sur ordinateur et sur mobile.
-2. Le plan de travail « Bureau — aube et crépuscule », pour valider l'image.
-3. L'arrivée dans la scène du parcours (ciel, ville, fenêtre, pièce) et le contact dans le ciel.
-4. L'écran : bureau de Windows, ouverture du navigateur et aperçus.
+1. La scène Three.js du bureau (pièce, objets, ville), ses deux lumières et les rendus en couches, sur ordinateur et sur mobile. **Fait.**
+2. Le plan de travail « Bureau — aube et crépuscule », pour valider l'image. **Fait, image validée.**
+3. L'arrivée dans la scène du parcours (ciel, ville, fenêtre, pièce) et le contact dans le ciel. **Construite, en attente de validation.**
+4. L'écran : bureau de Windows, ouverture du navigateur et aperçus. **Fait ; les vraies captures des pages remplaceront les aperçus.**
 5. Le mobile.
 6. Les deux moments sur tout le site (réglage « heure », charte).
 7. Le storyboard.
