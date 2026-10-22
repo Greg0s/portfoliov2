@@ -56,13 +56,13 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 ## 5. L'arrivée
 
 1. Après le dernier projet, la caméra continue de reculer ; les cartes passées s'éloignent vers la planète et s'effacent, comme aujourd'hui.
-2. **L'atmosphère** : le noir de l'espace se teinte peu à peu aux couleurs du moment, le ciel arrivant par le haut dans un fondu doux ; la plupart des étoiles s'éteignent ; la planète du parcours passe le relais à celle du ciel, au même point de l'image, et reste une petite lumière floue.
-3. **La ville** monte par le bas de l'image, dans la même brume que le ciel : collines, toits, rivière, et au crépuscule le soleil couchant. Au crépuscule, ses fenêtres s'allument en vague pendant ce temps, des quartiers proches vers les collines : encore éteintes devant le front, toutes allumées un instant à son passage, puis comme sur l'image.
+2. **Le saut** : la caméra passe à la vitesse de la lumière, en marche arrière. Les étoiles s'étirent en traînées blanches, quelques-unes lavande ou violettes, qui filent vers la planète, vives à la tête et évanescentes vers la queue ; un éclat marque le saut, un cœur lumineux brille sur la planète et l'image vibre très légèrement à pleine vitesse. Puis les traînées se rétractent en points et s'éteignent, avant que le ciel n'apparaisse (environ 0,8 s en tout). La planète du parcours passe le relais à celle du ciel, au même point de l'image, et reste une petite lumière floue.
+3. **Le ciel et la ville** : le ciel du moment se lève depuis l'horizon, comme un lever de soleil accéléré : une bande orangée, puis le rose, le violet et le bleu nuit qui gagnent le haut de l'image. La ville monte par le bas : collines, toits, rivière, et au crépuscule le soleil couchant. Au crépuscule, ses fenêtres s'allument en vague pendant ce temps, des quartiers proches vers les collines : encore éteintes devant le front, toutes allumées un instant à son passage, puis comme sur l'image.
 4. **La fenêtre** : son cadre surgit autour de l'image, puis la pièce se déploie en reculant : le mur et les posters à gauche, le bureau, la lampe, l'écran à droite. La caméra descend un peu en reculant, si bien que le bureau monte par le bas au lieu d'envahir l'image (surtout sur mobile, où l'écran est au centre).
 5. **La place assise** : la caméra s'arrête ; le texte du contact apparaît en fondu au centre du ciel ; l'en-tête reste en haut. Une ombre légère en haut et en bas, qui vient avec le texte, garde l'en-tête et « © 2026 Grégoire Tinnes » lisibles. À cet instant, une fois par visite, une étoile filante traverse le ciel, comme un accueil.
 
-- **Durée** : le passage de l'ancre du dernier projet à celle du contact dure environ 3 s, même en un seul geste. L'arrivée avance au rythme du temps, pas de la distance parcourue par la caméra, pour que chaque étape (ciel, ville, fenêtre, pièce) ait sa part au lieu que les premières passent en un éclair.
-- **Retour** : en remontant, on refait le chemin à l'envers, par la fenêtre, vers l'espace.
+- **Durée** : le passage de l'ancre du dernier projet à celle du contact dure environ 3,5 s, même en un seul geste. Sur ce tronçon, la caméra suit sa propre horloge : elle accélère, file à vitesse constante, puis ralentit, si bien que chaque étape (saut, ciel, ville, fenêtre, pièce) a sa part au lieu que les premières passent en un éclair.
+- **Retour** : en remontant, on refait le chemin à l'envers, par la fenêtre, vers l'espace, au même rythme qu'à l'aller.
 - **Mise au point** : la pièce est nette ; seule la planète garde son flou.
 - **Mobile** : la même chorégraphie, dans le cadrage vertical.
 
@@ -70,15 +70,15 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 - **Le texte**, toujours visible, est centré dans le haut du ciel de la fenêtre, là où il est le plus sombre, sous la planète : le libellé « Contact », « Vous recrutez, ou vous avez un projet ? » (Libre Franklin 500, 40 px sur ordinateur, 30 px sur mobile), l'email avec « Copier », LinkedIn, GitHub, CV et Instagram ; « © 2026 Grégoire Tinnes » en bas de la page. Un léger halo sombre le garde lisible devant l'horizon.
 - **L'écran** (par défaut) : le bureau de Windows, sans aucune icône : le fond d'écran (la photo de Grégoire, recadrée au format de l'écran) et la barre des tâches sombre en bas, d'après une capture de son ordinateur : les icônes des applications au centre, simplifiées sans reproduire les logos ; à droite, la langue, le réseau, le son, la batterie, l'heure et la date du visiteur, en petit. Rien sur l'écran n'attire l'œil plus que le texte du contact.
-- **Au survol d'un lien** (ordinateur) : Firefox s'ouvre comme sous Windows, en grandissant depuis son icône de la barre des tâches jusqu'au plein écran en environ 0,4 s (départ vif, arrivée douce), sur la page du lien, avec le bon onglet et la bonne adresse ; sous l'icône, le trait de l'application ouverte s'allonge et bleuit :
+- **Au survol d'un lien** (ordinateur) : Firefox s'ouvre comme sous Windows, en grandissant depuis son icône de la barre des tâches jusqu'au plein écran en environ 0,4 s (départ vif, arrivée douce), avec les quatre pages ouvertes dans quatre onglets (LinkedIn, GitHub, CV, Instagram), celui du lien au premier plan et son adresse dans la barre ; sous l'icône, le trait de l'application ouverte s'allonge et bleuit :
   - LinkedIn : le profil de Grégoire ;
   - GitHub : son profil et ses dépôts ;
   - CV : le PDF ouvert dans le navigateur ;
   - Instagram : sa grille de photos ;
   - l'email (ou « Copier ») : c'est l'application de messagerie qui s'ouvre, de la même façon depuis sa propre icône, sur une fenêtre « Nouveau message » adressée à son email, plus petite que l'écran ; si Firefox était ouvert, il se réduit en même temps.
 - **Si la souris reste sur un lien**, la page défile doucement vers le bas au bout d'environ une seconde, jusqu'à sa fin en 5 à 12 s, d'un mouvement lent au départ et à l'arrivée ; chaque nouvelle page repart du haut, et rien ne défile avec le mouvement réduit.
-- **D'un lien à l'autre**, la fenêtre reste ouverte et seul l'onglet change. **Quand la souris quitte les liens**, elle se réduit dans la barre des tâches après 0,6 s.
-- **Les pages** sont des aperçus simplifiés (la mise en page de chaque site avec le nom, le portrait et des photos de Grégoire, sans reproduire les logos), en attendant les vraies captures ; Firefox est en thème sombre, comme la barre des tâches. Les captures que fournira Grégoire prendront la place de la page dans la fenêtre de Firefox, dont la zone visible mesure 1280 × 670 px : capturées en page entière, pour le défilement, à l'échelle 2 (2560 px de large), au zoom 100 %, sans notification ni contenu d'autres personnes ; le CV vient directement du PDF.
+- **D'un lien à l'autre**, la fenêtre reste ouverte et Firefox passe à l'onglet du lien survolé. **Quand la souris quitte les liens**, elle se réduit dans la barre des tâches après 0,6 s.
+- **Les pages** sont des aperçus simplifiés (la mise en page de chaque site avec le nom, le portrait et des photos de Grégoire, sans reproduire les logos), en attendant les vraies captures ; Firefox est en thème sombre, comme la barre des tâches. Les captures que fournira Grégoire prendront la place de la page dans la fenêtre de Firefox, dont la zone visible mesure 1280 × 670 px : affichées sur 1280 px de large (mode adaptatif de Firefox), capturées en page entière, pour le défilement, à l'échelle 2 (2560 px de large), au zoom 100 %, en navigation privée (la vue d'un visiteur, sans les menus du propriétaire), sans notification ni contenu d'autres personnes ; le CV vient directement du PDF.
 - **Mobile** : le bureau de Windows seul ; les liens s'ouvrent directement.
 
 ## 7. Le mouvement et la vie dans la pièce
@@ -106,7 +106,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 10. Sur le canevas
 
-- La scène du parcours finit dans le bureau, sur ordinateur et sur mobile.
+- La scène du parcours finit dans le bureau, sur ordinateur et sur mobile. Le réglage « Passage » des deux parcours remplace le saut par un simple fondu, pour comparer.
 - Un nouveau plan de travail, « Bureau — aube et crépuscule », montre les deux moments côte à côte, sur ordinateur et sur mobile, lisibles sur téléphone. Le composant « Bureau » (la scène en HTML sur les couches rendues) sert à ce plan et à la fin du parcours.
 - Storyboard : l'image 7 devient l'arrivée au bureau ; une image s'ajoute avec le navigateur ouvert sur un aperçu.
 - La charte passe à deux lumières.
