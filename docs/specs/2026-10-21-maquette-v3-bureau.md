@@ -50,7 +50,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
   Tout est en volumes simples ; les fenêtres sont de petits rectangles ; la ville se fond dans la couleur du ciel avec la distance.
 
 - **Aube** (avant midi) : ciel du bleu nuit au rose pâle, puis à un orangé doux sur l'horizon ; le soleil n'est pas encore levé, une lueur se devine derrière les collines ; la ville est dans l'ombre bleutée, avec quelques fenêtres allumées.
-- **Crépuscule** (après midi) : ciel de l'indigo à l'orange profond sur l'horizon ; le soleil vient de passer derrière les collines ; beaucoup de fenêtres allumées et les réverbères des quais.
+- **Crépuscule** (après midi) : ciel de l'indigo à l'orange profond sur l'horizon ; le soleil se couche derrière les collines, à moitié caché dans un creux entre deux d'entre elles, près de celle qui porte la petite tour, avec un halo qui déborde sur les crêtes (un disque un peu plus grand que nature, 2,4°) ; beaucoup de fenêtres allumées et les réverbères des quais. Sur mobile, le soleil est juste hors du cadre, à gauche : on n'en voit que la lueur.
 - **Dans les deux cas** : les étoiles les plus brillantes restent visibles en haut du ciel ; la planète du Petit Prince reste la petite lumière floue de la fin du parcours, au-dessus du texte, avec « B 612 » au survol ; la vitre est invisible, sans reflet.
 
 ## 5. L'arrivée
@@ -84,6 +84,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 ## 7. Le mouvement et la vie dans la pièce
 
 - **La tête suit la souris** (ordinateur) : les couches se décalent légèrement selon leur distance (au plus 13 px pour le bureau, 8 pour la pièce, 4 pour la ville, 2 pour le ciel), avec un amorti d'environ 0,5 s calculé image par image, sans à-coups.
+- **La planète** est dans le ciel, derrière le mur : sa lueur ne passe jamais sur le mur ni sur le cadre de la fenêtre, qui la cachent comme ils cacheraient le ciel. Sur mobile, elle est placée juste sous le haut de la fenêtre pour rester toujours visible.
 - **La vie, très discrète** : la planète respire et les étoiles les plus brillantes scintillent ; quelques nuages fins glissent très lentement ; de temps en temps, une fenêtre de la ville s'allume ou s'éteint (de plus en plus allumées au crépuscule, de moins en moins à l'aube) ; une étoile filante traverse parfois la fenêtre ; l'heure de la barre des tâches avance. La lampe, la plante et la rose restent immobiles.
 - **Mobile** : pas de mouvement de tête, la même vie discrète.
 - **« Réduire les animations »** : ni mouvement de tête, ni nuages, ni étoile filante, ni fenêtres qui s'allument ; l'arrivée devient un fondu de l'espace vers le bureau ; la pièce reste fixe derrière le contact.

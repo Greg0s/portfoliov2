@@ -122,6 +122,16 @@ function renderWindows() {
   renderer.render(scene, camera);
 }
 
+// The centre of the setting sun and its radius, in pixels, for the halo the HTML lays over the hills (dusk only).
+function sunPixels() {
+  const sun = office.city.getObjectByName('sun');
+  if (!sun) return null;
+  const c = sun.getWorldPosition(new THREE.Vector3());
+  const rim = new THREE.Vector3(0, sun.userData.radius, 0).applyMatrix4(sun.matrixWorld);
+  const [[x, y], [rx, ry]] = toPixels([c, rim], camera, W, H);
+  return [x, y, Number(Math.hypot(rx - x, ry - y).toFixed(2))];
+}
+
 // Where things land in the picture, for the HTML that goes over it.
 function meta() {
   const px = (pts) => toPixels(pts, camera, W, H);
@@ -136,6 +146,7 @@ function meta() {
     screen: px(screenCorners(office.desk.monitor)),
     window: px([new THREE.Vector3(win.x0, win.y1, wallZ), new THREE.Vector3(win.x1, win.y1, wallZ), new THREE.Vector3(win.x1, win.y0, wallZ), new THREE.Vector3(win.x0, win.y0, wallZ)]),
     bulb: px([bulb])[0],
+    sun: sunPixels(),
     camera: { fov: camera.fov, position: camera.position.toArray(), rotation: [camera.rotation.x, camera.rotation.y] },
   };
 }

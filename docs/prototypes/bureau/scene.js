@@ -6,7 +6,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const LAYERS = { city: 1, room: 2, desk: 3 };
 
-// The two moments of the site. `sky` runs from the top of the frame down to the horizon.
+// The two moments of the site. `sky` runs from the top of the frame down to the horizon. At dusk the sun, a disc a little
+// larger than life (`sunDisc`, degrees), sets behind the hills in a dip between two of them, where the sky glows.
 export const MOMENTS = {
   aube: {
     sky: ['#101834', '#27366a', '#6c68a0', '#cb94a2', '#eec29f'],
@@ -16,7 +17,8 @@ export const MOMENTS = {
   },
   crepuscule: {
     sky: ['#121538', '#3b3172', '#a2567b', '#e7845a', '#f8b26b'],
-    glow: { azimuth: 6, color: '#ffd38c', strength: 0.7 },
+    glow: { azimuth: -9.5, color: '#ffd38c', strength: 0.7 },
+    sunDisc: { elevation: 2.05, size: 2.4 },
     city: { hemi: ['#b391b6', '#2d1d23', 1.1], sun: ['#ff9a5a', 0.85], fill: ['#ab9cdb', 0.38], lit: 0.38, litGlow: 1.2, lamps: 3.5, fog: '#e09a7c', hills: '#9b6377' },
     room: { hemi: ['#a67f99', '#2c1e1c', 0.4], window: ['#ffa47c', 4.1], bounce: ['#dcb9a8', 1.2], lamp: ['#ffae60', 8], screen: ['#ffa868', 0.9], exposure: 1 },
   },
@@ -1387,6 +1389,26 @@ function hillPlanes(moment) {
   const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 5, 90, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(M.city.hills).lerp(haze, 0.22), fog: false, toneMapped: false }));
   tower.position.set(p.x * 0.995, y + 40, p.y * 0.995);
   g.add(tower);
+  // The setting sun, far beyond the last hills, which hide its lower part; paler at the top, warmer toward the bottom.
+  if (M.sunDisc) {
+    const d = 9500;
+    const az = M.glow.azimuth * DEG;
+    const el = M.sunDisc.elevation * DEG;
+    const r = d * Math.tan((M.sunDisc.size / 2) * DEG);
+    const geo = new THREE.CircleGeometry(r, 64);
+    const top = new THREE.Color(0xffefc4);
+    const low = new THREE.Color(0xffbf7a);
+    const sp = geo.attributes.position;
+    const tint = new Float32Array(sp.count * 3);
+    for (let i = 0; i < sp.count; i++) low.clone().lerp(top, (sp.getY(i) / r + 1) / 2).toArray(tint, i * 3);
+    geo.setAttribute('color', new THREE.BufferAttribute(tint, 3));
+    const sun = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, toneMapped: false }));
+    sun.position.set(Math.sin(az) * Math.cos(el) * d, eye + Math.sin(el) * d, -Math.cos(az) * Math.cos(el) * d);
+    sun.lookAt(0, eye, 0);
+    sun.name = 'sun';
+    sun.userData.radius = r;
+    g.add(sun);
+  }
   return g;
 }
 
