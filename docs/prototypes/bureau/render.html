@@ -22,7 +22,6 @@ const q = new URLSearchParams(location.search);
 const moment = q.get('moment') || 'crepuscule';
 const framing = q.get('framing') || 'desktop';
 const layer = q.get('layer') || 'preview'; // city | room | desk | windows | preview
-// `city=proposal` builds the proposed town (varied districts, hills on several planes) instead of the current one.
 const scale = Number(q.get('scale') || 1);
 const overscan = Number(q.get('overscan') || 0);
 // Camera overrides while looking for the framing.
@@ -59,7 +58,7 @@ async function loadRose() {
   }
 }
 
-const office = createOffice(moment, { rose: await loadRose(), city: q.get('city') || 'current' });
+const office = createOffice(moment, { rose: await loadRose() });
 const { scene } = office;
 renderer.toneMappingExposure = office.moment.room.exposure;
 const camera = makeCamera(framing, overrides);

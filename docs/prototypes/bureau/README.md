@@ -20,7 +20,7 @@ Puis, dans un autre terminal (les navigateurs de Playwright doivent être instal
 mkdir -p renders
 node shoot.cjs renders "apercu:moment=crepuscule&framing=desktop&layer=preview"
 npm run layers       # les couches finales, dans renders/layers
-node layers.mjs --city=proposal --layers=city,windows   # la ville proposée seule, fichiers suffixés -proposal
+node layers.mjs --layers=desk   # seulement certaines couches (city, room, desk, windows)
 ```
 
 La rose posée sur le bureau est celle de la planète : la scène la prend dans l'export Blender de Grégoire, `../petit-prince/models/projet2.glb` (non versionné, voir le README du prototype de la planète). Sans ce fichier, une rose simplifiée la remplace.
@@ -34,7 +34,6 @@ Pour voir le fond d'écran sur le moniteur dans les aperçus, copier la photo de
 | `moment`              | `crepuscule` (défaut), `aube`                         | lumière                                                                                                             |
 | `framing`             | `desktop` (défaut, 1440 × 900), `mobile` (390 × 844)  | cadrage                                                                                                             |
 | `layer`               | `preview` (défaut), `city`, `room`, `desk`, `windows` | aperçu complet sur le ciel, ou une couche détourée ; `windows` : toutes les fenêtres de la ville allumées, sur noir |
-| `city`                | `current` (défaut), `proposal`                        | la ville actuelle, ou la ville proposée (quartiers plus variés, tours au loin, parc, collines sur cinq plans)        |
 | `scale`               | facteur                                               | densité de pixels (1,5 et 2 pour les couches finales)                                                               |
 | `overscan`            | fraction                                              | marge autour du cadre pour les mouvements de tête (0,04 pour les couches finales)                                   |
 | `screen`              | `0`                                                   | aperçu sans le fond d'écran sur le moniteur                                                                         |

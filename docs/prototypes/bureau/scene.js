@@ -22,10 +22,12 @@ export const MOMENTS = {
   },
 };
 
-// The two framings. Angles are in degrees; the pitch is positive when looking up.
+// The two framings. Angles are in degrees; the pitch is positive when looking up. On mobile the eye stands a little
+// higher and to the right: the sky of the window at the top for the contact, the screen, the rose and the pencil cup
+// to the right, the town to the left of the screen.
 export const FRAMINGS = {
   desktop: { w: 1440, h: 900, fov: 62, pos: [0, 1.2, 0], pitch: -3, yaw: 0 },
-  mobile: { w: 390, h: 844, fov: 80, pos: [-0.1, 1.18, 0.35], pitch: 10, yaw: -3 },
+  mobile: { w: 390, h: 844, fov: 80, pos: [0.1, 1.4, 0.35], pitch: 7, yaw: -13 },
 };
 
 // The wall in front of the desk, its window, and the desk.
@@ -43,18 +45,20 @@ export const SCREEN = { w: 0.7, h: 0.4375 };
 
 // Where each object stands on the desk: [x, z], a turn around the vertical axis and, for the mouse on its pad, a lift.
 // The monitor is only slightly turned toward us: at the edge of a wide view, a screen facing the eye looks stretched.
-// The lamp stands between the posters and the window, its arm reaching back over the plant; the rose stands at the back,
-// under the raised monitor, between its foot and the pencil cup.
+// The lamp stands between the posters and the window and turns toward the point it lights, on the desk to the left of
+// the keyboard (LAMP_AIM); the rose stands at the back, under the raised monitor, between its foot and the pencil cup.
 const PLACES = {
   monitor: [0.62, -0.98, -0.15],
   keyboard: [0.3, -0.72, -0.06],
   pad: [0.67, -0.745, -0.15],
   mouse: [0.67, -0.775, -0.2, 0.0036],
-  lamp: [-0.46, -1.06, -1.82],
+  lamp: [-0.5, -1.04],
   plant: [-0.62, -0.6, 0.4],
   rose: [0.85, -1.04, 4.26],
   pencils: [0.8, -0.86, 0],
 };
+
+const LAMP_AIM = [-0.05, -0.8];
 
 const DEG = Math.PI / 180;
 
@@ -399,42 +403,83 @@ function buildPad() {
   return new THREE.Mesh(geo, std(0x6b9ee0, 0.95));
 }
 
-// A dome lamp on a curved arm. Whichever way the lamp is turned, its shade keeps the same tilt in the room.
-function buildLamp(turn = 0) {
+// A desk lamp in the spirit of the Anglepoise Type 75 Mini: a round base, one gently curved arm and a head made of a
+// short cylinder that flares into a bell, lit inside. The lamp is built facing +x, its head aimed at a point of the desk
+// `reach` metres in front of its base. The cylinder of the head is kept short so that it hides little behind it.
+function buildLamp(reach) {
   const g = new THREE.Group();
-  const metal = std(0x1b1b1e, 0.42, 0.6);
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.08, 0.018, 48), metal);
-  base.position.y = 0.009;
-  g.add(base);
-  const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0.015, 0),
-    new THREE.Vector3(0, 0.26, -0.011),
-    new THREE.Vector3(0.034, 0.43, 0.023),
-    new THREE.Vector3(0.136, 0.48, 0.102),
-    new THREE.Vector3(0.203, 0.455, 0.168),
-  ]);
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.007, 12, false), metal));
-  // Dome shade, open downward and tilted toward the desk.
-  const pts = [];
-  for (let i = 24; i >= 0; i--) {
-    const a = (i / 24) * (Math.PI / 2);
-    pts.push(new THREE.Vector2(0.01 + Math.sin(a) * 0.072, Math.cos(a) * 0.064));
+  const paint = std(0x2b2725, 0.5, 0.25);
+  const steel = std(0xc9c4bc, 0.3, 0.85);
+  const lathe = (pts, material, segments = 64) => new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), segments), material);
+  g.add(
+    lathe(
+      [
+        [0, 0],
+        [0.085, 0],
+        [0.0865, 0.004],
+        [0.0855, 0.012],
+        [0.08, 0.018],
+        [0.07, 0.021],
+        [0.04, 0.0235],
+        [0, 0.024],
+      ],
+      paint
+    )
+  );
+  // The arm rises from just behind the middle of the base, leans back, then bends forward into the joint of the head.
+  const joint = new THREE.Vector3(-0.02, 0.42, 0);
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.01, 24), steel);
+  collar.position.set(-0.025, 0.027, 0);
+  g.add(collar);
+  const arm = new THREE.CatmullRomCurve3([new THREE.Vector3(-0.025, 0.02, 0), new THREE.Vector3(-0.045, 0.15, 0), new THREE.Vector3(-0.055, 0.28, 0), new THREE.Vector3(-0.045, 0.37, 0), joint.clone()]);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(arm, 64, 0.0065, 12, false), paint));
+  const knuckle = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.0085, 0.022, 20), steel);
+  knuckle.rotation.x = Math.PI / 2;
+  knuckle.position.copy(joint);
+  g.add(knuckle);
+  // The head, along its own +y from the joint toward the lit point: a rounded back, the short cylinder, the bell.
+  const axis = new THREE.Vector3(reach, 0, 0).sub(joint).normalize();
+  const cyl = 0.045;
+  const bell = 0.075;
+  const profile = [
+    [0, 0],
+    [0.012, 0.002],
+    [0.02, 0.006],
+    [0.024, 0.012],
+    [0.025, 0.02],
+    [0.025, cyl],
+  ];
+  for (let i = 1; i <= 12; i++) {
+    const t = i / 12;
+    profile.push([0.025 + 0.037 * t ** 1.6, cyl + bell * t]);
   }
-  const shadeGeo = new THREE.LatheGeometry(pts, 64);
-  const outer = new THREE.Mesh(shadeGeo, std(0x18181a, 0.45, 0.5, { side: THREE.FrontSide }));
-  const inner = new THREE.Mesh(shadeGeo, std(0xfff1d6, 0.6, 0, { side: THREE.BackSide, emissive: 0xffcf8f, emissiveIntensity: 1.6 }));
-  inner.userData.noShadow = true;
-  const shade = new THREE.Group();
-  shade.add(outer, inner);
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.02, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff6e2 }));
-  bulb.position.y = 0.011;
+  const head = new THREE.Group();
+  head.add(lathe(profile, std(0x2b2725, 0.45, 0.3, { side: THREE.FrontSide })));
+  // Inside, the bell glows by itself, brightest at the throat and warmer toward the rim, whatever the lights around.
+  const inside = lathe(profile, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide }));
+  const ip = inside.geometry.attributes.position;
+  const glow = new Float32Array(ip.count * 3);
+  const throat = new THREE.Color(0xffffff);
+  const rim = new THREE.Color(0xf2dcbc);
+  for (let i = 0; i < ip.count; i++) throat.clone().lerp(rim, Math.max(0, Math.min(1, (ip.getY(i) - cyl) / bell)) ** 0.8).toArray(glow, i * 3);
+  inside.geometry.setAttribute('color', new THREE.BufferAttribute(glow, 3));
+  inside.userData.noShadow = true;
+  head.add(inside);
+  // The bright diffuser at the throat of the bell.
+  const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.024, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff6e2, side: THREE.DoubleSide }));
+  bulb.position.y = cyl + 0.006;
   bulb.userData.noShadow = true;
   bulb.name = 'bulb';
-  shade.add(bulb);
-  shade.position.set(0.211, 0.44, 0.178);
-  shade.quaternion.setFromEuler(new THREE.Euler(0.42, 0, -0.18)).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -turn));
-  g.add(shade);
-  g.userData.shade = shade;
+  head.add(bulb);
+  head.position.copy(joint);
+  head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
+  g.add(head);
+  // Where the light leaves the bell, and the way it goes.
+  const light = new THREE.Object3D();
+  light.position.copy(joint).addScaledVector(axis, cyl + bell - 0.01);
+  light.userData.axis = axis;
+  g.add(light);
+  g.userData.light = light;
   return g;
 }
 
@@ -705,15 +750,15 @@ function buildDesk(roseModel) {
     keyboard: buildKeyboard(),
     pad: buildPad(),
     mouse: buildMouse(),
-    lamp: buildLamp(PLACES.lamp[2]),
+    lamp: buildLamp(Math.hypot(LAMP_AIM[0] - PLACES.lamp[0], LAMP_AIM[1] - PLACES.lamp[1])),
     plant: buildPlant(),
     rose: buildRose(roseModel),
     pencils: buildPencils(),
   };
   for (const [name, o] of Object.entries(objects)) {
-    const [x, z, ry, lift = 0] = PLACES[name];
+    const [x, z, turn, lift = 0] = PLACES[name];
     o.position.set(x, deskY + lift, z);
-    o.rotation.y = ry;
+    o.rotation.y = name === 'lamp' ? Math.atan2(z - LAMP_AIM[1], LAMP_AIM[0] - x) : turn;
     g.add(o);
   }
   onLayer(g, LAYERS.desk);
@@ -722,7 +767,7 @@ function buildDesk(roseModel) {
 
 // ---------- The city seen through the window ----------
 // The flat is near the top of a hill, 80 m above the town. A river crosses the view diagonally, from the bottom of the
-// window toward the right; beyond it the town recedes to hills on the horizon (Lyon, loosely).
+// window toward the right; beyond it the town, gently rolling, recedes to hills on several planes (Lyon, loosely).
 
 const CITY = {
   land: -80,
@@ -750,12 +795,11 @@ const hillY = (d) => {
 const FACADES = [0xece0c8, 0xe6c79c, 0xe9bba4, 0xdccbb5, 0xd2bb9f, 0xf1e5d0, 0xe3d2b0, 0xd9b48f];
 const TILES = [0xa06a58, 0x94614f, 0xaa7563, 0x8b5b4c, 0xa2705d];
 
-// The windows of the facades, 8 x 8 cells of one bay and one floor each: classic windows with a sill, the ribbon windows
-// of modern blocks, or the glass of a tower.
+// The windows of the facades, 8 x 8 cells of one bay and one floor each: classic windows with a sill, or the ribbon
+// windows of modern blocks.
 const WINDOWS = {
   classic: { x: 0.3, y: 0.24, w: 0.4, h: 0.52, glass: 'rgba(64,66,80,0.86)', sill: true },
   ribbon: { x: 0.02, y: 0.3, w: 0.96, h: 0.42, glass: 'rgba(58,66,82,0.9)' },
-  curtain: { x: 0.05, y: 0.1, w: 0.9, h: 0.8, glass: 'rgba(40,50,70,0.7)' },
 };
 
 function facadeTextures(seed, litRatio, style = 'classic') {
@@ -905,14 +949,13 @@ function addBuilding(parts, r, { x, z, w, d, h, y0, turn = 0, roof = 'hip', rh, 
   }
 }
 
-// ---------- A proposal for the town: varied districts, a business district, a park ----------
+// ---------- The town: districts, a park and gentle relief ----------
 
 const OLD_FACADES = [0xefdcbc, 0xe8c393, 0xe2a77f, 0xd99c84, 0xf1e3c8, 0xd8b088, 0xeacca2, 0xcf9673, 0xe6d2b0, 0xdcb59a, 0xe9b98d, 0xd7a07a];
 const HOUSE_FACADES = [0xf0e6d4, 0xe8d6b8, 0xeedcc4, 0xe2c8a6, 0xf2e9dc];
 const BLOCK_FACADES = [0xe6ddd0, 0xd8d2c8, 0xe0d4c0, 0xcfc8bd, 0xe9e2d6];
 const OLD_TILES = [0xa8644e, 0x96553f, 0xb0725a, 0x8c5141, 0x9e6a58, 0x7f4a3d, 0xb47a5f];
 const ZINC = [0x7b828c, 0x6d747e, 0x858b93];
-const GLASS = [0x56627a, 0x5f6b80, 0x4f5a70, 0x687388];
 
 const smoothstep = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -938,54 +981,59 @@ function valueNoise(seed, scale) {
   };
 }
 
-// A box of glass with the window grid in world units; its top can slope.
-function towerBox(w, d, h, slope = 0) {
-  const g = new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0);
-  const pos = g.attributes.position;
-  const nrm = g.attributes.normal;
-  const uv = g.attributes.uv;
-  for (let i = 0; i < pos.count; i++) {
-    if (pos.getY(i) > h - 0.01) pos.setY(i, h + (pos.getX(i) / w + 0.5) * slope);
-    const top = Math.abs(nrm.getY(i)) > 0.5;
-    const along = Math.abs(nrm.getX(i)) > 0.5 ? pos.getZ(i) : pos.getX(i);
-    uv.setXY(i, top ? 0 : along / 3.2 / 8, top ? 0 : pos.getY(i) / 3.6 / 8);
-  }
-  g.computeVertexNormals();
-  return g;
-}
-
 const bareRoof = (g) => {
   const n = g.toNonIndexed();
   n.deleteAttribute('uv');
   return n;
 };
 
+// The relief of the town, in metres above the plain: flat along the quays (and so at the foot of our hill and in the
+// park); on the far bank, two broad hills covered with houses whose crests stand out against the haze, small
+// undulations elsewhere, and the ground rising a little toward the hills on the horizon.
+const reliefNoise = valueNoise(41, 380);
+const TOWN_HILLS = [
+  { az: -10, d: 1500, r: 360, h: 46 },
+  { az: 8, d: 1950, r: 460, h: 58 },
+].map((k) => ({ ...k, p: polar(k.az, k.d) }));
+function relief(p) {
+  const v = acrossOf(p);
+  let h = 6 * smoothstep(0.35, 0.8, reliefNoise(p.x, p.y)) + (v > 0 ? 10 * smoothstep(1200, 2800, p.length()) : 0);
+  for (const k of TOWN_HILLS) h += k.h * 0.5 * (1 + Math.cos(Math.PI * Math.min(1, p.distanceTo(k.p) / k.r)));
+  return smoothstep(HALF + 160, HALF + 460, Math.abs(v)) * h;
+}
+
+// The ground under a building turned along the river: the lowest point of its footprint, so that it never floats.
+function footing(p, w, d) {
+  let low = relief(p);
+  for (const [a, b] of [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+  ]) {
+    low = Math.min(low, relief(p.clone().addScaledVector(ALONG, (a * w) / 2).addScaledVector(ACROSS, (b * d) / 2)));
+  }
+  return low;
+}
+
 // The town in districts: an old town of tall houses with tiled or zinc roofs, quieter streets of small houses, a few
-// modern blocks further away, small squares, a park with a pond on the far quay, and the towers of a business district
-// far away.
-function townProposal(parts, r, inView) {
+// modern blocks further away, small squares, and a park with a pond on the far quay. Everything sits on the relief.
+function buildTown(parts, r, inView) {
   const district = valueNoise(13, 420);
   const pick = (list) => list[Math.floor(r() * list.length)];
-  const tree = (x, y, z, s) => new THREE.IcosahedronGeometry(1, 1).scale(s, s * 1.12, s).translate(x, y + s, z);
+  const tree = (x, z, s) => {
+    const p = new THREE.Vector2(x, z);
+    return new THREE.IcosahedronGeometry(1, 1).scale(s, s * 1.12, s).translate(x, CITY.land + relief(p) + s, z);
+  };
   const trees = [];
-  const towers = [
-    { az: 4.4, d: 2150, kind: 'pencil', w: 26, h: 142, top: 26 },
-    { az: 7.8, d: 2280, kind: 'spire', w: 30, h: 168, top: 34 },
-    { az: 6.2, d: 1990, kind: 'slant', w: 26, dd: 40, h: 96, top: 20 },
-    { az: 9.9, d: 2080, kind: 'box', w: 24, dd: 34, h: 118 },
-    { az: 2.4, d: 2350, kind: 'box', w: 22, dd: 30, h: 72 },
-  ].map((t) => ({ ...t, p: polar(t.az, t.d) }));
   const park = { u: [40, 180], v: [75, 245] };
   const pond = { u: 112, v: 166, ru: 44, rv: 26 };
-  const riverUV = (p) => {
-    const q = p.clone().sub(R0);
-    return [q.dot(ALONG), q.dot(ACROSS)];
-  };
   const inPark = (p) => {
-    const [u, v] = riverUV(p);
+    const q = p.clone().sub(R0);
+    const u = q.dot(ALONG);
+    const v = q.dot(ACROSS);
     return u > park.u[0] - 6 && u < park.u[1] + 6 && v > park.v[0] - 6 && v < park.v[1] + 6;
   };
-  const nearTower = (p) => towers.some((t) => p.distanceTo(t.p) < 55);
 
   const kindAt = (p, row) => {
     if (row === 0) return 'old';
@@ -998,9 +1046,10 @@ function townProposal(parts, r, inView) {
   };
   const widthOf = (kind, row) => (kind === 'block' ? 28 + r() * 22 : kind === 'house' ? 7 + r() * 4 : kind === 'square' ? 16 + r() * 10 : (row === 0 ? 12 : 9) + r() * 10);
   const addKind = (kind, p, w, depth, row) => {
-    if (inPark(p) || nearTower(p)) return;
-    const base = { x: p.x, z: p.y, w, d: depth, y0: CITY.land - 1, turn: RIVER_TURN };
-    const place = new THREE.Matrix4().makeRotationY(RIVER_TURN).setPosition(p.x, CITY.land - 1, p.y);
+    if (inPark(p)) return;
+    const y0 = CITY.land - 1 + footing(p, w, depth);
+    const base = { x: p.x, z: p.y, w, d: depth, y0, turn: RIVER_TURN };
+    const place = new THREE.Matrix4().makeRotationY(RIVER_TURN).setPosition(p.x, y0, p.y);
     if (kind === 'block') {
       const h = 21 + Math.floor(r() * 5) * 3;
       addBuilding(parts, r, { ...base, h, roof: 'flat', color: pick(BLOCK_FACADES), into: 'blocks' });
@@ -1010,12 +1059,12 @@ function townProposal(parts, r, inView) {
       addBuilding(parts, r, { ...base, d: depth * 0.7, h: 6.5 + r() * 3.5, roof: r() < 0.6 ? 'gable' : 'hip', color: pick(HOUSE_FACADES), tiles: pick(OLD_TILES) });
       if (r() < 0.5) {
         const g = new THREE.Vector3(w / 2 + 1.5, 0, depth * 0.3).applyMatrix4(place);
-        trees.push(tree(g.x, CITY.land, g.z, 2.2 + r() * 1.4));
+        trees.push(tree(g.x, g.z, 2.2 + r() * 1.4));
       }
     } else if (kind === 'square') {
       for (let k = 0; k < 3; k++) {
         const g = new THREE.Vector3((r() - 0.5) * w * 0.7, 0, (r() - 0.5) * depth * 0.6).applyMatrix4(place);
-        trees.push(tree(g.x, CITY.land, g.z, 2.4 + r() * 1.6));
+        trees.push(tree(g.x, g.z, 2.4 + r() * 1.6));
       }
     } else {
       const n = district(p.x, p.y);
@@ -1059,27 +1108,6 @@ function townProposal(parts, r, inView) {
     v += depth + (row === 0 ? 14 : 8 + r() * 6 + v * 0.004);
   }
 
-  // The towers: a round one with a pointed top, a glass one with a spire, one with a sloping roof, and plainer ones.
-  for (const t of towers) {
-    const place = new THREE.Matrix4().makeRotationY(RIVER_TURN + (t.kind === 'slant' ? 0.3 : 0)).setPosition(t.p.x, CITY.land - 1, t.p.y);
-    if (t.kind === 'pencil') {
-      const body = new THREE.CylinderGeometry(t.w / 2, t.w / 2, t.h, 28, 1, true).translate(0, t.h / 2, 0);
-      const uv = body.attributes.uv;
-      for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * Math.PI * t.w) / 3.2 / 8, (uv.getY(i) * t.h) / 3.6 / 8);
-      parts.glass.push(colorize(body, 0x8a5f58).applyMatrix4(place));
-      parts.tops.push(colorize(bareRoof(new THREE.ConeGeometry(t.w / 2, t.top, 28)).translate(0, t.h + t.top / 2, 0), 0x7a514b).applyMatrix4(place));
-      continue;
-    }
-    const dd = t.dd ?? t.w;
-    parts.glass.push(colorize(towerBox(t.w, dd, t.h, t.kind === 'slant' ? t.top : 0), pick(GLASS)).applyMatrix4(place));
-    if (t.kind === 'spire') {
-      parts.tops.push(colorize(bareRoof(new THREE.ConeGeometry(t.w / Math.SQRT2, t.top, 4)).rotateY(Math.PI / 4).translate(0, t.h + t.top / 2, 0), 0x6f7d92).applyMatrix4(place));
-      parts.tops.push(colorize(bareRoof(new THREE.CylinderGeometry(0.4, 0.6, 22, 6)).translate(0, t.h + t.top + 9, 0), 0x5a6070).applyMatrix4(place));
-    } else if (t.kind === 'box') {
-      parts.tops.push(colorize(flatRoof(t.w - 1, dd - 1).translate(0, t.h, 0), 0x50555f).applyMatrix4(place));
-    }
-  }
-
   // The park: groves around lawns, and the pond in a clearing.
   const lawn = valueNoise(29, 60);
   for (let u = park.u[0] + 5; u < park.u[1] - 5; u += 7.5) {
@@ -1087,18 +1115,46 @@ function townProposal(parts, r, inView) {
       if (((u - pond.u) / (pond.ru + 16)) ** 2 + ((v - pond.v) / (pond.rv + 16)) ** 2 < 1) continue;
       const p = at(u + (r() - 0.5) * 5, v + (r() - 0.5) * 5);
       if (lawn(p.x, p.y) < 0.42) continue;
-      trees.push(tree(p.x, CITY.land, p.y, 3 + r() * 2.2));
+      trees.push(tree(p.x, p.y, 3 + r() * 2.2));
     }
   }
   const corners = [at(park.u[0], park.v[0]), at(park.u[1], park.v[0]), at(park.u[1], park.v[1]), at(park.u[0], park.v[1])];
   return { trees, pond: { center: at(pond.u, pond.v), ru: pond.ru, rv: pond.rv }, lawn: corners };
 }
 
-function buildCity(moment, variant = 'current') {
+// The relief as ground: a polar grid over the view, a little below the plain where the town is flat so that the plain
+// shows there, and sunk deep under the river so that the water shows. It stops short of the first hills on the horizon.
+function reliefGround(material) {
+  const azs = 200;
+  const rings = 160;
+  const pos = [];
+  for (let j = 0; j <= rings; j++) {
+    const d = (CITY.hill.foot - 20) * Math.pow(2950 / (CITY.hill.foot - 20), j / rings);
+    for (let i = 0; i <= azs; i++) {
+      const p = polar(-55 + (110 * i) / azs, d);
+      const river = Math.abs(acrossOf(p)) < HALF + 10;
+      pos.push(p.x, river ? CITY.land - 50 : CITY.land - 0.4 + relief(p), p.y);
+    }
+  }
+  const index = [];
+  for (let j = 0; j < rings; j++) {
+    for (let i = 0; i < azs; i++) {
+      const a = j * (azs + 1) + i;
+      const b = a + azs + 1;
+      index.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setIndex(index);
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, material);
+}
+
+function buildCity(moment) {
   const M = MOMENTS[moment].city;
   const r = rng(2024);
-  const proposal = variant === 'proposal';
-  const parts = { walls: [], roofs: [], chimneys: [], blocks: [], glass: [], tops: [] };
+  const parts = { walls: [], roofs: [], chimneys: [], blocks: [] };
   // Only what can be seen through the window, with a margin for the movements of the head, is built.
   const inView = (p, margin = 40) => p.y < 0 && p.length() < 3500 && Math.abs(p.x) < -p.y * Math.tan(50 * DEG) + margin;
 
@@ -1118,33 +1174,7 @@ function buildCity(moment, variant = 'current') {
     const ground = hillY(n.d) - 2;
     addBuilding(parts, r, { x: (x0 + x1) / 2, z: -n.d - n.depth / 2, w: x1 - x0, d: n.depth, h: ridgeY - rh - ground, y0: ground, roof: n.roof, rh, dormers: n.dormers, color: n.color, chimneys: true });
   }
-  const town = proposal ? townProposal(parts, r, inView) : null;
-  // The town, in rows parallel to the river. Near bank: from the quay back to the foot of our hill.
-  for (let v = -(HALF + 24), row = 0; !proposal && v > -900; row++) {
-    const depth = 11 + r() * 5;
-    for (let u = -600; u < 3200; ) {
-      const w = 10 + r() * 9;
-      const p = at(u + w / 2, v - depth / 2);
-      if (p.length() > CITY.hill.foot + 8 && inView(p)) {
-        addBuilding(parts, r, { x: p.x, z: p.y, w, d: depth, h: row === 0 ? 16 + r() * 5 : 12 + r() * 8, y0: CITY.land - 1, turn: RIVER_TURN, roof: r() < 0.14 ? 'flat' : 'hip' });
-      }
-      u += w + (row === 0 ? 0.4 : 0.8 + r() * 3);
-    }
-    v -= depth + (row === 0 ? 12 : 8 + r() * 6);
-  }
-  // Far bank: a continuous row of facades along the quay, then the town receding toward the hills.
-  for (let v = HALF + 24, row = 0; !proposal && v < 3200; row++) {
-    const depth = 12 + r() * 5 + v * 0.004;
-    for (let u = -1500; u < 3500; ) {
-      const w = (row === 0 ? 12 : 10) + r() * 9 + v * 0.005;
-      const p = at(u + w / 2, v + depth / 2);
-      if (inView(p, 60)) {
-        addBuilding(parts, r, { x: p.x, z: p.y, w, d: depth, h: row === 0 ? 17 + r() * 5 : 13 + r() * 10, y0: CITY.land - 1, turn: RIVER_TURN, roof: r() < 0.16 ? 'flat' : 'hip' });
-      }
-      u += w + (row === 0 ? 0.4 : 0.6 + r() * 3 + v * 0.002);
-    }
-    v += depth + (row === 0 ? 14 : 8 + r() * 6 + v * 0.004);
-  }
+  const town = buildTown(parts, r, inView);
 
   const g = new THREE.Group();
   const facade = facadeTextures(5, M.lit);
@@ -1152,80 +1182,61 @@ function buildCity(moment, variant = 'current') {
   const walls = new THREE.Mesh(mergeGeometries(parts.walls), wallMat);
   // Every window lit, for the layer from which windows light up now and then.
   walls.userData.allLit = new THREE.MeshBasicMaterial({ map: facadeTextures(5, 1).emissive });
-  g.add(walls);
-  if (proposal) {
-    // Modern blocks with ribbon windows, and towers of glass that mirror the sky.
-    const ribbon = facadeTextures(6, M.lit * 0.8, 'ribbon');
-    const blocks = new THREE.Mesh(mergeGeometries(parts.blocks), new THREE.MeshStandardMaterial({ vertexColors: true, map: ribbon.map, emissiveMap: ribbon.emissive, emissive: 0xffffff, emissiveIntensity: M.litGlow, roughness: 0.9 }));
-    blocks.userData.allLit = new THREE.MeshBasicMaterial({ map: facadeTextures(6, 1, 'ribbon').emissive });
-    // The towers rise out of the mist that lies over the town: they take only half of it.
-    const halfFog = (m) => {
-      m.onBeforeCompile = (shader) => {
-        shader.fragmentShader = shader.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n  gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(fogNear, fogFar, vFogDepth) * 0.5);\n#endif');
-      };
-      return m;
-    };
-    const curtain = facadeTextures(7, M.lit * 0.45, 'curtain');
-    const glass = new THREE.Mesh(mergeGeometries(parts.glass), halfFog(new THREE.MeshStandardMaterial({ vertexColors: true, map: curtain.map, emissiveMap: curtain.emissive, emissive: 0xffffff, emissiveIntensity: M.litGlow, roughness: 0.3, metalness: 0.5 })));
-    glass.userData.allLit = new THREE.MeshBasicMaterial({ map: facadeTextures(7, 1, 'curtain').emissive });
-    const tops = new THREE.Mesh(mergeGeometries(parts.tops), halfFog(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.4, flatShading: true })));
-    g.add(blocks, glass, tops);
-  }
+  // Modern blocks with ribbon windows.
+  const ribbon = facadeTextures(6, M.lit * 0.8, 'ribbon');
+  const blocks = new THREE.Mesh(mergeGeometries(parts.blocks), new THREE.MeshStandardMaterial({ vertexColors: true, map: ribbon.map, emissiveMap: ribbon.emissive, emissive: 0xffffff, emissiveIntensity: M.litGlow, roughness: 0.9 }));
+  blocks.userData.allLit = new THREE.MeshBasicMaterial({ map: facadeTextures(6, 1, 'ribbon').emissive });
+  g.add(walls, blocks);
   g.add(new THREE.Mesh(mergeGeometries(parts.roofs), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, flatShading: true })));
   g.add(new THREE.Mesh(mergeGeometries(parts.chimneys), std(0xb9a58f, 0.9)));
 
-  // Landmarks on the far bank: a dome near the quay and a few bell towers.
+  // Landmarks: a dome near the far quay, bell towers, and a small dome of green copper further away.
   const stone = std(0xdccab0, 0.88);
   const slate = std(0x6c7480, 0.6, 0.3);
   {
     const p = polar(-4, 560);
+    const y = CITY.land + relief(p);
     const drum = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 10, 32), stone);
-    drum.position.set(p.x, CITY.land + 24, p.y);
+    drum.position.set(p.x, y + 24, p.y);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(9.4, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), slate);
-    dome.position.set(p.x, CITY.land + 29, p.y);
+    dome.position.set(p.x, y + 29, p.y);
     dome.scale.y = 1.25;
     const lantern = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 4, 12), stone);
-    lantern.position.set(p.x, CITY.land + 42, p.y);
+    lantern.position.set(p.x, y + 42, p.y);
     g.add(drum, dome, lantern);
   }
   [
-    [-15, 820, 38],
-    [7, 1150, 44],
-    [-9, 1600, 40],
-  ].forEach(([az, d, h]) => {
+    [-15, 820, 38, 8],
+    [7, 1150, 44, 8],
+    [-9, 1600, 40, 8],
+    [-14, 1050, 34, 7],
+    [1.5, 980, 30, 7],
+  ].forEach(([az, d, h, w]) => {
     const p = polar(az, d);
-    g.add(box(8, h, 8, stone, p.x, CITY.land + h / 2, p.y));
-    const spire = new THREE.Mesh(new THREE.ConeGeometry(5.6, 15, 4), slate);
+    const y = CITY.land + footing(p, w, w);
+    g.add(box(w, h, w, stone, p.x, y + h / 2, p.y));
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(w * 0.7, h * 0.39, 4), slate);
     spire.rotation.y = Math.PI / 4 + RIVER_TURN;
-    spire.position.set(p.x, CITY.land + h + 7.5, p.y);
+    spire.position.set(p.x, y + h + h * 0.195, p.y);
     g.add(spire);
   });
-  if (proposal) {
-    // Two more bell towers, and a small dome of green copper.
-    [
-      [-14, 1050, 34],
-      [1.5, 980, 30],
-    ].forEach(([az, d, h]) => {
-      const p = polar(az, d);
-      g.add(box(7, h, 7, stone, p.x, CITY.land + h / 2, p.y));
-      const spire = new THREE.Mesh(new THREE.ConeGeometry(4.9, 13, 4), slate);
-      spire.rotation.y = Math.PI / 4 + RIVER_TURN;
-      spire.position.set(p.x, CITY.land + h + 6.5, p.y);
-      g.add(spire);
-    });
+  {
     const p = polar(-8.5, 1350);
+    const y = CITY.land + relief(p);
     const drum = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 9, 28), stone);
-    drum.position.set(p.x, CITY.land + 20, p.y);
+    drum.position.set(p.x, y + 20, p.y);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(7.3, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), std(0x6f9a8a, 0.55, 0.3));
-    dome.position.set(p.x, CITY.land + 24.5, p.y);
+    dome.position.set(p.x, y + 24.5, p.y);
     dome.scale.y = 1.2;
     g.add(drum, dome);
   }
 
-  // Ground: the town with the river cut out of it, and our hill.
+  // Ground: the plain of the town with the river cut out of it, the relief over it, and our hill.
+  const earth = std(0x5a4f48, 0.95);
   const land = new THREE.Shape([new THREE.Vector2(-7000, -300), new THREE.Vector2(7000, -300), new THREE.Vector2(7000, 9000), new THREE.Vector2(-7000, 9000)]);
   land.holes.push(new THREE.Path([at(-250, -HALF), at(3500, -HALF), at(3500, HALF), at(-250, HALF)].map((p) => new THREE.Vector2(p.x, -p.y))));
-  g.add(new THREE.Mesh(new THREE.ShapeGeometry(land).rotateX(-Math.PI / 2).translate(0, CITY.land, 0), std(0x5a4f48, 0.95)));
+  g.add(new THREE.Mesh(new THREE.ShapeGeometry(land).rotateX(-Math.PI / 2).translate(0, CITY.land, 0), earth));
+  g.add(reliefGround(earth));
   const { top, flat, foot } = CITY.hill;
   const hill = new THREE.Mesh(new THREE.CylinderGeometry(flat, foot, top - CITY.land, 96, 1, true), std(0x4a5139, 0.95));
   hill.position.y = (top + CITY.land) / 2;
@@ -1268,20 +1279,18 @@ function buildCity(moment, variant = 'current') {
     const d = p.length();
     if (Math.abs(acrossOf(p)) < HALF + 10 || !inView(p)) continue;
     const s = 2.6 + r() * 2;
-    trees.push(new THREE.IcosahedronGeometry(1, 1).scale(s, s * 1.15, s).translate(p.x, hillY(d) + s, p.y));
+    trees.push(new THREE.IcosahedronGeometry(1, 1).scale(s, s * 1.15, s).translate(p.x, hillY(d) + relief(p) + s, p.y));
   }
-  if (town) {
-    trees.push(...town.trees);
-    const pond = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), water.material);
-    pond.scale.set(town.pond.ru, 1, town.pond.rv);
-    pond.rotation.y = RIVER_TURN;
-    // Raised a little above the lawn, itself above the ground, so that the depth buffer still tells them apart from
-    // this far away.
-    pond.position.set(town.pond.center.x, CITY.land + 1.2, town.pond.center.y);
-    const lawn = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(town.lawn.map((p) => new THREE.Vector2(p.x, -p.y)))).rotateX(-Math.PI / 2), std(0x7d9a5a, 0.95));
-    lawn.position.y = CITY.land + 0.6;
-    g.add(pond, lawn);
-  }
+  trees.push(...town.trees);
+  const pond = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), water.material);
+  pond.scale.set(town.pond.ru, 1, town.pond.rv);
+  pond.rotation.y = RIVER_TURN;
+  // Raised a little above the lawn, itself above the ground, so that the depth buffer still tells them apart from this
+  // far away.
+  pond.position.set(town.pond.center.x, CITY.land + 1.2, town.pond.center.y);
+  const lawn = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(town.lawn.map((p) => new THREE.Vector2(p.x, -p.y)))).rotateX(-Math.PI / 2), std(0x7d9a5a, 0.95));
+  lawn.position.y = CITY.land + 0.6;
+  g.add(pond, lawn);
   g.add(new THREE.Mesh(mergeGeometries(trees), std(0x3a4a31, 0.95, 0, { flatShading: true })));
   g.add(new THREE.Mesh(mergeGeometries(lamps), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc472).multiplyScalar(M.lamps) })));
 
@@ -1318,48 +1327,7 @@ function buildCity(moment, variant = 'current') {
     g.add(m);
   }
 
-  const fog = new THREE.Color(M.fog);
-  if (proposal) {
-    g.add(hillPlanes(moment));
-    onLayer(g, LAYERS.city, false);
-    return g;
-  }
-  // Hills on the horizon: rolling ranges as flat silhouettes, paler with distance. The middle range carries a slender
-  // metal tower.
-  const ranges = [
-    { d: 5600, base: 150, amp: 330, seed: 3, haze: 0.62 },
-    { d: 4200, base: 80, amp: 270, seed: 8, haze: 0.22 },
-  ];
-  ranges.forEach((rg) => {
-    const rr = rng(rg.seed);
-    const ph = [rr() * 6, rr() * 6, rr() * 6, rr() * 6];
-    rg.dist = (az) => rg.d + Math.sin(az * 0.05 + ph[3]) * 300;
-    const pos = [];
-    const steps = 320;
-    for (let i = 0; i <= steps; i++) {
-      const az = -62 + (124 * i) / steps;
-      const k = 0.5 + 0.28 * Math.sin(az * 0.07 + ph[0]) + 0.16 * Math.sin(az * 0.19 + ph[1]) + 0.07 * Math.sin(az * 0.47 + ph[2]);
-      const p = polar(az, rg.dist(az));
-      pos.push(p.x, CITY.land + rg.base + rg.amp * k, p.y, p.x, CITY.land - 60, p.y);
-    }
-    const index = [];
-    for (let i = 0; i < steps; i++) index.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setIndex(index);
-    const range = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(M.hills).lerp(fog, rg.haze), fog: false, toneMapped: false, side: THREE.DoubleSide }));
-    g.add(range);
-    rg.top = (az) => {
-      const i = Math.round(((az + 62) / 124) * steps);
-      return pos[i * 6 + 1];
-    };
-  });
-  const towerAz = -12;
-  const tp = polar(towerAz, ranges[1].dist(towerAz) - 20);
-  const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 5, 90, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(M.hills).lerp(fog, 0.22), fog: false, toneMapped: false }));
-  tower.position.set(tp.x, ranges[1].top(towerAz) + 40, tp.y);
-  g.add(tower);
-
+  g.add(hillPlanes(moment));
   onLayer(g, LAYERS.city, false);
   return g;
 }
@@ -1472,7 +1440,7 @@ export function roomEnvironmentScene(moment) {
   const pane = new THREE.Mesh(new THREE.PlaneGeometry(win.x1 - win.x0, win.y1 - win.y0), new THREE.MeshBasicMaterial({ map: sky }));
   pane.position.set((win.x0 + win.x1) / 2, (win.y0 + win.y1) / 2, wallZ);
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(M.room.lamp[0]).multiplyScalar(6) }));
-  lamp.position.set(-0.6, 1.15, -0.9);
+  lamp.position.set(-0.44, 1.1, -1);
   env.add(pane, lamp);
   return env;
 }
@@ -1500,12 +1468,11 @@ function buildLights(moment, desk) {
   // Inside: the desk lamp, the light from the window and the faint glow of the screen.
   const interior = new THREE.Group();
   interior.add(all(new THREE.HemisphereLight(M.room.hemi[0], M.room.hemi[1], M.room.hemi[2])));
-  const shade = desk.lamp.userData.shade;
+  const lampLight = desk.lamp.userData.light;
   desk.group.updateMatrixWorld(true);
-  const spot = all(new THREE.SpotLight(M.room.lamp[0], M.room.lamp[1], 4, 0.95, 0.85, 2));
-  shade.getWorldPosition(spot.position);
-  spot.position.y -= 0.02;
-  spot.target.position.set(spot.position.x + 0.28, ROOM.deskY, spot.position.z + 0.28);
+  const spot = all(new THREE.SpotLight(M.room.lamp[0], M.room.lamp[1], 4, 0.8, 0.75, 2));
+  lampLight.getWorldPosition(spot.position);
+  spot.target.position.copy(spot.position).addScaledVector(lampLight.userData.axis.clone().transformDirection(desk.lamp.matrixWorld), 0.8);
   spot.castShadow = true;
   spot.shadow.mapSize.set(2048, 2048);
   spot.shadow.bias = -0.0004;
@@ -1558,11 +1525,11 @@ function buildLights(moment, desk) {
 
 // ---------- Assembly ----------
 
-export function createOffice(moment, { rose, city: variant = 'current' } = {}) {
+export function createOffice(moment, { rose } = {}) {
   const scene = new THREE.Scene();
   const room = buildRoom();
   const desk = buildDesk(rose);
-  const city = buildCity(moment, variant);
+  const city = buildCity(moment);
   scene.add(room, desk.group, city);
   const lights = buildLights(moment, desk);
   scene.add(lights.exterior, lights.interior);
