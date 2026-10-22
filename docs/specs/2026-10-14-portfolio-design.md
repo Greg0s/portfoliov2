@@ -187,7 +187,7 @@ src/
 public/
   models/               petit-prince.glb (version optimisée)
   images/               rendus de repli de la planète, photos du contact
-  cv/                   CV en PDF (FR et EN)
+  cv/                   CV en PDF (en anglais, seule version)
 tests/
   unit/                 Vitest
   e2e/                  Playwright
@@ -245,7 +245,7 @@ Claude rédige une première version des études de cas en français et en angla
 
 - les vidéos en boucle des 8 projets ;
 - les trois photos du contact en haute définition (2 400 px de large au moins) ;
-- l'URL LinkedIn à jour, le CV en français, sans numéro de téléphone (fournis : le CV en anglais sans numéro, gardé dans les fichiers du canevas, et l'adresse email à afficher, contact@gregoiretinn.es) ;
+- l'URL LinkedIn à jour (fournis : le CV, en anglais seulement et sans numéro de téléphone, gardé dans les fichiers du canevas, et l'adresse email à afficher, contact@gregoiretinn.es) ;
 - les années et rôles à confirmer, en particulier pour Le Petit Prince et Obaine, et l'adresse en ligne de Lyrix.
 
 ## 9. Qualité

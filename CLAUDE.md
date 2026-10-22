@@ -12,7 +12,8 @@ canvas, and the site itself (not started yet) will be built from the specs in `d
     projects. It overrides the main spec's home layout.
   - `2026-10-21-maquette-v3-bureau.md` — v3 mockup: the office scene that ends the journey (Contact). §12 gives the
     build order and where it stands.
-- `docs/prototypes/petit-prince/` — Three.js prototype of the Little Prince planet; versions the web model.
+- `docs/prototypes/petit-prince/` — Three.js prototype of the Little Prince planet; versions the web model and renders
+  the layers the mockup animates (the scarf in the wind, the rose).
 - `docs/prototypes/bureau/` — Three.js office scene, the final version the site will reuse, rendered headless into
   the layered images the mockup shows.
 - `docs/prototypes/outils/` — tools to check and screenshot canvas components outside the canvas.

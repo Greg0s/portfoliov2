@@ -30,6 +30,8 @@ Ce même recul finit dans un bureau : la caméra repasse par la fenêtre et s'ar
 | 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                           |
 | 12  | Projet suivant           | directement l'étude suivante, par une plongée dans son image                                         |
 | 13  | Indice de clic           | sur ordinateur, un curseur « Voir le projet » en disque clair ; sur mobile, une pastille sur l'image |
+| 14  | Appel de l'ouverture     | un seul, en bas au centre : « Voir les projets » (22 octobre 2026)                                   |
+| 15  | Liens de l'en-tête       | un fondu au noir, rapide, quel que soit le lien (22 octobre 2026)                                    |
 
 ## 3. Le canevas v3
 
@@ -50,6 +52,8 @@ La scène (étoiles, planète, cartes, cartels, textes) est un seul composant, u
 
 - **Espace** : perspective CSS. La planète est l'objet le plus lointain et sert de point de fuite. Les projets sont posés le long du trajet, entre la planète et la position finale de la caméra. Trois couches d'étoiles (environ 60, 40 et 20) remplissent le volume à des profondeurs croissantes.
 - **Recul** : la caméra ne fait que reculer. La planète, posée à gauche sur l'ouverture (600 px) avec son décor d'étoiles et de planètes lumineuses, glisse vers le centre en s'éloignant, jusqu'à n'être plus qu'une petite lumière floue. Les étoiles proches défilent plus vite que les lointaines.
+- **Petits mondes** : seize sur ordinateur, treize sur mobile, de la même famille que le décor de la planète : disques lumineux, planètes à anneau (vu de biais, ou par la tranche comme un trait), une planète et sa lune, petites étoiles à cinq branches, tous blancs. Posés entre les projets, en haut et en bas de l'image ou sur le côté libre, à l'écart des cartes et des cartels, ils arrivent de derrière, passent et s'éloignent vers la planète avec les étoiles. Discrets : opacité de 0,5 à 0,75, flous hors du plan net comme les cartes, ils flottent de quelques pixels. Ajoutés le 22 octobre 2026 pour l'immersion.
+- **Le vent sur la planète** : l'écharpe du Petit Prince flotte doucement, une vague qui court du cou jusqu'au bout du ruban (une boucle de 6 s, en 96 images rendues par le prototype `docs/prototypes/petit-prince`, `npm run vent`) ; toutes les 7 à 14 s, un coup de vent fait plier un peu la rose (5° au plus, en une oscillation amortie de 2,8 s) et presse l'écharpe un instant. Avec « Réduire les animations », et dans le storyboard, la planète reste le rendu fixe.
 - **Vie d'une carte** : elle arrive par-dessus l'épaule, tout près et floue, en fondu ; elle devient nette quand elle occupe environ un tiers de la largeur de l'écran (de 30 à 38 % selon la carte) ; puis elle repart vers la planète en rapetissant, en se floutant et en s'estompant.
 - **Ancres** : le défilement s'arrête toujours sur une ancre : l'ouverture, chacun des huit projets (carte nette), puis le contact. Un geste (molette, pavé tactile, doigt, clavier) mène à l'ancre suivante ou précédente ; on ne peut pas rester entre deux.
 - **Paliers** : sur le tronçon de chaque projet, la position de la caméra suit `f(s) = s + k · sin(2πs) / 2π`, avec `s` la progression dans le tronçon (de 0 à 1) et `k = 0,75`. Le recul tombe à 25 % de sa vitesse moyenne au milieu du tronçon, quand la carte est nette, et monte à 175 % entre deux projets, sans à-coup. Avec les ancres, cette courbe rythme le passage d'une ancre à l'autre : départ et arrivée en douceur, accélération entre les deux.
@@ -84,10 +88,11 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 
 ## 6. L'ouverture et ce qui reste à l'écran
 
-- **Ouverture** : celle de la v2. La planète à gauche, éclairée selon l'heure ; à droite le nom, le métier animé (Libre Franklin italique léger), « Je code des images. », la phrase d'accroche et « Voir les projets ↓ », qui mène à l'ancre du premier projet.
+- **Ouverture** : celle de la v2. La planète à gauche, éclairée selon l'heure ; à droite le nom, le métier animé (Libre Franklin italique léger), « Je code des images. » et la phrase d'accroche.
 - **Texte** : reste net et immobile pendant que la planète commence à reculer, puis s'efface en fondu, avec une montée de quelques pixels, juste avant que le premier projet devienne net.
-- **En-tête** : fixe pendant tout le parcours : le nom, Projets (premier projet), Contact (fin du parcours), FR/EN.
-- **Invitation à défiler** : en bas au centre de l'ouverture, le libellé « Défiler » et un trait qui descend lentement ; disparaît au premier mouvement.
+- **En-tête** : fixe pendant tout le parcours : le nom (retour à l'ouverture), Projets (premier projet), Contact (fin du parcours), FR/EN.
+- **Passage par le noir** : tout clic sur un lien de l'en-tête (le nom, Projets, Contact, et sur mobile les liens du menu) passe par le noir, quelle que soit la distance : l'image s'éteint en 0,25 s (`cubic-bezier(0.32, 0, 0.67, 0)`), la caméra saute à destination, puis l'image revient en 0,35 s (`cubic-bezier(0.33, 1, 0.68, 1)`). Une étude de cas ouverte ou le menu se ferment dans le noir ; le lien « Contact » du bas d'une étude de cas fait de même. On arrive au contact directement sur la place assise, avec l'étoile filante d'accueil si elle n'a pas encore été vue. Déjà à destination, un clic ne fait rien. « Retour aux projets » garde la plongée inverse.
+- **Appel à l'action** : un seul, en bas au centre de l'ouverture, sur ordinateur comme sur téléphone : « Voir les projets » en petites capitales et un trait qui descend lentement. Un clic fait glisser la caméra jusqu'au premier projet, comme un défilement ; l'appel disparaît au premier mouvement (et sort alors de l'ordre de tabulation).
 
 ## 7. La fin : le contact dans le vide
 
