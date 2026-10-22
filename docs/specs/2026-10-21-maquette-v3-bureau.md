@@ -78,7 +78,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
   - l'email (ou « Copier ») : c'est l'application de messagerie qui s'ouvre, de la même façon depuis sa propre icône, sur une fenêtre « Nouveau message » adressée à son email, plus petite que l'écran ; si Firefox était ouvert, il se réduit en même temps.
 - **Si la souris reste sur un lien**, la page défile doucement vers le bas au bout d'environ une seconde, jusqu'à sa fin en 5 à 12 s, d'un mouvement lent au départ et à l'arrivée ; chaque nouvelle page repart du haut, et rien ne défile avec le mouvement réduit.
 - **D'un lien à l'autre**, la fenêtre reste ouverte et Firefox passe à l'onglet du lien survolé. **Quand la souris quitte les liens**, elle se réduit dans la barre des tâches après 0,6 s.
-- **Les pages** sont des aperçus simplifiés (la mise en page de chaque site avec le nom, le portrait et des photos de Grégoire, sans reproduire les logos), en attendant les vraies captures ; Firefox est en thème sombre, comme la barre des tâches. Les captures que fournira Grégoire prendront la place de la page dans la fenêtre de Firefox, dont la zone visible mesure 1280 × 670 px : affichées sur 1280 px de large (mode adaptatif de Firefox), capturées en page entière, pour le défilement, à l'échelle 2 (2560 px de large), au zoom 100 %, en navigation privée (la vue d'un visiteur, sans les menus du propriétaire), sans notification ni contenu d'autres personnes ; le CV vient directement du PDF.
+- **Les pages** sont les captures de Grégoire, affichées sur 1280 px de large : GitHub et Instagram, vus par un visiteur, et le CV, le PDF tel que Firefox l'affiche à 100 % (794 × 1123 px, sur fond gris foncé). LinkedIn reste un aperçu simplifié (la mise en page du site, sans en reproduire le logo) en attendant sa capture. Firefox est en thème sombre, comme la barre des tâches. Les captures prennent la place de la page dans la fenêtre de Firefox, dont la zone visible mesure 1280 × 670 px : affichées sur 1280 px de large (mode adaptatif de Firefox), capturées en page entière, pour le défilement, à l'échelle 2 (2560 px de large), au zoom 100 %, en navigation privée (la vue d'un visiteur, sans les menus du propriétaire), sans notification ni contenu d'autres personnes ; le CV vient directement du PDF.
 - **Mobile** : le bureau de Windows seul ; les liens s'ouvrent directement.
 
 ## 7. Le mouvement et la vie dans la pièce
@@ -106,7 +106,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 10. Sur le canevas
 
-- La scène du parcours finit dans le bureau, sur ordinateur et sur mobile. Le réglage « Passage » des deux parcours remplace le saut par un simple fondu, pour comparer.
+- La scène du parcours finit dans le bureau, sur ordinateur et sur mobile. À l'essai, le réglage « Reflet » des deux parcours ajoute un reflet horizontal bleuté (anamorphique) au moment de l'éclat du saut.
 - Un nouveau plan de travail, « Bureau — aube et crépuscule », montre les deux moments côte à côte, sur ordinateur et sur mobile, lisibles sur téléphone. Le composant « Bureau » (la scène en HTML sur les couches rendues) sert à ce plan et à la fin du parcours.
 - Storyboard : l'image 7 devient l'arrivée au bureau ; une image s'ajoute avec le navigateur ouvert sur un aperçu.
 - La charte passe à deux lumières.
@@ -114,7 +114,6 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 ## 11. Hors périmètre
 
 - Le contenu des posters et des photos, et donc leurs formes définitives.
-- Les vraies captures des pages LinkedIn, GitHub, CV et Instagram.
 - Le rendu en temps réel du site final, qui reprendra la scène en code.
 
 ## 12. Ordre de construction
@@ -122,7 +121,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 1. La scène Three.js du bureau (pièce, objets, ville), ses deux lumières et les rendus en couches, sur ordinateur et sur mobile. **Fait.**
 2. Le plan de travail « Bureau — aube et crépuscule », pour valider l'image. **Fait, image validée.**
 3. L'arrivée dans la scène du parcours (ciel, ville, fenêtre, pièce) et le contact dans le ciel. **Construite, en attente de validation.**
-4. L'écran : bureau de Windows, ouverture du navigateur et aperçus. **Fait ; les vraies captures des pages remplaceront les aperçus.**
+4. L'écran : bureau de Windows, ouverture du navigateur et aperçus. **Fait, avec les vraies pages GitHub et Instagram et le CV ; la capture de LinkedIn est attendue.**
 5. Le mobile.
 6. Les deux moments sur tout le site (réglage « heure », charte).
 7. Le storyboard.
