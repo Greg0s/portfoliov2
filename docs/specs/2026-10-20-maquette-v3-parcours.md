@@ -25,7 +25,7 @@ Ce même recul finit dans un bureau : la caméra repasse par la fenêtre et s'ar
 | 6   | Fin                      | le contact dans le vide, sans photo                                                                  |
 | 7   | Ouvrir un projet         | plongée dans la carte ; au retour, on retrouve le parcours au même endroit                           |
 | 8   | Mobile                   | le même parcours, adapté ; version allégée automatique si le téléphone peine                         |
-| 9   | Repère                   | compteur de distance depuis l'astéroïde B 612                                                        |
+| 9   | Repère                   | aucun : le compteur de distance a été retiré (22 octobre 2026)                                       |
 | 10  | Maquette                 | un nouveau canevas Claude Design                                                                     |
 | 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                           |
 | 12  | Projet suivant           | directement l'étude suivante, par une plongée dans son image                                         |
@@ -44,7 +44,7 @@ Un canevas « Maquette portfolio v3 », séparé de celui de la v2, avec ces pla
 
 Les réglages ne s'affichent que dans l'éditeur, sur ordinateur. Sur téléphone, on fait défiler le parcours mobile, et le storyboard montre les moments clés d'un coup d'œil.
 
-La scène (étoiles, planète, cartes, cartels, compteur, textes) est un seul composant, utilisé par les deux parcours et par les huit images du storyboard, chacun à sa position. Comme un composant importé ne peut pas porter de styles partagés, ses animations (flottement, scintillement, dérive de la caméra) sont calculées en JavaScript à partir du temps et de la progression, et ses styles sont tous en ligne.
+La scène (étoiles, planète, cartes, cartels, textes) est un seul composant, utilisé par les deux parcours et par les huit images du storyboard, chacun à sa position. Comme un composant importé ne peut pas porter de styles partagés, ses animations (flottement, scintillement, dérive de la caméra) sont calculées en JavaScript à partir du temps et de la progression, et ses styles sont tous en ligne.
 
 ## 4. La scène et la caméra
 
@@ -54,7 +54,7 @@ La scène (étoiles, planète, cartes, cartels, compteur, textes) est un seul co
 - **Ancres** : le défilement s'arrête toujours sur une ancre : l'ouverture, chacun des huit projets (carte nette), puis le contact. Un geste (molette, pavé tactile, doigt, clavier) mène à l'ancre suivante ou précédente ; on ne peut pas rester entre deux.
 - **Paliers** : sur le tronçon de chaque projet, la position de la caméra suit `f(s) = s + k · sin(2πs) / 2π`, avec `s` la progression dans le tronçon (de 0 à 1) et `k = 0,75`. Le recul tombe à 25 % de sa vitesse moyenne au milieu du tronçon, quand la carte est nette, et monte à 175 % entre deux projets, sans à-coup. Avec les ancres, cette courbe rythme le passage d'une ancre à l'autre : départ et arrivée en douceur, accélération entre les deux.
 - **Longueur** : douze écrans et demi de défilement : l'ouverture et l'effacement du texte (un écran), un écran et quart par projet, un écran et demi pour la fin.
-- **Compteur** : en bas à gauche, dans le style des libellés de la v2 (Manrope 500, 12 px, capitales, interlettrage 0,16em), avec des chiffres alignés. « Sur l'astéroïde B 612 » tant que la caméra n'a pas bougé, puis la distance, qui croît de façon exponentielle (quelques dizaines de km au premier mouvement, environ 100 millions de km à la fin), arrondie à trois chiffres significatifs : « 3 410 km de l'astéroïde B 612 », « 12,4 millions de km de l'astéroïde B 612 ». Il suit la caméra, donc ralentit aussi sur les paliers.
+- **Compteur** : retiré le 22 octobre 2026, à la demande de Grégoire ; la distance depuis l'astéroïde B 612 n'est plus affichée.
 - **Touches « poétiques »** : la caméra dérive très légèrement (quelques pixels, une fraction de degré, sur une dizaine de secondes) ; sur ordinateur, elle s'incline de 1 à 2° vers la souris, ce qui remplace la parallaxe de la v2. La planète garde la lumière selon l'heure.
 
 ## 5. Les projets
@@ -105,7 +105,7 @@ Cette fin est remplacée par le bureau (`2026-10-21-maquette-v3-bureau.md`) ; el
 - Le même parcours au doigt, sur 390 × 844 : la planète en haut de l'ouverture, le texte en dessous.
 - Les mêmes ancres qu'à l'ordinateur, au doigt.
 - Les projets passent près du centre avec une alternance légère (5 à 8 % de décalage) ; la carte nette fait environ 78 % de la largeur, avec son cartel en dessous.
-- Le compteur en plus petit, le menu plein écran de la v2, la même plongée, le contact empilé dans le vide.
+- Le menu plein écran de la v2, la même plongée, le contact empilé dans le vide.
 - Si la cadence reste sous 40 images par seconde pendant les 3 premières secondes (le seuil de la spec principale), le site bascule sur une version allégée : la planète s'éloigne au début, puis les projets défilent en liste, sans 3D. Cette version n'est pas prototypée dans la maquette.
 
 ## 9. Animations réduites et accessibilité
