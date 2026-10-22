@@ -56,10 +56,10 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 ## 5. L'arrivée
 
 1. Après le dernier projet, la caméra continue de reculer ; les cartes passées s'éloignent vers la planète et s'effacent, comme aujourd'hui.
-2. **L'atmosphère** : le noir de l'espace se teinte peu à peu aux couleurs du moment ; la plupart des étoiles s'éteignent ; la planète reste une petite lumière floue.
-3. **La ville** monte par le bas de l'image : toits, rivière, collines. Au crépuscule, ses fenêtres s'allument en vague pendant ce temps, de la rivière vers les collines.
-4. **La fenêtre** : son cadre surgit autour de l'image, puis la pièce se déploie en reculant : le mur et les posters à gauche, le bureau, la lampe, l'écran à droite.
-5. **La place assise** : la caméra s'arrête ; le texte du contact apparaît en fondu au centre du ciel ; l'en-tête reste en haut ; le compteur s'arrête à environ 100 millions de km de l'astéroïde B 612.
+2. **L'atmosphère** : le noir de l'espace se teinte peu à peu aux couleurs du moment, le ciel arrivant par le haut dans un fondu doux ; la plupart des étoiles s'éteignent ; la planète du parcours passe le relais à celle du ciel, au même point de l'image, et reste une petite lumière floue.
+3. **La ville** monte par le bas de l'image, dans la même brume que le ciel : collines, toits, rivière, et au crépuscule le soleil couchant. Au crépuscule, ses fenêtres s'allument en vague pendant ce temps, des quartiers proches vers les collines : encore éteintes devant le front, toutes allumées un instant à son passage, puis comme sur l'image.
+4. **La fenêtre** : son cadre surgit autour de l'image, puis la pièce se déploie en reculant : le mur et les posters à gauche, le bureau, la lampe, l'écran à droite. La caméra descend un peu en reculant, si bien que le bureau monte par le bas au lieu d'envahir l'image (surtout sur mobile, où l'écran est au centre).
+5. **La place assise** : la caméra s'arrête ; le texte du contact apparaît en fondu au centre du ciel ; l'en-tête reste en haut ; le compteur s'arrête à environ 100 millions de km de l'astéroïde B 612. Une ombre légère en haut et en bas, qui vient avec le texte, garde l'en-tête, le compteur et « © 2026 Grégoire Tinnes » lisibles ; sur mobile, la ligne du © passe au-dessus du compteur.
 
 - **Durée** : le passage de l'ancre du dernier projet à celle du contact dure environ 2,5 s, même en un seul geste.
 - **Retour** : en remontant, on refait le chemin à l'envers, par la fenêtre, vers l'espace.
