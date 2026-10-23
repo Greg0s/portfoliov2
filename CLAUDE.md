@@ -15,6 +15,8 @@ specs in `docs/specs/`.
     projects. It overrides the main spec's home layout.
   - `2026-10-21-maquette-v3-bureau.md` — v3 mockup: the office scene that ends the journey (Contact). §12 gives the
     build order and where it stands.
+- `docs/plans/2026-10-23-site-implementation-plan.md` — how the site is built, step by step (main spec §11, steps 2
+  to 12): files, tasks, tests and what "done" means for each step.
 - `docs/prototypes/petit-prince/` — Three.js prototype of the Little Prince planet; versions the web model and renders
   the layers the mockup animates (the scarf in the wind, the rose).
 - `docs/prototypes/bureau/` — Three.js office scene, the final version the site will reuse, rendered headless into

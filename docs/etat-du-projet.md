@@ -1,6 +1,6 @@
 # Où en est le projet
 
-- **Mis à jour** : 23 octobre 2026 (spec principale à jour avec la v3)
+- **Mis à jour** : 23 octobre 2026 (plan d'implémentation du site)
 - **À lire en premier** dans une nouvelle conversation, juste après `CLAUDE.md`.
 
 ## La maquette v3 est terminée
@@ -18,12 +18,12 @@ Grégoire l'a validée le 23 octobre 2026 : c'est la fin de l'étape 0 de la spe
 
 1. ~~Fusionner la pull request #1 dans `main`~~ : fait.
 2. **Mettre la spec principale à jour avec la v3** : fait et validé par Grégoire le 23 octobre 2026. La spec principale reprend le parcours et le bureau (sections 4, 5.4, 5.5, 6.4, 6.5, 7.4), les images du mur et leurs crédits (7.3, 8.2), les budgets du bureau, de l'écran et du mur (9.4), les étapes de construction réécrites (11) et les risques du bureau (12). Les deux points laissés « à l'intégration » par la spec du parcours sont tranchés en 7.4 : cartes en HTML et CSS 3D par défaut, plongée par le routeur d'Astro avec une transition de vue.
-3. **Mesurer avant de choisir** (étape 1 de la spec principale). Un prototype de mesure, sur un téléphone et sur un ordinateur de milieu de gamme (images par seconde, poids, mémoire) :
+3. **Mesurer avant de choisir** (étape 1 de la spec principale) : fait le 23 octobre 2026 (`docs/prototypes/perf/RESULTS.md`) ; bureau en temps réel avec les couches en secours, cartes en CSS, étoiles en WebGL. Un prototype de mesure, sur un téléphone et sur un ordinateur de milieu de gamme (images par seconde, poids, mémoire) :
    - le bureau rendu en temps réel par la scène de `docs/prototypes/bureau/` ;
    - le parcours avec ses cartes floutées.
 
    Le résultat fixe l'architecture du bureau (temps réel partout, couches pré-rendues comme dans la maquette, ou un mélange) et celle des cartes (CSS ou WebGL).
-4. **Construire le site** étape par étape (spec principale, section 11), à partir de l'étape 2 : les fondations (Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement).
+4. **Construire le site** étape par étape (spec principale, section 11), à partir de l'étape 2 : les fondations (Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement). Le plan détaillé, avec les fichiers, les tâches et les tests de chaque étape, est dans `docs/plans/2026-10-23-site-implementation-plan.md`.
 
 ## Performance et qualité du code
 
