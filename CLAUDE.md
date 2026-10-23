@@ -1,12 +1,18 @@
 # Portfolio v2 — Grégoire Tinnes
 
-Grégoire Tinnes's portfolio site. The v3 mockup, built in a Claude Design canvas, was validated on 23 October 2026,
-and the main spec now includes it. Next come a performance-measurement prototype, then the site itself, built from the
-specs in `docs/specs/`.
+Grégoire Tinnes's portfolio site: a static Astro site at the root of this repository, built step by step from the
+specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a Claude Design canvas, was validated on
+23 October 2026; the performance measurement (step 1) is done; the foundations (step 2) are in place.
 `docs/etat-du-projet.md` says where things stand and what comes next: read it first.
 
 ## Repository map
 
+- `src/` — the site: `pages/`, `layouts/`, `lib/url.ts` (`withBase`, the only way to build an internal URL); main
+  spec §7.2 gives the full layout to come.
+- `public/` — files served as they are. `scripts/budgets.ts` — the budgets of main spec §9.4, checked on `dist/`.
+- `tests/unit/` (Vitest) and `tests/e2e/` (Playwright, on the built site, `desktop` 1440 × 900 and `mobile` Pixel 7).
+- `.github/workflows/` — `ci.yml` (every push and pull request) and `deploy.yml` (push to `main` → GitHub Pages,
+  preview at https://greg0s.github.io/portfoliov2/).
 - `docs/etat-du-projet.md` — where the project stands, what comes next, what Grégoire still has to provide.
 - `docs/specs/` — design specs, in French, the source of truth. Read the relevant one before any change.
   - `2026-10-14-portfolio-design.md` — main spec: content, art direction, 3D scenes (§6), stack and architecture
@@ -41,10 +47,23 @@ specs in `docs/specs/`.
 - Headless rendering uses Playwright's Chromium; set `CHROMIUM_PATH` if Playwright's browsers aren't installed.
 - `renders/` folders are generated and gitignored.
 
-## The site (to come)
+## Working on the site
 
-- Stack and layout: main spec §7 (static Astro, strict TypeScript, Three.js, GSAP, Lenis, pnpm, Node 24).
-- Checks to run before calling a change done: main spec §9.
+- Node 24 and pnpm, pinned in `package.json` (`corepack enable`); `.npmrc` sets `engine-strict`. Stack and layout:
+  main spec §7 (static Astro, strict TypeScript, Three.js, GSAP, Lenis).
+- Commands: `pnpm dev`, `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm format` / `pnpm format:check`, `pnpm check`,
+  `pnpm test`, `pnpm test:e2e`, `pnpm budgets`; Lighthouse with `pnpm exec lhci autorun` (after a build).
+- Before calling a change done, run what CI runs, in this order: lint, format:check, check, test, build, budgets,
+  test:e2e (main spec §9). Lighthouse warns until step 7 and fails from step 7 on.
+- The site lives under the base path `/portfoliov2/` until it goes live (`BASE_PATH` overrides it). Never write an
+  internal URL by hand: use `withBase()`. Playwright tests use relative paths (`en/`), resolved under the base.
+- `astro preview` keeps a lock file for one server at a time: Playwright and Lighthouse start theirs with
+  `--ignore-lock`; `pnpm exec astro preview stop` stops a background one.
+- Headless Chromium behind a proxy needs `--no-proxy-server` to reach `localhost` (e.g. for Lighthouse:
+  `--collect.settings.chromeFlags="--no-sandbox --no-proxy-server"`, with `CHROME_PATH` set to Playwright's Chromium).
+- pnpm refuses packages published less than a day ago (its release-age policy): pin the previous version rather than
+  adding an exclusion.
+- Visible changes ship with side-by-side pictures of the site and the mockup, desktop and mobile (plan §2.10).
 
 ## Conventions
 
