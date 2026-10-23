@@ -1,0 +1,10 @@
+# Generated
+dist/
+.astro/
+playwright-report/
+test-results/
+.lighthouseci/
+pnpm-lock.yaml
+
+# Separate npm packages with their own style, and their renders
+docs/prototypes/
