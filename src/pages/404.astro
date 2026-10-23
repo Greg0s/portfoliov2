@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import { withBase } from '../lib/url';
+---
+
+<Base
+  lang="fr"
+  title="Page introuvable · Page not found"
+  description="Cette page n'existe pas. This page does not exist."
+>
+  <h1>Page introuvable</h1>
+  <p>Cette page n'existe pas, ou plus.</p>
+  <a href={withBase('/')}>Retour à l'accueil</a>
+  <hr />
+  <h2 lang="en">Page not found</h2>
+  <p lang="en">This page does not exist, or no longer does.</p>
+  <a href={withBase('/en/')} lang="en" hreflang="en">
+    Back to the home page
+  </a>
+</Base>
