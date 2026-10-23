@@ -1,0 +1,8 @@
+{
+  "name": "outils-canevas",
+  "private": true,
+  "description": "Outils pour vérifier les composants du canevas Claude Design hors du canevas : contrôle du script, rendu en HTML statique, captures.",
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

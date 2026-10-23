@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rendu du bureau</title>
+<style>html,body{margin:0;background:transparent;overflow:hidden}</style>
+<script type="importmap">
+{ "imports": {
+  "three": "./node_modules/three/build/three.module.js",
+  "three/addons/": "./node_modules/three/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createOffice, makeCamera, skyTexture, roomEnvironmentScene, screenCorners, pictureCorners, toPixels, LAYERS, FRAMINGS, ROOM, SCREEN } from './scene.js';
+
+const q = new URLSearchParams(location.search);
+const moment = q.get('moment') || 'crepuscule';
+const framing = q.get('framing') || 'desktop';
+const layer = q.get('layer') || 'preview'; // city | room | desk | windows | preview
+const scale = Number(q.get('scale') || 1);
+const overscan = Number(q.get('overscan') || 0);
+// Camera overrides while looking for the framing.
+const overrides = { overscan };
+for (const k of ['fov', 'pitch', 'yaw']) if (q.has(k)) overrides[k] = Number(q.get(k));
+if (q.has('cx') || q.has('cy') || q.has('cz')) {
+  const p = FRAMINGS[framing].pos;
+  overrides.pos = [Number(q.get('cx') ?? p[0]), Number(q.get('cy') ?? p[1]), Number(q.get('cz') ?? p[2])];
+}
+
+const f = FRAMINGS[framing];
+const W = Math.round(f.w * (1 + 2 * overscan));
+const H = Math.round(f.h * (1 + 2 * overscan));
+
+RectAreaLightUniformsLib.init();
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(scale);
+renderer.setSize(W, H, false);
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+
+// The rose on the desk is the one of the planet, from Grégoire's Blender model (not versioned); without the model, the
+// scene falls back on a simplified rose.
+async function loadRose() {
+  try {
+    const gltf = await new GLTFLoader().loadAsync('../petit-prince/models/projet2.glb');
+    return gltf.scene.getObjectByName(THREE.PropertyBinding.sanitizeNodeName('pétale.003')) ?? null;
+  } catch (e) {
+    console.log('Modèle de la planète introuvable : rose simplifiée.');
+    return null;
+  }
+}
+
+const office = createOffice(moment, { rose: await loadRose() });
+const { scene } = office;
+renderer.toneMappingExposure = office.moment.room.exposure;
+const camera = makeCamera(framing, overrides);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const skyEnv = pmrem.fromEquirectangular(skyTexture(moment)).texture;
+const roomEnv = pmrem.fromScene(roomEnvironmentScene(moment), 0.04, 0.05, 20, { position: new THREE.Vector3(0, 1.2, -0.4) }).texture;
+
+// Preview only: the Windows desktop the HTML will draw on the screen, the wallpaper cropped to its format and the
+// taskbar along the bottom.
+async function dressScreen() {
+  const img = new Image();
+  img.src = 'renders/wallpaper.jpg';
+  try {
+    await img.decode();
+  } catch {
+    return;
+  }
+  const c = document.createElement('canvas');
+  c.width = 1400;
+  c.height = Math.round((1400 * SCREEN.h) / SCREEN.w);
+  const ctx = c.getContext('2d');
+  const k = Math.max(c.width / img.width, c.height / img.height);
+  ctx.drawImage(img, (c.width - img.width * k) / 2, (c.height - img.height * k) / 2, img.width * k, img.height * k);
+  const bar = 56;
+  ctx.fillStyle = 'rgba(28, 28, 30, 0.9)';
+  ctx.fillRect(0, c.height - bar, c.width, bar);
+  ['#3d8ee6', '#f2c14e', '#2f6fd6', '#2a8fe0', '#1ed760', '#22324a', '#f36f2c', '#f2f2f2', '#2b2b30'].forEach((color, i) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(c.width / 2 + (i - 4) * 52 - 15, c.height - bar / 2 - 15, 30, 30);
+  });
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'right';
+  ctx.font = '400 17px Manrope, sans-serif';
+  ctx.fillText('18:40', c.width - 64, c.height - bar / 2 - 3);
+  ctx.fillText('21/10/2026', c.width - 64, c.height - bar / 2 + 19);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  office.desk.monitor.getObjectByName('screen').material = new THREE.MeshBasicMaterial({ map: t, toneMapped: false });
+}
+
+function renderLayer(name) {
+  camera.layers.set(LAYERS[name]);
+  office.lights.exterior.visible = name === 'city';
+  office.lights.interior.visible = name !== 'city';
+  scene.environment = name === 'city' ? skyEnv : roomEnv;
+  scene.environmentIntensity = name === 'city' ? 1 : 0.7;
+  renderer.render(scene, camera);
+}
+
+// Every window of the city lit and nothing else, on black, fading with distance: the source of the windows that
+// light up now and then over the city layer.
+function renderWindows() {
+  camera.layers.set(LAYERS.city);
+  office.lights.exterior.visible = office.lights.interior.visible = false;
+  const black = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  office.city.traverse((o) => {
+    if (o.isMesh) o.material = o.userData.allLit ?? black;
+  });
+  scene.fog = new THREE.Fog(0x000000, scene.fog.near, scene.fog.far);
+  renderer.setClearColor(0x000000, 1);
+  renderer.render(scene, camera);
+}
+
+// The centre of the setting sun and its radius, in pixels, for the halo the HTML lays over the hills (dusk only).
+function sunPixels() {
+  const sun = office.city.getObjectByName('sun');
+  if (!sun) return null;
+  const c = sun.getWorldPosition(new THREE.Vector3());
+  const rim = new THREE.Vector3(0, sun.userData.radius, 0).applyMatrix4(sun.matrixWorld);
+  const [[x, y], [rx, ry]] = toPixels([c, rim], camera, W, H);
+  return [x, y, Number(Math.hypot(rx - x, ry - y).toFixed(2))];
+}
+
+// Where things land in the picture, for the HTML that goes over it.
+function meta() {
+  const px = (pts) => toPixels(pts, camera, W, H);
+  const far = (az) => new THREE.Vector3(Math.sin(az) * 1e5, camera.position.y, camera.position.z - Math.cos(az) * 1e5);
+  const { win, wallZ } = ROOM;
+  const bulb = new THREE.Vector3();
+  office.desk.lamp.getObjectByName('bulb').getWorldPosition(bulb);
+  return {
+    moment, framing, w: W, h: H, overscan, scale,
+    horizon: px([far(0)])[0][1],
+    glow: px([far((office.moment.glow.azimuth * Math.PI) / 180)])[0],
+    screen: px(screenCorners(office.desk.monitor)),
+    window: px([new THREE.Vector3(win.x0, win.y1, wallZ), new THREE.Vector3(win.x1, win.y1, wallZ), new THREE.Vector3(win.x1, win.y0, wallZ), new THREE.Vector3(win.x0, win.y0, wallZ)]),
+    bulb: px([bulb])[0],
+    sun: sunPixels(),
+    pictures: pictureCorners(office.scene).map((p) => ({ id: p.id, type: p.type, ratio: p.ratio, corners: px(p.corners) })),
+    camera: { fov: camera.fov, position: camera.position.toArray(), rotation: [camera.rotation.x, camera.rotation.y] },
+  };
+}
+
+(async () => {
+  if (layer === 'windows') {
+    renderWindows();
+    window.__image = renderer.domElement.toDataURL('image/png');
+  } else if (layer !== 'preview') {
+    renderLayer(layer);
+    window.__image = renderer.domElement.toDataURL('image/png');
+  } else {
+    if (q.get('screen') !== '0') await dressScreen();
+    const out = document.createElement('canvas');
+    out.width = W * scale;
+    out.height = H * scale;
+    const ctx = out.getContext('2d');
+    const m = meta();
+    // The sky goes from the top of the frame to the horizon, with the glow of the sun behind the hills.
+    const sky = office.moment.sky;
+    const grad = ctx.createLinearGradient(0, 0, 0, m.horizon * scale);
+    sky.forEach((c, i) => grad.addColorStop(i / (sky.length - 1), c));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, out.width, out.height);
+    const glow = ctx.createRadialGradient(m.glow[0] * scale, m.horizon * scale, 0, m.glow[0] * scale, m.horizon * scale, W * 0.32 * scale);
+    glow.addColorStop(0, office.moment.glow.color);
+    glow.addColorStop(1, 'rgba(255,220,170,0)');
+    ctx.globalAlpha = office.moment.glow.strength;
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.globalAlpha = 1;
+    for (const name of ['city', 'room', 'desk']) {
+      renderLayer(name);
+      ctx.drawImage(renderer.domElement, 0, 0);
+    }
+    window.__image = out.toDataURL('image/png');
+  }
+  window.__meta = meta();
+  window.__done = true;
+})();
+</script>
+</body>
+</html>

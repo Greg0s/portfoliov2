@@ -1,0 +1,5 @@
+node_modules/
+# The Blender export and the intermediate file stay local; the web model is versioned.
+models/*
+!models/petit-prince.glb
+renders/
