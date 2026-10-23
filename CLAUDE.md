@@ -44,7 +44,12 @@ specs in `docs/specs/`.
 
 ## Conventions
 
-- Specs, READMEs and commit messages are in French; code and code comments are in English.
+- Everything written in the repository is in English: code, comments, specs, READMEs, commit messages, branch names
+  and pull requests (Grégoire's rule, 23 October 2026). Docs still in French are translated when Grégoire asks.
+- Commit messages follow Conventional Commits with a gitmoji: `<gitmoji> <type>(<scope>): <subject>`, e.g.
+  `📝 docs(specs): update the main spec to the v3 mockup` or `✨ feat(journey): add anchor scrolling`.
+- Never mention or link Claude in commits, pull requests or branch names: no co-author or session trailers, no
+  "Generated with" footers, no `claude/` branch prefixes.
 - One branch per task, opened from `main`, with one pull request per task; Grégoire reviews and merges. Never push
   to `main`.
 - When a design decision changes, update the spec that holds it in the same change.
