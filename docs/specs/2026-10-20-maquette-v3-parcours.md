@@ -37,9 +37,9 @@ Ce même recul finit dans un bureau : la caméra repasse par la fenêtre et s'ar
 
 Un canevas « Maquette portfolio v3 », séparé de celui de la v2, avec ces plans de travail :
 
-1. **Parcours, ordinateur** (1440 × 900) : on fait défiler à l'intérieur du plan de travail pour faire reculer la caméra. Réglages : « ancre » (pour se placer sur l'une d'elles), « heure » (Heure du visiteur, Aube, Crépuscule) et, dans la section « Essais », « contact » : le texte du contact centré ou ancré à gauche (`2026-10-21-maquette-v3-bureau.md`, section 6).
+1. **Parcours, ordinateur** (1440 × 900) : on fait défiler à l'intérieur du plan de travail pour faire reculer la caméra. Réglages : « ancre » (pour se placer sur l'une d'elles) et « heure » (Heure du visiteur, Aube, Crépuscule).
 2. **Parcours, mobile** (390 × 844) : le même parcours, adapté. Mêmes réglages.
-3. **Storyboard** : huit moments clés côte à côte, lisibles sur téléphone : l'ouverture ; le début du recul ; le premier projet net ; l'entre-deux ; un projet au milieu ; le dernier projet ; le contact dans le vide ; la plongée dans une carte.
+3. **Storyboard** : huit moments clés côte à côte, lisibles sur téléphone : l'ouverture ; le début du recul ; le premier projet net ; l'entre-deux ; un projet au milieu ; le dernier projet ; le contact dans le vide ; la plongée dans une carte. Il n'est plus mis à jour depuis l'arrivée du bureau (le contact y reste dans le vide) : il n'est pas nécessaire à l'intégration.
 4. **Étude de cas** : la page de la v2, en arrivée de la plongée, avec la carte cliquée comme média d'ouverture.
 5. **Titre animé** : le composant de la v2.
 6. **Charte** : celle de la v2.
