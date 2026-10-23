@@ -5,7 +5,7 @@
 - **Statut** : spec validée par Grégoire ; maquette terminée et validée le 23 octobre 2026
 - **Fin du parcours** : le bureau de la section Contact a sa propre spec (`2026-10-21-maquette-v3-bureau.md`).
 - **Maquette** : canevas Claude Design « Maquette portfolio v3 » ([lien privé](https://claude.ai/artifact/Qm7HYAAf7d991WuXECGZue))
-- **Lien avec la spec principale** (`2026-10-14-portfolio-design.md`) : la charte « Musée de nuit » reste valable (typographie, couleurs, mouvement « Poétique », lumière selon l'heure, animations réduites automatiques). La v3 remplace la mise en page de l'accueil : les cartes flottantes à plat et le contact sur photo. La spec principale sera mise à jour quand la maquette v3 sera validée.
+- **Lien avec la spec principale** (`2026-10-14-portfolio-design.md`) : la charte « Musée de nuit » reste valable (typographie, couleurs, mouvement « Poétique », lumière selon l'heure, animations réduites automatiques). La v3 remplace la mise en page de l'accueil : les cartes flottantes à plat et le contact sur photo. La spec principale a été mise à jour avec la v3 le 23 octobre 2026 (sections 4, 5.4, 5.5, 7.4 et 11).
 
 ## 1. Intention
 
@@ -128,8 +128,10 @@ Cette fin est remplacée par le bureau (`2026-10-21-maquette-v3-bureau.md`) ; el
 
 ## 11. À trancher à l'intégration
 
-- **Les cartes dans le site** : en HTML, en 3D CSS par-dessus la scène Three.js, comme dans la maquette ; ou en plans WebGL avec texture vidéo, doublés d'un HTML invisible pour l'accessibilité. Flouter une dizaine de vidéos en CSS peut coûter cher : on mesurera sur un prototype.
-- **La plongée dans le site** : elle remplace la planète qui s'éloigne et s'assombrit (section 7.4 de la spec principale). Reste à l'enchaîner avec le routeur d'Astro, qui garde la scène d'une page à l'autre.
+Ces deux points sont repris par la spec principale (section 7.4) :
+
+- **Les cartes dans le site** : en HTML, en 3D CSS par-dessus la scène Three.js, comme dans la maquette, par défaut ; en plans WebGL avec texture vidéo, doublés d'un HTML invisible pour l'accessibilité, si le prototype de mesure (étape 1 de la spec principale) montre que flouter les vidéos en CSS coûte trop cher.
+- **La plongée dans le site** : elle remplace la planète qui s'éloigne et s'assombrit. Le routeur d'Astro garde les scènes d'une page à l'autre ; une transition de vue nommée relie la carte au média d'ouverture de l'étude de cas, et la progression du parcours est gardée dans l'historique pour le retour.
 
 ## 12. Ordre de construction de la maquette
 

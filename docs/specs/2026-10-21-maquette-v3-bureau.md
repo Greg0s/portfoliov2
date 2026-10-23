@@ -4,6 +4,7 @@
 - **Auteur** : Grégoire Tinnes, avec Claude
 - **Statut** : design validé section par section ; maquette terminée et validée par Grégoire le 23 octobre 2026 (section 12)
 - **Lien avec la spec du parcours** (`2026-10-20-maquette-v3-parcours.md`) : le bureau remplace la fin « contact dans le vide » (section 7 de cette spec). Le reste du parcours ne change pas.
+- **Lien avec la spec principale** (`2026-10-14-portfolio-design.md`) : elle reprend le bureau (sections 4, 5.4 et 6.5) ; le choix entre le rendu en temps réel et les couches pré-rendues se fait après la mesure (étape 1 de sa section 11).
 - **Références partagées par Grégoire** : un schéma de composition (posters à gauche, fenêtre au centre, écran à droite au premier plan), une image d'ambiance (un bureau devant une fenêtre au coucher du soleil, sur une ville au bord d'une rivière), la photo qui servira de fond d'écran (une ville en silhouette au coucher du soleil) et le clavier Logitech MX Keys.
 
 ## 1. Intention
@@ -129,7 +130,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 11. Hors périmètre
 
-- Le rendu en temps réel du site final, qui reprendra la scène en code.
+- Le rendu en temps réel du site final, qui reprendra la scène en code (spec principale, section 6.5).
 
 ## 12. Ordre de construction
 

@@ -1,15 +1,16 @@
 # Portfolio v2 — Grégoire Tinnes
 
-Grégoire Tinnes's portfolio site. The v3 mockup, built in a Claude Design canvas, was validated on 23 October 2026;
-next come the update of the main spec to v3, then the site itself, built from the specs in `docs/specs/`.
+Grégoire Tinnes's portfolio site. The v3 mockup, built in a Claude Design canvas, was validated on 23 October 2026,
+and the main spec now includes it. Next come a performance-measurement prototype, then the site itself, built from the
+specs in `docs/specs/`.
 `docs/etat-du-projet.md` says where things stand and what comes next: read it first.
 
 ## Repository map
 
 - `docs/etat-du-projet.md` — where the project stands, what comes next, what Grégoire still has to provide.
 - `docs/specs/` — design specs, in French, the source of truth. Read the relevant one before any change.
-  - `2026-10-14-portfolio-design.md` — main spec: content, art direction, stack and architecture (§7), content
-    Grégoire provides (§8.2), quality checks (§9), deployment (§10), build steps (§11).
+  - `2026-10-14-portfolio-design.md` — main spec: content, art direction, 3D scenes (§6), stack and architecture
+    (§7), content Grégoire provides (§8.2), quality checks (§9), deployment (§10), build steps (§11).
   - `2026-10-20-maquette-v3-parcours.md` — v3 mockup: the home page as one scroll-driven camera move through the
     projects. It overrides the main spec's home layout.
   - `2026-10-21-maquette-v3-bureau.md` — v3 mockup: the office scene that ends the journey (Contact). §12 gives the
