@@ -71,3 +71,9 @@ first-time costs (shaders, buffer uploads) that the second test no longer pays.
 - **Journey on phones**: decided by the diagnostic run.
 - **Layers budget**: lighten the windows layer (246 kB) to bring a computer set under 500 kB, since the layers remain
   the fallback.
+
+## Decision
+
+- **Office**: Grégoire chose real time with the layers as fallback (23 October 2026). Main spec §6.5 updated.
+- **Cards**: HTML and CSS. Main spec §7.4 updated.
+- **Journey on phones**: open until the diagnostic run.
