@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mesure</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0c0c0d; color: #f3f3f1; font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
+  #stage { position: fixed; inset: 0; overflow: hidden; perspective: 1000px; perspective-origin: 50% 50%; }
+  #stage > canvas { position: absolute; inset: 0; }
+  #stage > canvas.planet-canvas { inset: auto; left: 50%; top: 50%; }
+
+  /* The readout. */
+  .hud { position: fixed; z-index: 10; top: calc(8px + env(safe-area-inset-top, 0px)); left: calc(8px + env(safe-area-inset-left, 0px)); padding: 8px 10px; border-radius: 8px; background: rgba(12, 12, 13, 0.78); font: 12px/1.35 ui-monospace, Menlo, monospace; pointer-events: none; }
+  .hud-fps { font-size: 13px; }
+  .hud-fps b { font-size: 22px; font-weight: 600; }
+  .hud canvas { display: block; margin: 4px 0; width: 160px; height: 40px; }
+  .hud-lines { white-space: pre; color: #c9c9c4; }
+  pre.alone { position: fixed; inset: 0; margin: 0; padding: 16px; overflow: auto; background: #0c0c0d; color: #f3f3f1; font: 12px/1.4 ui-monospace, monospace; z-index: 20; }
+
+  /* Office. */
+  .sky { position: absolute; left: -2%; right: -2%; top: 0; height: 100%; }
+  .overlay, .layers { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .layers .layer { position: absolute; left: 0; top: 0; }
+  .quad { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; }
+  .quad img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .quad.picture { mix-blend-mode: multiply; }
+  .taskbar { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; background: rgba(28, 28, 30, 0.9); }
+  .lit { position: absolute; mix-blend-mode: screen; opacity: 0; transition: opacity 1.2s; }
+  .lit.on { opacity: 1; }
+  .star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; animation: twinkle 4s ease-in-out infinite alternate; }
+  .star.big { width: 3px; height: 3px; }
+  @keyframes twinkle { from { opacity: 0.25; } to { opacity: 0.95; } }
+
+  /* Journey. */
+  .journey .stars { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  .journey .cards, .journey .world, .journey .planet-canvas, .journey .planet-dot, .journey .cartel { position: absolute; left: 50%; top: 50%; }
+  .journey .cards { transform-style: preserve-3d; }
+  .journey .planet-canvas { -webkit-mask-image: radial-gradient(circle, #000 62%, transparent 72%); mask-image: radial-gradient(circle, #000 62%, transparent 72%); }
+  .journey canvas.gl { position: absolute; inset: 0; }
+  .card { position: absolute; left: 0; top: 0; border-radius: 20px; overflow: hidden; background: #1a1a1c; will-change: transform, filter, opacity; }
+  .card img, .card video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .card video { opacity: 0; }
+  .card.playing video { opacity: 1; }
+  .card.sharp { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55), 0 0 40px rgba(255, 255, 255, 0.12); }
+  .world { border-radius: 50%; background: radial-gradient(circle, #fff 0 30%, rgba(255, 255, 255, 0.25) 31% 60%, transparent 61%); }
+  .world.w1 { background: radial-gradient(circle, #fff 0 34%, transparent 35%); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6); }
+  .world.w2 { border-radius: 2px; transform-origin: center; background: #fff; height: 2px !important; }
+  .planet-dot { width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #fff; filter: blur(3px); opacity: 0; transition: opacity 0.4s; }
+  .cartel { width: 300px; top: 50%; left: 50%; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 2; }
+  .cartel.on { opacity: 1; transition-duration: 0.3s; }
+  .cartel h2 { margin: 0 0 6px; font: 600 28px/1.1 system-ui, sans-serif; }
+  .cartel .tag { margin: 0 0 8px; font: 600 12px/1.2 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #c9c9c4; }
+  .cartel p { margin: 0; font-size: 15px; color: #dcdcd7; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module" src="app/run.js"></script>
+</body>
+</html>
