@@ -2,7 +2,7 @@
 
 - **Date** : 20 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
-- **Statut** : spec validée par Grégoire ; maquette construite, en cours d'affinage
+- **Statut** : spec validée par Grégoire ; maquette terminée et validée le 23 octobre 2026
 - **Fin du parcours** : le bureau de la section Contact a sa propre spec (`2026-10-21-maquette-v3-bureau.md`).
 - **Maquette** : canevas Claude Design « Maquette portfolio v3 » ([lien privé](https://claude.ai/artifact/Qm7HYAAf7d991WuXECGZue))
 - **Lien avec la spec principale** (`2026-10-14-portfolio-design.md`) : la charte « Musée de nuit » reste valable (typographie, couleurs, mouvement « Poétique », lumière selon l'heure, animations réduites automatiques). La v3 remplace la mise en page de l'accueil : les cartes flottantes à plat et le contact sur photo. La spec principale sera mise à jour quand la maquette v3 sera validée.

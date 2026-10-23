@@ -2,7 +2,7 @@
 
 - **Date** : 21 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
-- **Statut** : design validé section par section ; maquette en construction (avancement en section 12)
+- **Statut** : design validé section par section ; maquette terminée et validée par Grégoire le 23 octobre 2026 (section 12)
 - **Lien avec la spec du parcours** (`2026-10-20-maquette-v3-parcours.md`) : le bureau remplace la fin « contact dans le vide » (section 7 de cette spec). Le reste du parcours ne change pas.
 - **Références partagées par Grégoire** : un schéma de composition (posters à gauche, fenêtre au centre, écran à droite au premier plan), une image d'ambiance (un bureau devant une fenêtre au coucher du soleil, sur une ville au bord d'une rivière), la photo qui servira de fond d'écran (une ville en silhouette au coucher du soleil) et le clavier Logitech MX Keys.
 
@@ -135,9 +135,9 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 1. La scène Three.js du bureau (pièce, objets, ville), ses deux lumières et les rendus en couches, sur ordinateur et sur mobile. **Fait.**
 2. Le plan de travail « Bureau — aube et crépuscule », pour valider l'image. **Fait, image validée.**
-3. L'arrivée dans la scène du parcours (ciel, ville, fenêtre, pièce) et le contact dans le ciel. **Faite, en cours de finition** ; la ville recule pendant l'entrée par la fenêtre (23 octobre 2026), avec le saut à la vitesse de la lumière ; la vague des fenêtres a été retirée et la lune ajoutée à l'aube (22 octobre 2026). Le contact dit « On s'écrit ? » ; sur ordinateur, l'adresse ouvre la messagerie et un bouton à icône la copie ; sur mobile, une bulle propose les deux (23 octobre 2026).
+3. L'arrivée dans la scène du parcours (ciel, ville, fenêtre, pièce) et le contact dans le ciel. **Faite** ; la ville recule pendant l'entrée par la fenêtre (23 octobre 2026), avec le saut à la vitesse de la lumière ; la vague des fenêtres a été retirée et la lune ajoutée à l'aube (22 octobre 2026). Le contact dit « On s'écrit ? » ; sur ordinateur, l'adresse ouvre la messagerie et un bouton à icône la copie ; sur mobile, une bulle propose les deux (23 octobre 2026).
 4. L'écran : bureau de Windows, ouverture du navigateur et aperçus. **Fait, avec les vraies pages LinkedIn, GitHub et Instagram, le CV, les vrais logos et la barre des tâches de Grégoire (douze applications).**
-5. Le mobile. **En cours de finition**, comme l'ordinateur.
+5. Le mobile. **Fait.**
 6. Les deux moments sur tout le site (réglage « heure », charte). **Fait** : jour et nuit retirés (23 octobre 2026).
 7. Le storyboard. **Abandonné** : pas nécessaire à l'intégration (23 octobre 2026).
 8. Le mur : les cadres par type, les images tirées au hasard, les cartels et le petit cadre du bureau ; la Corbeille de l'écran qui relance le tirage. **Fait** (23 octobre 2026) ; d'autres images pour chaque cadre restent à venir.

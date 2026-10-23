@@ -5,7 +5,7 @@
 - **Statut** : direction « Musée de nuit » et charte graphique validées par Grégoire sur la maquette
 - **Méthode** : la maquette est affinée jusqu'à être parfaite avant d'intégrer quoi que ce soit. Pas de page « bientôt » : le site réel n'est pas prioritaire.
 - **Maquette de référence** : canevas Claude Design ([lien privé](https://claude.ai/artifact/Wj6dMenazXWimo8dPHnPnb)) avec l'accueil (ordinateur et mobile), une étude de cas et la planche de charte. Une évolution du design se fait d'abord sur la maquette, puis dans le code.
-- **Évolution en cours** : la maquette v3, un parcours au défilement (`2026-10-20-maquette-v3-parcours.md`), remplacera la mise en page de l'accueil (5.4), une partie du mouvement (5.5) et la transition vers les études de cas (7.4). Cette spec sera mise à jour quand la maquette v3 sera validée.
+- **Évolution en cours** : la maquette v3, un parcours au défilement (`2026-10-20-maquette-v3-parcours.md`), remplacera la mise en page de l'accueil (5.4), une partie du mouvement (5.5) et la transition vers les études de cas (7.4). La maquette v3 a été validée le 23 octobre 2026 : cette spec est à mettre à jour, c'est la prochaine étape (`docs/etat-du-projet.md`).
 
 ## 1. Contexte
 

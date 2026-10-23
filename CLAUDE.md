@@ -1,10 +1,12 @@
 # Portfolio v2 — Grégoire Tinnes
 
-Grégoire Tinnes's portfolio site. The project is in its design phase: the v3 mockup is built in a Claude Design
-canvas, and the site itself (not started yet) will be built from the specs in `docs/specs/`.
+Grégoire Tinnes's portfolio site. The v3 mockup, built in a Claude Design canvas, was validated on 23 October 2026;
+next come the update of the main spec to v3, then the site itself, built from the specs in `docs/specs/`.
+`docs/etat-du-projet.md` says where things stand and what comes next: read it first.
 
 ## Repository map
 
+- `docs/etat-du-projet.md` — where the project stands, what comes next, what Grégoire still has to provide.
 - `docs/specs/` — design specs, in French, the source of truth. Read the relevant one before any change.
   - `2026-10-14-portfolio-design.md` — main spec: content, art direction, stack and architecture (§7), content
     Grégoire provides (§8.2), quality checks (§9), deployment (§10), build steps (§11).
@@ -16,7 +18,8 @@ canvas, and the site itself (not started yet) will be built from the specs in `d
   the layers the mockup animates (the scarf in the wind, the rose).
 - `docs/prototypes/bureau/` — Three.js office scene, the final version the site will reuse, rendered headless into
   the layered images the mockup shows.
-- `docs/prototypes/outils/` — tools to check and screenshot canvas components outside the canvas.
+- `docs/prototypes/outils/` — tools to check, screenshot and test the interactions of canvas components outside the
+  canvas.
 
 ## The mockup canvas
 
@@ -41,6 +44,8 @@ canvas, and the site itself (not started yet) will be built from the specs in `d
 ## Conventions
 
 - Specs, READMEs and commit messages are in French; code and code comments are in English.
+- One branch per task, opened from `main`, with one pull request per task; Grégoire reviews and merges. Never push
+  to `main`.
 - When a design decision changes, update the spec that holds it in the same change.
 - Never commit Grégoire's photos (keep them in `.design-assets/`, which is gitignored) or the Blender export
   `projet2.glb`.
