@@ -166,16 +166,17 @@ function buildRoom() {
   // A slim stone sill under the frame.
   g.add(box(W + 0.06, 0.022, 0.05, std(0xcfc6b8, 0.7), cx, win.y0 - 0.011, wallZ + 0.012, 0.004));
 
-  // The pictures stuck straight onto the wall with blu-tack (nothing shows), filling the wall left of the window, behind
-  // the contact text, the lamp and the plant if need be. Each one holds a type of image (film poster, film still,
-  // painting, photo, album cover) in the format of its type; the site lays a picture of that type over it, picked at
-  // random, so their faces are white here and take the light of the room. `at` is the top-left corner as a fraction of
-  // the desktop frame, `w` the width of the picture in metres, `ratio` its width over its height. Posters and covers
-  // are printed to the edge; photos and film stills have a thin white border, paintings a wide one, as art prints.
+  // The pictures stuck straight onto the wall with blu-tack (nothing shows), filling the wall left of the window,
+  // behind the contact text, the lamp and the plant if need be. Each one holds a type of image (film poster, film
+  // still, painting, photo, album cover) in a format close to that of its own pictures, so that they are barely
+  // cropped; the site lays one of them over it, picked at random, so their faces are white here and take the light of
+  // the room. `at` is the top-left corner as a fraction of the desktop frame, `w` the width of the picture in metres,
+  // `ratio` its width over its height. Posters and covers are printed to the edge; photos and film stills have a thin
+  // white border, paintings a wide one, as art prints.
   const cam = makeCamera('desktop');
   const frames = [
     { id: 'film', type: 'film', kind: 'print', at: [-0.0347, 0.0178], w: 0.36, ratio: 16 / 9 },
-    { id: 'peinture', type: 'peinture', kind: 'art', at: [0.1424, 0.0178], w: 0.29, ratio: 3 / 2 },
+    { id: 'peinture', type: 'peinture', kind: 'art', at: [0.1424, 0.0178], w: 0.29, ratio: 16 / 9 },
     { id: 'affiche', type: 'affiche', kind: 'poster', at: [-0.0208, 0.1889], w: 0.417, ratio: 2 / 3 },
     { id: 'photo', type: 'photo', kind: 'print', at: [0.1819, 0.1911], w: 0.195, ratio: 4 / 5 },
     { id: 'photo-paysage', type: 'photo', kind: 'print', at: [0.1819, 0.3911], w: 0.21, ratio: 4 / 3 },
