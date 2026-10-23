@@ -19,6 +19,8 @@ specs in `docs/specs/`.
   the layers the mockup animates (the scarf in the wind, the rose).
 - `docs/prototypes/bureau/` — Three.js office scene, the final version the site will reuse, rendered headless into
   the layered images the mockup shows.
+- `docs/prototypes/perf/` — performance test bench (main spec §11, step 1): the real-time office, the pre-rendered
+  office and the journey with its blurred cards, published as a private artifact that records each run.
 - `docs/prototypes/outils/` — tools to check, screenshot and test the interactions of canvas components outside the
   canvas.
 

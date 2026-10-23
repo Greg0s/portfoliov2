@@ -1,0 +1,350 @@
+<title>Banc d’essai du portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@0,500;0,600;1,300&family=Manrope:wght@400;500&display=swap">
+<style>
+  /* A single dark "night museum" look, like the site: one column of reading width, the results as a table. */
+  :root {
+    color-scheme: dark;
+    --bg: #0c0c0d;
+    --panel: #151517;
+    --line: #2a2a2e;
+    --fg: #f3f3f1;
+    --muted: #a3a39c;
+    --accent: #ffb37c;
+    --good: #8fd6a4;
+    --warn: #f2c14e;
+    --bad: #ff7a5c;
+    --display: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+    --body: 'Manrope', system-ui, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
+  main { max-width: 760px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+  h1 { margin: 0; font: italic 300 clamp(34px, 7vw, 52px)/1.05 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+  h2 { margin: 0 0 12px; font: 600 12px/1.2 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  p { margin: 0; max-width: 62ch; }
+  .lede { color: var(--muted); margin-top: 12px; }
+  section { display: grid; gap: 12px; }
+  ol.tips { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 4px; }
+  .tests { display: grid; gap: 8px; }
+  .test { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  .test input { margin-top: 4px; accent-color: var(--accent); width: 18px; height: 18px; }
+  .test b { font: 500 15px/1.3 var(--display); }
+  .test span { display: block; color: var(--muted); font-size: 13px; }
+  .test .dur { font: 12px var(--mono); color: var(--muted); white-space: nowrap; }
+  .device { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .device label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+  .device input, .device select { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+  .device .info { grid-column: 1 / -1; font: 12px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button { font: 600 14px var(--display); letter-spacing: 0.02em; border-radius: 999px; padding: 12px 22px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+  button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .note { font-size: 13px; color: var(--muted); }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font: 600 11px var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font: 600 12px var(--display); color: var(--bg); }
+  .chip.good { background: var(--good); }
+  .chip.warn { background: var(--warn); }
+  .chip.bad { background: var(--bad); }
+  .empty { padding: 14px; color: var(--muted); }
+  /* The test runs full screen on top of the page. */
+  .runner { position: fixed; inset: 0; z-index: 50; background: #000; }
+  .runner iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .runner .bar { position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; display: flex; justify-content: space-between; gap: 12px; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(12, 12, 13, 0.82); font-size: 13px; }
+  .runner .bar button { padding: 6px 14px; font-size: 12px; }
+  @media (max-width: 520px) { .device { grid-template-columns: 1fr; } }
+</style>
+
+<main>
+  <header>
+    <h1>Banc d’essai</h1>
+    <p class="lede">Chaque mesure joue une séquence du site sur ton appareil et relève les images par seconde, les images trop lentes, la mémoire et le temps de chargement. Les résultats s’enregistrent ici, et Claude les lit pour choisir l’architecture du bureau et des cartes.</p>
+  </header>
+
+  <section aria-labelledby="h-before">
+    <h2 id="h-before">Avant de lancer</h2>
+    <ol class="tips">
+      <li>Ferme les autres onglets et applications lourdes.</li>
+      <li>Ordinateur portable : une fois branché sur secteur, une fois sur batterie si tu peux.</li>
+      <li>Téléphone : tiens-le en portrait, luminosité normale, sans mode économie d’énergie.</li>
+      <li>Ne touche plus à rien pendant les deux minutes de mesure.</li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="h-device">
+    <h2 id="h-device">L’appareil</h2>
+    <div class="device">
+      <label for="device-name">Nom
+        <input id="device-name" type="text" placeholder="ex. iPhone 13, PC portable du travail" autocomplete="off">
+      </label>
+      <label for="device-power">Alimentation
+        <select id="device-power">
+          <option value="secteur">Sur secteur</option>
+          <option value="batterie">Sur batterie</option>
+        </select>
+      </label>
+      <div class="info" id="device-info">…</div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tests">
+    <h2 id="h-tests">Les mesures</h2>
+    <div class="tests" id="tests"></div>
+    <div class="actions">
+      <button class="primary" id="run" type="button">Lancer les mesures</button>
+      <span class="note" id="run-note">Environ deux minutes.</span>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-diag">
+    <h2 id="h-diag">Diagnostic, sur téléphone</h2>
+    <p class="note">Après un premier passage : le bureau préchauffé avant l’arrivée, puis le parcours sans étoiles, sans petits mondes ou sans vidéo, pour trouver ce qui le ralentit. Environ trois minutes, à lancer juste après avoir ouvert la page.</p>
+    <div class="actions">
+      <button id="run-diag" type="button">Lancer le diagnostic</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-results">
+    <h2 id="h-results">Ce passage</h2>
+    <div class="scroll"><table id="results"><thead><tr><th>Mesure</th><th>Phase</th><th>i/s</th><th>Lentes</th><th>95 % sous</th><th>GPU estimé</th><th>JS</th><th>Mise en place</th></tr></thead><tbody><tr><td colspan="8" class="empty">Les résultats s’affichent ici après les mesures.</td></tr></tbody></table></div>
+    <div class="actions">
+      <button id="copy" type="button" disabled>Copier le relevé</button>
+      <span class="note" id="save-note"></span>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-history">
+    <h2 id="h-history">Tous les passages enregistrés</h2>
+    <div class="scroll"><table id="history"><thead><tr><th>Appareil</th><th>Date</th><th>Bureau direct</th><th>Bureau couches</th><th>Parcours CSS</th><th>Parcours WebGL</th></tr></thead><tbody><tr><td colspan="6" class="empty">Aucun passage enregistré pour l’instant.</td></tr></tbody></table></div>
+  </section>
+</main>
+
+<script type="module">
+const TESTS = [
+  { id: 'office-live', title: 'Bureau en temps réel', detail: 'La scène 3D du bureau : arrivée par la fenêtre, puis la tête qui bouge. Ombres calculées une fois.', seconds: 14 },
+  { id: 'office-live-shadows', title: 'Bureau en temps réel, ombres vivantes', detail: 'La même scène, ombres recalculées à chaque image : le pire cas.', seconds: 14 },
+  { id: 'office-layers', title: 'Bureau en couches', detail: 'Les images pré-rendues de la maquette, avec la tête qui bouge et les fenêtres qui s’allument.', seconds: 14 },
+  { id: 'journey-css', title: 'Parcours, cartes en CSS', detail: 'La planète en 3D, les étoiles et les huit cartes floutées en CSS, vidéo sur la carte nette.', seconds: 25 },
+  { id: 'journey-webgl', title: 'Parcours, cartes en WebGL', detail: 'Le même parcours, cartes dessinées par WebGL avec le flou dans le rendu.', seconds: 25 },
+];
+
+// Order matters: the warmed-up office runs first, before any other scene has warmed the GPU driver's caches.
+const DIAG = [
+  { id: 'office-live-warm', title: 'Bureau en temps réel, préchauffé', seconds: 14 },
+  { id: 'journey-css', title: 'Parcours, cartes en CSS', seconds: 25 },
+  { id: 'journey-plain', title: 'Parcours sans étoiles, mondes ni vidéo', seconds: 25 },
+  { id: 'journey-novideo', title: 'Parcours sans vidéo', seconds: 25 },
+  { id: 'journey-noworlds', title: 'Parcours sans petits mondes', seconds: 25 },
+  { id: 'journey-nostars', title: 'Parcours sans étoiles', seconds: 25 },
+];
+
+const $ = (s) => document.querySelector(s);
+const store = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+};
+
+// ---------- The device ----------
+function gpuName() {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl');
+    if (!gl) return 'WebGL indisponible';
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return name;
+  } catch { return 'inconnu'; }
+}
+const device = {
+  userAgent: navigator.userAgent,
+  platform: navigator.userAgentData?.platform ?? navigator.platform ?? '',
+  mobile: navigator.userAgentData?.mobile ?? /Mobi|Android|iPhone|iPad/.test(navigator.userAgent),
+  screen: `${screen.width}×${screen.height}`,
+  devicePixelRatio,
+  cores: navigator.hardwareConcurrency ?? null,
+  memoryGB: navigator.deviceMemory ?? null,
+  gpu: gpuName(),
+};
+$('#device-info').textContent = `${device.gpu} · écran ${device.screen} à ×${device.devicePixelRatio}${device.cores ? ` · ${device.cores} cœurs` : ''}${device.memoryGB ? ` · ${device.memoryGB} Go et plus` : ''}`;
+$('#device-name').value = store.get('perf-device-name') ?? '';
+$('#device-power').value = store.get('perf-device-power') ?? 'secteur';
+$('#device-name').addEventListener('input', (e) => store.set('perf-device-name', e.target.value));
+$('#device-power').addEventListener('change', (e) => store.set('perf-device-power', e.target.value));
+
+// ---------- The list of tests ----------
+const chosen = new Set(TESTS.map((t) => t.id));
+for (const t of TESTS) {
+  const row = document.createElement('label');
+  row.className = 'test';
+  row.htmlFor = 'test-' + t.id;
+  row.innerHTML = `<input type="checkbox" id="test-${t.id}" checked><div><b></b><span></span></div><div class="dur">${t.seconds} s</div>`;
+  row.querySelector('b').textContent = t.title;
+  row.querySelector('span').textContent = t.detail;
+  row.querySelector('input').addEventListener('change', (e) => {
+    if (e.target.checked) chosen.add(t.id);
+    else chosen.delete(t.id);
+    $('#run').disabled = chosen.size === 0;
+  });
+  $('#tests').append(row);
+}
+
+// ---------- Verdicts ----------
+// 60 i/s is the target on a mid-range computer; under 40 the site switches to the light version (main spec §9.4, §6.4).
+function verdict(fps, hz) {
+  const target = Math.min(60, hz || 60);
+  if (fps >= target * 0.92) return ['good', 'fluide'];
+  if (fps >= 40) return ['warn', 'limite'];
+  return ['bad', 'trop lent'];
+}
+const chip = (fps, hz) => {
+  if (fps == null) return '–';
+  const [cls, label] = verdict(fps, hz);
+  return `<span class="chip ${cls}" title="${label}">${Math.round(fps)}</span>`;
+};
+const worstPhase = (r) => (r?.phases ? Math.min(...Object.values(r.phases).map((p) => p.fps ?? Infinity)) : null);
+
+function renderResults(results) {
+  const body = $('#results tbody');
+  body.innerHTML = '';
+  for (const r of results) {
+    if (r.error) {
+      const tr = body.insertRow();
+      tr.innerHTML = `<td></td><td colspan="7"></td>`;
+      tr.cells[0].textContent = r.title;
+      tr.cells[1].textContent = 'Erreur : ' + r.error;
+      continue;
+    }
+    Object.entries(r.phases).forEach(([phase, p], i) => {
+      const tr = body.insertRow();
+      const gpu = r.stats?.gpuTotalMB != null ? `${r.stats.gpuTotalMB} Mo` : '–';
+      const heap = r.jsHeapMB ? `${r.jsHeapMB.after} Mo` : '–';
+      tr.innerHTML = `<td></td><td></td><td>${chip(p.fps, r.refreshHz)}</td><td>${p.slowPct} %</td><td>${p.p95Ms} ms</td><td>${i ? '' : gpu}</td><td>${i ? '' : heap}</td><td>${i ? '' : `${Math.round((r.timings.importMs ?? 0) + (r.timings.setupMs ?? 0) + (r.timings.firstFrameMs ?? 0))} ms`}</td>`;
+      tr.cells[0].textContent = i ? '' : r.title + (r.interrupted ? ' (interrompue)' : '');
+      tr.cells[1].textContent = phase;
+    });
+  }
+}
+
+// ---------- Saving ----------
+let db = null;
+const dbReady = (async () => {
+  try { db = await window.claude?.use?.('db'); } catch { db = null; }
+  return db;
+})();
+
+async function loadHistory() {
+  await dbReady;
+  if (!db) return;
+  try {
+    const snap = await db.collection('runs').orderBy('at', 'desc').limit(30).get();
+    const body = $('#history tbody');
+    if (!snap.docs.length) return;
+    body.innerHTML = '';
+    for (const d of snap.docs) {
+      const run = d.data();
+      const by = Object.fromEntries((run.results ?? []).map((r) => [r.test, r]));
+      const tr = body.insertRow();
+      const cell = (id) => (by[id] ? chip(worstPhase(by[id]), by[id].refreshHz) : '–');
+      tr.innerHTML = `<td></td><td></td><td>${cell('office-live')}</td><td>${cell('office-layers')}</td><td>${cell('journey-css')}</td><td>${cell('journey-webgl')}</td>`;
+      tr.cells[0].textContent = `${run.device?.name || 'Sans nom'} · ${run.device?.power ?? ''}${run.kind === 'diagnostic' ? ' · diagnostic' : ''}`;
+      tr.cells[1].textContent = new Date(run.at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+    }
+  } catch (e) {
+    console.warn(e);
+  }
+}
+loadHistory();
+
+async function save(run) {
+  await dbReady;
+  if (!db) {
+    $('#save-note').textContent = 'Enregistrement indisponible ici : copie le relevé et envoie-le à Claude.';
+    return;
+  }
+  try {
+    await db.collection('runs').add(run);
+    $('#save-note').textContent = 'Enregistré : Claude pourra le lire.';
+    loadHistory();
+  } catch (e) {
+    $('#save-note').textContent = 'L’enregistrement a échoué (' + (e.code ?? e.message) + ') : copie le relevé et envoie-le à Claude.';
+  }
+}
+
+// ---------- Running ----------
+function runOne(test) {
+  return new Promise((resolve) => {
+    const runner = document.createElement('div');
+    runner.className = 'runner';
+    runner.innerHTML = '<iframe title="Mesure en cours"></iframe><div class="bar"><span></span><button type="button">Arrêter</button></div>';
+    const label = runner.querySelector('.bar span');
+    const done = (result) => {
+      removeEventListener('message', onMessage);
+      runner.remove();
+      resolve(result);
+    };
+    const onMessage = (e) => {
+      const m = e.data;
+      if (!m || m.source !== 'perf-run' || e.source !== runner.querySelector('iframe').contentWindow) return;
+      if (m.type === 'status') label.textContent = `${test.index}/${test.count} · ${test.title} · ${m.text}`;
+      if (m.type === 'result') done(m.result);
+      if (m.type === 'error') done({ test: test.id, title: test.title, error: m.message });
+    };
+    addEventListener('message', onMessage);
+    runner.querySelector('button').addEventListener('click', () => done({ test: test.id, title: test.title, error: 'arrêtée' , stopped: true }));
+    document.body.append(runner);
+    label.textContent = `${test.index}/${test.count} · ${test.title}`;
+    runner.querySelector('iframe').src = `run.html?test=${test.id}`;
+  });
+}
+
+let lastRun = null;
+async function runList(list, kind) {
+  $('#run').disabled = $('#run-diag').disabled = true;
+  $('#copy').disabled = true;
+  $('#save-note').textContent = '';
+  let lock = null;
+  try { lock = await navigator.wakeLock?.request('screen'); } catch {}
+  const results = [];
+  for (const [i, t] of list.entries()) {
+    const r = await runOne({ ...t, index: i + 1, count: list.length });
+    results.push(r);
+    renderResults(results);
+    if (r.stopped) break;
+    await new Promise((res) => setTimeout(res, 1200));
+  }
+  try { await lock?.release(); } catch {}
+  lastRun = {
+    kind,
+    at: new Date().toISOString(),
+    device: { ...device, name: $('#device-name').value.trim(), power: $('#device-power').value },
+    results,
+  };
+  $('#copy').disabled = false;
+  $('#run').disabled = $('#run-diag').disabled = false;
+  await save(lastRun);
+}
+$('#run').addEventListener('click', () => runList(TESTS.filter((t) => chosen.has(t.id)), 'main'));
+$('#run-diag').addEventListener('click', () => runList(DIAG, 'diagnostic'));
+
+$('#copy').addEventListener('click', async () => {
+  const text = JSON.stringify(lastRun);
+  try {
+    await navigator.clipboard.writeText(text);
+    $('#save-note').textContent = 'Relevé copié.';
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.style.width = '100%';
+    area.rows = 6;
+    $('#copy').closest('section').append(area);
+    area.select();
+    $('#save-note').textContent = 'Sélectionne le texte ci-dessous et copie-le.';
+  }
+});
+</script>
