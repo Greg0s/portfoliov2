@@ -5,6 +5,11 @@ import { createMeter, measureRefresh, jsHeapMB, round } from './meter.js';
 const TESTS = {
   'office-live': { load: () => import('./office-live.js'), title: 'Bureau en temps réel, ombres figées' },
   'office-live-shadows': { load: () => import('./office-live.js'), title: 'Bureau en temps réel, ombres recalculées', params: { shadows: 'live' } },
+  'office-live-warm': { load: () => import('./office-live.js'), title: 'Bureau en temps réel, préchauffé', params: { warm: '1' } },
+  'journey-plain': { load: () => import('./journey.js'), title: 'Parcours sans étoiles, mondes ni vidéo', variant: 'css', params: { stars: '0', worlds: '0', video: '0' } },
+  'journey-novideo': { load: () => import('./journey.js'), title: 'Parcours sans vidéo', variant: 'css', params: { video: '0' } },
+  'journey-noworlds': { load: () => import('./journey.js'), title: 'Parcours sans petits mondes', variant: 'css', params: { worlds: '0' } },
+  'journey-nostars': { load: () => import('./journey.js'), title: 'Parcours sans étoiles', variant: 'css', params: { stars: '0' } },
   'office-layers': { load: () => import('./office-layers.js'), title: 'Bureau en couches pré-rendues' },
   'journey-css': { load: () => import('./journey.js'), title: 'Parcours, cartes en CSS', variant: 'css' },
   'journey-webgl': { load: () => import('./journey.js'), title: 'Parcours, cartes en WebGL', variant: 'webgl' },

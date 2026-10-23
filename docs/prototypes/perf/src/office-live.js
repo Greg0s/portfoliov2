@@ -142,6 +142,26 @@ export async function setup({ stage, mobile, moment, params, timings }) {
     first = false;
   }
 
+  // Warm-up (`warm=1`): compile every shader and upload every buffer before the arrival, by drawing the whole scene
+  // once with frustum culling off, so that no object costs its first upload when it comes into view.
+  if (params.get('warm') === '1') {
+    t0 = performance.now();
+    const culled = [];
+    scene.traverse((o) => {
+      if (o.isMesh && o.frustumCulled) {
+        o.frustumCulled = false;
+        culled.push(o);
+      }
+    });
+    pose(0);
+    render();
+    pose(ARRIVAL);
+    render();
+    for (const o of culled) o.frustumCulled = true;
+    renderer.getContext().finish();
+    timings.warmupMs = round(performance.now() - t0);
+  }
+
   return {
     duration: ARRIVAL + SEATED,
     phaseAt: (t) => (t < ARRIVAL ? 'arrivée' : 'assis'),

@@ -102,6 +102,14 @@
     </div>
   </section>
 
+  <section aria-labelledby="h-diag">
+    <h2 id="h-diag">Diagnostic, sur téléphone</h2>
+    <p class="note">Après un premier passage : le bureau préchauffé avant l’arrivée, puis le parcours sans étoiles, sans petits mondes ou sans vidéo, pour trouver ce qui le ralentit. Environ trois minutes, à lancer juste après avoir ouvert la page.</p>
+    <div class="actions">
+      <button id="run-diag" type="button">Lancer le diagnostic</button>
+    </div>
+  </section>
+
   <section aria-labelledby="h-results">
     <h2 id="h-results">Ce passage</h2>
     <div class="scroll"><table id="results"><thead><tr><th>Mesure</th><th>Phase</th><th>i/s</th><th>Lentes</th><th>95 % sous</th><th>GPU estimé</th><th>JS</th><th>Mise en place</th></tr></thead><tbody><tr><td colspan="8" class="empty">Les résultats s’affichent ici après les mesures.</td></tr></tbody></table></div>
@@ -124,6 +132,16 @@ const TESTS = [
   { id: 'office-layers', title: 'Bureau en couches', detail: 'Les images pré-rendues de la maquette, avec la tête qui bouge et les fenêtres qui s’allument.', seconds: 14 },
   { id: 'journey-css', title: 'Parcours, cartes en CSS', detail: 'La planète en 3D, les étoiles et les huit cartes floutées en CSS, vidéo sur la carte nette.', seconds: 25 },
   { id: 'journey-webgl', title: 'Parcours, cartes en WebGL', detail: 'Le même parcours, cartes dessinées par WebGL avec le flou dans le rendu.', seconds: 25 },
+];
+
+// Order matters: the warmed-up office runs first, before any other scene has warmed the GPU driver's caches.
+const DIAG = [
+  { id: 'office-live-warm', title: 'Bureau en temps réel, préchauffé', seconds: 14 },
+  { id: 'journey-css', title: 'Parcours, cartes en CSS', seconds: 25 },
+  { id: 'journey-plain', title: 'Parcours sans étoiles, mondes ni vidéo', seconds: 25 },
+  { id: 'journey-novideo', title: 'Parcours sans vidéo', seconds: 25 },
+  { id: 'journey-noworlds', title: 'Parcours sans petits mondes', seconds: 25 },
+  { id: 'journey-nostars', title: 'Parcours sans étoiles', seconds: 25 },
 ];
 
 const $ = (s) => document.querySelector(s);
@@ -234,7 +252,7 @@ async function loadHistory() {
       const tr = body.insertRow();
       const cell = (id) => (by[id] ? chip(worstPhase(by[id]), by[id].refreshHz) : '–');
       tr.innerHTML = `<td></td><td></td><td>${cell('office-live')}</td><td>${cell('office-layers')}</td><td>${cell('journey-css')}</td><td>${cell('journey-webgl')}</td>`;
-      tr.cells[0].textContent = `${run.device?.name || 'Sans nom'} · ${run.device?.power ?? ''}`;
+      tr.cells[0].textContent = `${run.device?.name || 'Sans nom'} · ${run.device?.power ?? ''}${run.kind === 'diagnostic' ? ' · diagnostic' : ''}`;
       tr.cells[1].textContent = new Date(run.at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
     }
   } catch (e) {
@@ -286,13 +304,12 @@ function runOne(test) {
 }
 
 let lastRun = null;
-$('#run').addEventListener('click', async () => {
-  $('#run').disabled = true;
+async function runList(list, kind) {
+  $('#run').disabled = $('#run-diag').disabled = true;
   $('#copy').disabled = true;
   $('#save-note').textContent = '';
   let lock = null;
   try { lock = await navigator.wakeLock?.request('screen'); } catch {}
-  const list = TESTS.filter((t) => chosen.has(t.id));
   const results = [];
   for (const [i, t] of list.entries()) {
     const r = await runOne({ ...t, index: i + 1, count: list.length });
@@ -303,14 +320,17 @@ $('#run').addEventListener('click', async () => {
   }
   try { await lock?.release(); } catch {}
   lastRun = {
+    kind,
     at: new Date().toISOString(),
     device: { ...device, name: $('#device-name').value.trim(), power: $('#device-power').value },
     results,
   };
   $('#copy').disabled = false;
-  $('#run').disabled = false;
+  $('#run').disabled = $('#run-diag').disabled = false;
   await save(lastRun);
-});
+}
+$('#run').addEventListener('click', () => runList(TESTS.filter((t) => chosen.has(t.id)), 'main'));
+$('#run-diag').addEventListener('click', () => runList(DIAG, 'diagnostic'));
 
 $('#copy').addEventListener('click', async () => {
   const text = JSON.stringify(lastRun);

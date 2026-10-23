@@ -96,7 +96,11 @@ const BLUR_SHADER = {
     }`,
 };
 
-export async function setup({ stage, mobile, moment, variant, timings }) {
+export async function setup({ stage, mobile, moment, variant, params, timings }) {
+  // Diagnostic switches: leave out the stars, the small worlds or the videos.
+  const withStars = params.get('stars') !== '0';
+  const withWorlds = params.get('worlds') !== '0';
+  const withVideo = params.get('video') !== '0';
   const vw = stage.clientWidth;
   const vh = stage.clientHeight;
   const webgl = variant === 'webgl';
@@ -107,7 +111,7 @@ export async function setup({ stage, mobile, moment, variant, timings }) {
   const starLayers = [60, 40, 20].map((n, li) => {
     const layer = document.createElement('div');
     layer.className = 'stars';
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < (withStars ? n : 0); i++) {
       const s = document.createElement('i');
       s.className = 'star';
       s.style.left = Math.random() * 140 - 20 + '%';
@@ -121,7 +125,7 @@ export async function setup({ stage, mobile, moment, variant, timings }) {
     return { el: layer, rate: [0.25, 0.5, 1][li] };
   });
   const worlds = [];
-  const worldCount = mobile ? 16 : 21;
+  const worldCount = withWorlds ? (mobile ? 16 : 21) : 0;
   for (let i = 0; i < worldCount; i++) {
     const el = document.createElement('div');
     el.className = 'world w' + (i % 4);
@@ -300,7 +304,7 @@ export async function setup({ stage, mobile, moment, variant, timings }) {
         const dist = 1 + (p - card.at) * L;
         const visible = dist > 0.3 && dist < 7;
         const f = focus(dist);
-        const play = visible && Math.abs(dist - 1) < 0.35;
+        const play = withVideo && visible && Math.abs(dist - 1) < 0.35;
         if (play !== card.playing) {
           card.playing = play;
           if (play) card.video.play().catch(() => {});
