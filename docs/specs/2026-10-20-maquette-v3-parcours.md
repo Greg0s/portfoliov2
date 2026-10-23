@@ -37,8 +37,8 @@ Ce même recul finit dans un bureau : la caméra repasse par la fenêtre et s'ar
 
 Un canevas « Maquette portfolio v3 », séparé de celui de la v2, avec ces plans de travail :
 
-1. **Parcours, ordinateur** (1440 × 900) : on fait défiler à l'intérieur du plan de travail pour faire reculer la caméra. Réglages : « ancre » (pour se placer sur l'une d'elles) et « heure ».
-2. **Parcours, mobile** (390 × 844) : le même parcours, adapté. Réglages : « ancre » et « heure ».
+1. **Parcours, ordinateur** (1440 × 900) : on fait défiler à l'intérieur du plan de travail pour faire reculer la caméra. Réglages : « ancre » (pour se placer sur l'une d'elles), « heure » (Heure du visiteur, Aube, Crépuscule) et, dans la section « Essais », « contact » : le texte du contact centré ou ancré à gauche (`2026-10-21-maquette-v3-bureau.md`, section 6).
+2. **Parcours, mobile** (390 × 844) : le même parcours, adapté. Mêmes réglages.
 3. **Storyboard** : huit moments clés côte à côte, lisibles sur téléphone : l'ouverture ; le début du recul ; le premier projet net ; l'entre-deux ; un projet au milieu ; le dernier projet ; le contact dans le vide ; la plongée dans une carte.
 4. **Étude de cas** : la page de la v2, en arrivée de la plongée, avec la carte cliquée comme média d'ouverture.
 5. **Titre animé** : le composant de la v2.
@@ -111,7 +111,8 @@ Cette fin est remplacée par le bureau (`2026-10-21-maquette-v3-bureau.md`) ; el
 - Le même parcours au doigt, sur 390 × 844 : la planète en haut de l'ouverture, le texte en dessous.
 - Les mêmes ancres qu'à l'ordinateur, au doigt.
 - Les projets passent près du centre avec une alternance légère (5 à 8 % de décalage) ; la carte nette fait environ 78 % de la largeur, avec son cartel en dessous.
-- Le menu plein écran de la v2, la même plongée, le contact empilé dans le vide.
+- Le menu plein écran de la v2, la même plongée, le contact au bureau.
+- **Le menu s'ouvre comme on baisse la lumière d'un musée** : le fond de nuit couvre la scène en fondu (0,26 s), puis le nom et « Fermer », « Projets », « Contact » et les langues apparaissent en montant de 10 px, l'un après l'autre (0,32 s chacun, 50 ms d'écart, `cubic-bezier(0.23, 1, 0.32, 1)`). « Fermer » le referme en un seul fondu plus court (0,18 s), les mots restant en place ; un lien du menu le ferme dans le noir, avec le saut. Avec « Réduire les animations », les mots apparaissent sans monter.
 - Si la cadence reste sous 40 images par seconde pendant les 3 premières secondes (le seuil de la spec principale), le site bascule sur une version allégée : la planète s'éloigne au début, puis les projets défilent en liste, sans 3D. Cette version n'est pas prototypée dans la maquette.
 
 ## 9. Animations réduites et accessibilité

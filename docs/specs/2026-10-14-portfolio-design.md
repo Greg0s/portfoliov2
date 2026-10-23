@@ -91,17 +91,15 @@ La rigueur d'un musée d'art moderne (MoMA, MAM Paris), le calme photographique 
 
 ### 5.3 La lumière suit l'heure du visiteur
 
-L'éclairage de la planète et la teinte du ciel dépendent de l'heure locale du visiteur :
+L'éclairage de la planète et la teinte du ciel dépendent de l'heure locale du visiteur : deux moments, l'aube avant midi et le crépuscule après midi, les mêmes que ceux du bureau de la maquette v3 (les lumières du jour et de la nuit ont été retirées le 23 octobre 2026) :
 
-| Période    | Heures      | Spot                      | Ciel (décor) | Étoiles CSS | Teinte en haut de page          |
-| ---------- | ----------- | ------------------------- | ------------ | ----------- | ------------------------------- |
-| Aube       | 6 h – 9 h   | rosé `#FFC2A0`            | 55 %         | 70 %        | `rgba(255, 168, 140, 0.12)`     |
-| Jour       | 9 h – 18 h  | blanc `#FFFFFF`, plus fort | 20 %         | 35 %        | `rgba(150, 182, 255, 0.10)`     |
-| Crépuscule | 18 h – 21 h | orangé `#FFA070`          | 70 %         | 80 %        | `rgba(255, 122, 80, 0.12)`      |
-| Nuit       | 21 h – 6 h  | blanc froid `#FFF8EE`     | 100 %        | 100 %       | aucune                          |
+| Période    | Heures     | Spot             | Ciel (décor) | Étoiles CSS | Teinte en haut de page      |
+| ---------- | ---------- | ---------------- | ------------ | ----------- | --------------------------- |
+| Aube       | avant midi | rosé `#FFC2A0`   | 55 %         | 70 %        | `rgba(255, 168, 140, 0.12)` |
+| Crépuscule | après midi | orangé `#FFA070` | 70 %         | 80 %        | `rgba(255, 122, 80, 0.12)`  |
 
-- Si la période change pendant la visite, la lumière passe de l'une à l'autre en fondu, sur quelques secondes.
-- Un paramètre d'URL `?heure=aube|jour|crepuscule|nuit` force une période, pour les tests et les captures.
+- Si la période change pendant la visite (à midi), la lumière passe de l'une à l'autre en fondu, sur quelques secondes.
+- Un paramètre d'URL `?heure=aube|crepuscule` force une période, pour les tests et les captures.
 
 ### 5.4 Mise en page et composants
 
