@@ -649,9 +649,58 @@ function buildDeskFrame() {
   return g;
 }
 
-// A succulent in a white pot beside the photo frame, about the size of the frame: an echeveria, its thick leaves in a
-// rosette, in rings of 21, 13, 8 and 5 turned by the golden angle, the outer ones longer and flatter, the inner ones short
-// and upright. Modelled small, then scaled up as a whole.
+// A succulent leaf: flat and pointed, spoon-shaped (widest toward the tip, then a short point), fleshy, thicker at its
+// base, its face a little domed and its back rounder, curling up toward the tip. It lies along +z from its base at the
+// origin, face up; its tip blushes.
+function succulentLeaf(len, wid, thick, curl, base, tip, blush) {
+  const NU = 22;
+  const NV = 8;
+  const width = (u) => {
+    if (u < 0.6) return 0.42 + 0.58 * Math.sin((u / 0.6) * (Math.PI / 2));
+    const t = (u - 0.6) / 0.4;
+    return Math.sqrt(1 - t * t) * Math.pow(1 - t, 0.35);
+  };
+  const pos = [];
+  const col = [];
+  const c0 = new THREE.Color(base);
+  const c1 = new THREE.Color(tip);
+  const c = new THREE.Color();
+  [0.42, -0.72].forEach((side) => {
+    for (let i = 0; i <= NU; i++) {
+      const u = i / NU;
+      const half = (wid * width(u)) / 2;
+      const th = thick * (1 - 0.55 * u);
+      const lift = curl * u * u * len;
+      c.copy(c0).lerp(c1, blush * Math.pow(Math.max(0, (u - 0.55) / 0.45), 1.5));
+      for (let j = 0; j <= NV; j++) {
+        const v = (j / NV) * 2 - 1;
+        pos.push(v * half, lift + side * th * (1 - v * v * v * v), u * len);
+        col.push(c.r, c.g, c.b);
+      }
+    }
+  });
+  const row = NV + 1;
+  const off = (NU + 1) * row;
+  const idx = [];
+  for (let i = 0; i < NU; i++) {
+    for (let j = 0; j < NV; j++) {
+      const a = i * row + j;
+      idx.push(a, a + row, a + 1, a + 1, a + row, a + row + 1);
+      idx.push(off + a, off + a + 1, off + a + row, off + a + 1, off + a + row + 1, off + a + row);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// A succulent in a white pot beside the photo frame, about the size of the frame: an echeveria in the manner of
+// Grégoire's photo, a compact rosette of flat, pointed leaves, the outer ones spread and blushing at the tip, the inner
+// ones short, upright and brighter, in rings of 13, 8, 5 and 3 turned by the golden angle. The rosette stays within the
+// rim, so that the soil shows around it. Modelled small, then scaled up as a whole.
 function buildSucculent() {
   const g = new THREE.Group();
   const pot = [
@@ -666,30 +715,43 @@ function buildSucculent() {
     [0, 0.04],
   ].map(([x, y]) => new THREE.Vector2(x, y));
   g.add(new THREE.Mesh(new THREE.LatheGeometry(pot, 48), std(0xeeebe5, 0.55)));
-  const soil = new THREE.Mesh(new THREE.CircleGeometry(0.0246, 32), std(0x2b1f18, 1));
+  // Coarse soil, a little heaped, with a few grains on it.
+  const soil = new THREE.Mesh(new THREE.CircleGeometry(0.0246, 36), std(0x2e2119, 1));
   soil.rotation.x = -Math.PI / 2;
   soil.position.y = 0.0405;
   g.add(soil);
-  const leafGeo = new THREE.SphereGeometry(1, 14, 10);
-  const mats = [0x678f7b, 0x6f9c84, 0x83ad95, 0x9cc2a6].map((c) => std(c, 0.75));
+  const r = rng(31);
+  const grain = new THREE.IcosahedronGeometry(1, 0);
+  const grainMats = [0x3d2c20, 0x4b3828, 0x261a13].map((cc) => std(cc, 1));
+  for (let i = 0; i < 110; i++) {
+    const a = r() * Math.PI * 2;
+    const d = 0.008 + Math.sqrt(r()) * 0.0155;
+    const m = new THREE.Mesh(grain, grainMats[i % 3]);
+    const s = 0.0008 + r() * 0.0009;
+    m.scale.set(s, s * 0.7, s);
+    m.position.set(Math.cos(a) * d, 0.0408, Math.sin(a) * d);
+    m.rotation.set(r() * 3, r() * 3, r() * 3);
+    g.add(m);
+  }
+  const mat = std(0xffffff, 0.6, 0, { vertexColors: true });
   const rings = [
-    { n: 21, len: 0.036, wid: 0.0135, thick: 0.004, rise: 0.16 },
-    { n: 13, len: 0.032, wid: 0.0135, thick: 0.0042, rise: 0.34 },
-    { n: 8, len: 0.025, wid: 0.012, thick: 0.0046, rise: 0.68 },
-    { n: 5, len: 0.016, wid: 0.0095, thick: 0.0045, rise: 1.05 },
+    { n: 13, len: 0.022, wid: 0.0122, thick: 0.0044, rise: 0.55, curl: 0.2, base: 0x86b86a, tip: 0xd88a80, blush: 0.85 },
+    { n: 8, len: 0.0185, wid: 0.0115, thick: 0.0046, rise: 0.88, curl: 0.16, base: 0x7fbc56, tip: 0xc9967a, blush: 0.5 },
+    { n: 5, len: 0.0145, wid: 0.0095, thick: 0.0044, rise: 1.12, curl: 0.1, base: 0x78bf46, tip: 0x9fbe5c, blush: 0.25 },
+    { n: 3, len: 0.011, wid: 0.0078, thick: 0.004, rise: 1.3, curl: 0.06, base: 0x86c94a, tip: 0x86c94a, blush: 0 },
   ];
   const golden = Math.PI * (3 - Math.sqrt(5));
   let k = 0;
   rings.forEach((ring, j) => {
+    const geo = succulentLeaf(ring.len, ring.wid, ring.thick, ring.curl, ring.base, ring.tip, ring.blush);
     for (let i = 0; i < ring.n; i++, k++) {
       const holder = new THREE.Group();
       holder.rotation.y = k * golden;
-      holder.position.y = 0.042 + j * 0.0025;
+      holder.position.y = 0.0415 + j * 0.0022;
       const tilt = new THREE.Group();
-      tilt.rotation.x = -ring.rise;
-      const leaf = new THREE.Mesh(leafGeo, mats[j]);
-      leaf.scale.set(ring.wid / 2, ring.thick, ring.len / 2);
-      leaf.position.z = ring.len * 0.45;
+      tilt.rotation.x = -(ring.rise + (r() - 0.5) * 0.12);
+      const leaf = new THREE.Mesh(geo, mat);
+      leaf.position.z = 0.0012;
       tilt.add(leaf);
       holder.add(tilt);
       g.add(holder);
