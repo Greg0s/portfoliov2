@@ -2,7 +2,7 @@
 
 Ce dossier fabrique la scène du bureau qui termine le parcours (voir la spec `docs/specs/2026-10-21-maquette-v3-bureau.md`). La scène est en code et sert de version finale : le site la reprendra pour le rendu en temps réel.
 
-- `scene.js` : la scène Three.js (pièce, objets du bureau, ville générée, deux lumières, deux cadrages).
+- `scene.js` : la scène Three.js (pièce et cadres des images, objets du bureau, ville générée, deux lumières, deux cadrages).
 - `render.html` : rend une couche ou un aperçu complet dans une page et le récupère en image.
 - `shoot.cjs` : ouvre `render.html` dans Chromium sans interface et enregistre chaque image avec ses données de placement (`.json`).
 - `layers.mjs` : rend toutes les couches finales, les convertit en WebP et rassemble les placements dans `renders/layers/placement.json`.
@@ -42,4 +42,4 @@ Pour voir le fond d'écran sur le moniteur dans les aperçus, copier la photo de
 
 ## Les données de placement
 
-Chaque image est accompagnée d'un `.json` qui donne, en pixels CSS du cadre élargi par la marge : la ligne d'horizon, la position de la lueur du soleil, les quatre coins de l'écran (pour y caler l'écran de verrouillage en HTML), les coins de l'ouverture de la fenêtre et la position de l'ampoule (pour son halo). Le composant « Bureau » de la maquette reprend ces valeurs.
+Chaque image est accompagnée d'un `.json` qui donne, en pixels CSS du cadre élargi par la marge : la ligne d'horizon, la position de la lueur du soleil, les quatre coins de l'écran (pour y caler l'écran de verrouillage en HTML), les coins de l'ouverture de la fenêtre, la position de l'ampoule (pour son halo) et, dans `pictures`, les quatre coins de la face blanche de chaque image du mur et du petit cadre du bureau, avec son type et son format (pour y caler les images en HTML, qui s'y multiplient pour prendre la lumière de la pièce). Le composant « Bureau » de la maquette reprend ces valeurs, ramenées au cadre sans la marge.

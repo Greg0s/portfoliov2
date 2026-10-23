@@ -55,7 +55,8 @@ const PLACES = {
   pad: [0.67, -0.745, -0.15],
   mouse: [0.67, -0.775, -0.2, 0.0036],
   lamp: [-0.5, -1.04],
-  plant: [-0.62, -0.6, 0.4],
+  plant: [-0.68, -0.6, 0.4],
+  frame: [0.19, -1.07, 0.16],
   rose: [0.85, -1.04, 4.26],
   pencils: [0.8, -0.86, 0],
 };
@@ -165,42 +166,44 @@ function buildRoom() {
   // A slim stone sill under the frame.
   g.add(box(W + 0.06, 0.022, 0.05, std(0xcfc6b8, 0.7), cx, win.y0 - 0.011, wallZ + 0.012, 0.004));
 
-  // Seven pictures stuck straight onto the wall with blu-tack (nothing shows), laid out as on the composition sketch
-  // (fractions of the desktop frame), as plain swatches until their content is chosen. The sketch's lowest prints are
-  // lifted above the desk.
+  // The pictures stuck straight onto the wall with blu-tack (nothing shows), filling the wall left of the window, behind
+  // the contact text, the lamp and the plant if need be. Each one holds a type of image (film poster, film still,
+  // painting, photo, album cover) in the format of its type; the site lays a picture of that type over it, picked at
+  // random, so their faces are white here and take the light of the room. `at` is the top-left corner as a fraction of
+  // the desktop frame, `w` the width of the picture in metres, `ratio` its width over its height. Posters and covers
+  // are printed to the edge; photos and film stills have a thin white border, paintings a wide one, as art prints.
   const cam = makeCamera('desktop');
   const frames = [
-    { r: [-0.06, 0.02, 0.089, 0.14], kind: 'print', color: 0x7b8da2 },
-    { r: [0.124, 0.02, 0.225, 0.14], kind: 'print', color: 0xc4a078 },
-    { r: [-0.06, 0.17, 0.168, 0.6], kind: 'poster', color: 0x26324e },
-    { r: [0.181, 0.17, 0.274, 0.32], kind: 'poster', color: 0xae664a },
-    { r: [0.181, 0.355, 0.267, 0.66], kind: 'poster', color: 0x7e9179 },
-    { r: [-0.06, 0.63, 0.061, 0.74], kind: 'print', color: 0xd5c2a0 },
-    { r: [0.075, 0.63, 0.145, 0.74], kind: 'print', color: 0x6c5b7b },
+    { id: 'film', type: 'film', kind: 'print', at: [-0.0347, 0.0178], w: 0.36, ratio: 16 / 9 },
+    { id: 'peinture', type: 'peinture', kind: 'art', at: [0.1424, 0.0178], w: 0.29, ratio: 3 / 2 },
+    { id: 'affiche', type: 'affiche', kind: 'poster', at: [-0.0208, 0.1889], w: 0.417, ratio: 2 / 3 },
+    { id: 'photo', type: 'photo', kind: 'print', at: [0.1819, 0.1911], w: 0.195, ratio: 4 / 5 },
+    { id: 'photo-paysage', type: 'photo', kind: 'print', at: [0.1819, 0.3911], w: 0.21, ratio: 4 / 3 },
+    { id: 'pochette', type: 'pochette', kind: 'poster', at: [0.1819, 0.5322], w: 0.224, ratio: 1 },
   ];
+  const BORDER = { poster: 0, print: 0.007, art: 0.022 };
   const paper = std(0xf3efe7, 0.9);
+  const blank = std(0xffffff, 0.9);
   frames.forEach((f, i) => {
-    const a = wallPoint(cam, f.r[0], f.r[1]);
-    const b = wallPoint(cam, f.r[2], f.r[3]);
-    const w = b.x - a.x;
-    const h = a.y - b.y;
-    const x = (a.x + b.x) / 2;
-    const y = (a.y + b.y) / 2;
-    const tilt = (i % 2 ? 1 : -1) * (f.kind === 'poster' ? 0.006 : 0.014);
-    if (f.kind === 'poster') {
-      // A poster printed to the edge.
-      const sheet = box(w, h, 0.0015, std(f.color, 0.9), x, y, wallZ + 0.002);
+    const a = wallPoint(cam, f.at[0], f.at[1]);
+    const iw = f.w;
+    const ih = f.w / f.ratio;
+    const bd = BORDER[f.kind];
+    const sw = iw + 2 * bd;
+    const sh = ih + 2 * bd;
+    const x = a.x + sw / 2;
+    const y = a.y - sh / 2;
+    const tilt = (i % 2 ? 1 : -1) * (f.kind === 'poster' ? 0.006 : 0.012);
+    if (bd) {
+      const sheet = box(sw, sh, 0.0015, paper, x, y, wallZ + 0.002);
       sheet.rotation.z = tilt;
       g.add(sheet);
-    } else {
-      // A photo print with its thin white border.
-      const print = box(w, h, 0.0015, paper, x, y, wallZ + 0.002);
-      print.rotation.z = tilt;
-      g.add(print);
-      const img = box(w - 0.012, h - 0.012, 0.0015, std(f.color, 0.85), x, y, wallZ + 0.0032);
-      img.rotation.z = tilt;
-      g.add(img);
     }
+    const img = box(iw, ih, 0.0015, blank, x, y, wallZ + (bd ? 0.0032 : 0.002));
+    img.rotation.z = tilt;
+    img.name = 'picture-' + f.id;
+    img.userData = { type: f.type, w: iw, h: ih, d: 0.0015 };
+    g.add(img);
   });
   return onLayer(g, LAYERS.room);
 }
@@ -503,7 +506,7 @@ function leafGeometry(len, wid) {
   return g;
 }
 
-// A trailing heart-leaf plant in a white pot.
+// A trailing heart-leaf plant in a white pot, kept small and low in the corner so that it hides little of the wall.
 function buildPlant() {
   const g = new THREE.Group();
   const r = rng(77);
@@ -542,7 +545,7 @@ function buildPlant() {
   const [px, pz, turn] = PLACES.plant;
   const w = new THREE.Vector3(-px, 1.2 - ROOM.deskY - 0.2, -pz).normalize();
   const toViewer = new THREE.Vector3(w.x * Math.cos(turn) - w.z * Math.sin(turn), w.y + 0.5, w.x * Math.sin(turn) + w.z * Math.cos(turn)).normalize();
-  const vines = 18;
+  const vines = 14;
   for (let v = 0; v < vines; v++) {
     const a = (v / vines) * Math.PI * 2 + r() * 0.4;
     const c = Math.cos(a);
@@ -555,8 +558,8 @@ function buildPlant() {
       const drop = 0.04 + r() * 0.1;
       curve = new THREE.CubicBezierCurve3(new THREE.Vector3(c * 0.03, 0.14, sn * 0.03), new THREE.Vector3(c * 0.075, 0.215, sn * 0.075), new THREE.Vector3(c * 0.15, 0.205, sn * 0.15), new THREE.Vector3(c * out, 0.15 - drop, sn * out));
     } else {
-      const reach = 0.12 + r() * 0.12;
-      const up = 0.12 + r() * 0.16;
+      const reach = 0.1 + r() * 0.1;
+      const up = 0.07 + r() * 0.11;
       curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(c * 0.02, 0.14, sn * 0.02), new THREE.Vector3(c * reach * 0.45, 0.14 + up * 0.7, sn * reach * 0.45), new THREE.Vector3(c * reach, 0.14 + up, sn * reach));
     }
     if (!curve.getPoints(24).every(clear)) continue;
@@ -612,6 +615,35 @@ function buildPlant() {
       if (fits(leaf, kind)) g.add(leaf);
     }
   }
+  return g;
+}
+
+// A small photo frame standing on the desk, leaning back on its strut: a slim black frame around a photo in the 4:5
+// format, whose face is white here (the site lays a photo over it, picked at random).
+function buildDeskFrame() {
+  const g = new THREE.Group();
+  const iw = 0.1;
+  const ih = 0.125;
+  const bd = 0.011;
+  const ow = iw + 2 * bd;
+  const oh = ih + 2 * bd;
+  const lean = 11 * DEG;
+  const face = new THREE.Group();
+  const black = std(0x1d1b1a, 0.55);
+  face.add(box(ow, bd, 0.012, black, 0, oh - bd / 2, 0, 0.002));
+  face.add(box(ow, bd, 0.012, black, 0, bd / 2, 0, 0.002));
+  face.add(box(bd, ih, 0.012, black, -ow / 2 + bd / 2, oh / 2, 0, 0.002));
+  face.add(box(bd, ih, 0.012, black, ow / 2 - bd / 2, oh / 2, 0, 0.002));
+  face.add(box(ow - 0.004, oh - 0.004, 0.003, std(0x2a2725, 0.8), 0, oh / 2, -0.0045));
+  const img = box(iw, ih, 0.0015, std(0xffffff, 0.9), 0, oh / 2, 0.0035);
+  img.name = 'picture-bureau';
+  img.userData = { type: 'photo', w: iw, h: ih, d: 0.0015 };
+  face.add(img);
+  face.rotation.x = -lean;
+  g.add(face);
+  const strut = box(0.018, 0.12, 0.004, black, 0, 0.055, -0.045);
+  strut.rotation.x = 0.42;
+  g.add(strut);
   return g;
 }
 
@@ -756,6 +788,7 @@ function buildDesk(roseModel) {
     plant: buildPlant(),
     rose: buildRose(roseModel),
     pencils: buildPencils(),
+    frame: buildDeskFrame(),
   };
   for (const [name, o] of Object.entries(objects)) {
     const [x, z, turn, lift = 0] = PLACES[name];
@@ -1578,4 +1611,23 @@ export function screenCorners(monitor) {
     [x, -y],
     [-x, -y],
   ].map(([cx, cy]) => new THREE.Vector3(cx, cy, 0).applyMatrix4(screen.matrixWorld));
+}
+
+// The four corners of each picture's face (top-left, top-right, bottom-right, bottom-left), in world space, with its
+// type: the wall's and the one on the desk.
+export function pictureCorners(root) {
+  const out = [];
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (!o.name || !o.name.startsWith('picture-')) return;
+    const { w, h, d, type } = o.userData;
+    const corners = [
+      [-w / 2, h / 2],
+      [w / 2, h / 2],
+      [w / 2, -h / 2],
+      [-w / 2, -h / 2],
+    ].map(([cx, cy]) => new THREE.Vector3(cx, cy, d / 2).applyMatrix4(o.matrixWorld));
+    out.push({ id: o.name.slice(8), type, ratio: Number((w / h).toFixed(4)), corners });
+  });
+  return out;
 }

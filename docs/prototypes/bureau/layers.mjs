@@ -27,7 +27,7 @@ for (const f of fs.readdirSync(OUT).filter((f) => f.endsWith('.png'))) {
   const name = f.replace('.png', '');
   await sharp(`${OUT}/${f}`).webp({ quality: 86, alphaQuality: 90, effort: 6 }).toFile(`${OUT}/${name}.webp`);
   const meta = JSON.parse(fs.readFileSync(`${OUT}/${name}.json`, 'utf8'));
-  placement[meta.framing] ??= meta;
+  placement[meta.framing] = { ...meta, ...placement[meta.framing] };
 }
 fs.writeFileSync(`${OUT}/placement.json`, JSON.stringify(placement, null, 2));
 for (const f of fs.readdirSync(OUT).filter((f) => f.endsWith('.webp'))) console.log(f, Math.round(fs.statSync(`${OUT}/${f}`).size / 1024) + ' Ko');

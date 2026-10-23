@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { createOffice, makeCamera, skyTexture, roomEnvironmentScene, screenCorners, toPixels, LAYERS, FRAMINGS, ROOM, SCREEN } from './scene.js';
+import { createOffice, makeCamera, skyTexture, roomEnvironmentScene, screenCorners, pictureCorners, toPixels, LAYERS, FRAMINGS, ROOM, SCREEN } from './scene.js';
 
 const q = new URLSearchParams(location.search);
 const moment = q.get('moment') || 'crepuscule';
@@ -147,6 +147,7 @@ function meta() {
     window: px([new THREE.Vector3(win.x0, win.y1, wallZ), new THREE.Vector3(win.x1, win.y1, wallZ), new THREE.Vector3(win.x1, win.y0, wallZ), new THREE.Vector3(win.x0, win.y0, wallZ)]),
     bulb: px([bulb])[0],
     sun: sunPixels(),
+    pictures: pictureCorners(office.scene).map((p) => ({ id: p.id, type: p.type, ratio: p.ratio, corners: px(p.corners) })),
     camera: { fov: camera.fov, position: camera.position.toArray(), rotation: [camera.rotation.x, camera.rotation.y] },
   };
 }
