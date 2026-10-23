@@ -21,6 +21,8 @@
     "budgets": "node scripts/budgets.ts"
   },
   "dependencies": {
+    "@fontsource-variable/libre-franklin": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
     "astro": "^7.4.2"
   },
   "devDependencies": {

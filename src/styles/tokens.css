@@ -1,0 +1,75 @@
+/* The "Musée de nuit" charter in code (main spec §5): colours, type, easings and durations. */
+
+@property --page-tint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+:root {
+  /* Colours (§5.2) */
+  --color-bg: #0c0c0d;
+  --color-bg-deep: #060607;
+  --color-surface: #161618;
+  --color-bubble: #19191b;
+  --color-text: #f3f3f1;
+  --color-muted: #8f8f8b;
+  --color-accent: #fff;
+  --color-line: rgb(243 243 241 / 14%);
+  --color-line-strong: rgb(243 243 241 / 18%);
+  --color-menu: rgb(8 8 9 / 97%);
+
+  /* The tint at the top of the page follows the visitor's moment (§5.3) */
+  --tint-aube: rgb(255 168 140 / 12%);
+  --tint-crepuscule: rgb(255 122 80 / 12%);
+
+  /* Type (§5.1) */
+  --font-display: 'Libre Franklin Variable', 'Libre Franklin', 'Helvetica Neue', arial, sans-serif;
+  --font-text: 'Manrope Variable', 'Manrope', 'Helvetica Neue', arial, sans-serif;
+  --tracking-title: -0.035em;
+  --tracking-project: -0.02em;
+  --tracking-subtitle: -0.01em;
+  --tracking-label: 0.16em;
+  --tracking-tag: 0.06em;
+  --size-label: 12px;
+  --size-tag: 12px;
+  --size-nav: 14px;
+  --size-name: clamp(52px, 6.07vw, 88px);
+  --size-job: 27px;
+  --size-tagline: 28px;
+  --size-project: 28px;
+  --size-contact-title: 56px;
+  --size-contact-email: 24px;
+  --size-menu-link: 44px;
+  --size-body: 16px;
+
+  /* Motion (§5.5) */
+  --ease-ui: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-float: cubic-bezier(0.37, 0, 0.63, 1);
+  --ease-dive: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-cut-out: cubic-bezier(0.32, 0, 0.67, 0);
+  --ease-cut-in: cubic-bezier(0.33, 1, 0.68, 1);
+  --duration-cut-out: 250ms;
+  --duration-cut-in: 350ms;
+  --duration-menu-in: 260ms;
+  --duration-menu-out: 180ms;
+  --duration-menu-item: 320ms;
+  --stagger-menu-item: 50ms;
+  --duration-moment: 4s;
+
+  /* Layout */
+  --header-height: 80px;
+  --gutter: 64px;
+  --radius-card: 20px;
+}
+
+@media (width < 768px) {
+  :root {
+    --header-height: 64px;
+    --gutter: 20px;
+    --size-job: 23px;
+    --size-contact-title: 30px;
+    --size-contact-email: 18px;
+    --size-body: 15px;
+  }
+}
