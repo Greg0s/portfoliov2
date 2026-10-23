@@ -1,0 +1,24 @@
+---
+// A full-screen section standing for a part of the home page until it is built (steps 5 to 8).
+interface Props {
+  id: string;
+  label: string;
+}
+
+const { id, label } = Astro.props;
+---
+
+<section class="placeholder" id={id} aria-label={label}>
+  <slot />
+</section>
+
+<style>
+  .placeholder {
+    display: grid;
+    place-content: center;
+    gap: 20px;
+    min-height: 100svh;
+    padding: calc(var(--header-height) + 24px) var(--gutter) 48px;
+    text-align: center;
+  }
+</style>

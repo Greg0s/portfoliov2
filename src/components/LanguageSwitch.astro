@@ -1,0 +1,81 @@
+---
+import { alternate, locales, t, type Locale } from '../i18n';
+import { withBase } from '../lib/url';
+
+interface Props {
+  locale: Locale;
+  /** The current page's path, without the base. */
+  path: string;
+  /** `slash` puts a slash between the languages, as in the desktop header; `menu` spaces them for the thumb. */
+  variant?: 'slash' | 'menu';
+}
+
+const { locale, path, variant = 'slash' } = Astro.props;
+const label = t(locale);
+const links = locales.map((lang) => ({
+  lang,
+  current: lang === locale,
+  href: withBase(lang === locale ? path : alternate(path, lang)),
+  name: t(lang)(lang === 'fr' ? 'language.fr' : 'language.en'),
+}));
+---
+
+<ul class:list={['languages', variant]} aria-label={label('language.label')}>
+  {links.map(({ lang, current, href, name }, index) => (
+    <li>
+      {variant === 'slash' && index > 0 && <span aria-hidden="true">/</span>}
+      {current ? (
+        <a href={href} lang={lang} aria-current="page">
+          {lang.toUpperCase()}
+          <span class="visually-hidden">— {name}</span>
+        </a>
+      ) : (
+        <a href={href} lang={lang} hreflang={lang} data-lang-switch={lang}>
+          {lang.toUpperCase()}
+          <span class="visually-hidden">— {name}</span>
+        </a>
+      )}
+    </li>
+  ))}
+</ul>
+
+<style>
+  .languages {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--color-muted);
+  }
+
+  .languages li {
+    display: flex;
+    align-items: center;
+  }
+
+  .slash {
+    gap: 8px;
+  }
+
+  .slash li {
+    gap: 8px;
+  }
+
+  .menu {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .menu a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  [aria-current='page'] {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+</style>
