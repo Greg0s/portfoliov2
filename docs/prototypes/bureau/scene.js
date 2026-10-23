@@ -57,7 +57,7 @@ const PLACES = {
   lamp: [-0.5, -1.04],
   plant: [-0.68, -0.6, 0.4],
   frame: [0.19, -1.07, 0.16],
-  succulent: [0.075, -1.08, 0.3],
+  succulent: [0.05, -1.08, 0.3],
   rose: [0.85, -1.04, 4.26],
   pencils: [0.8, -0.86, 0],
 };
@@ -649,8 +649,9 @@ function buildDeskFrame() {
   return g;
 }
 
-// A mini succulent in a small terracotta pot, beside the photo frame: an echeveria, its thick leaves in a rosette, in
-// rings of 13, 8 and 5 turned by the golden angle, the outer ones longer and flatter, the inner ones short and upright.
+// A succulent in a white pot beside the photo frame, about the size of the frame: an echeveria, its thick leaves in a
+// rosette, in rings of 21, 13, 8 and 5 turned by the golden angle, the outer ones longer and flatter, the inner ones short
+// and upright. Modelled small, then scaled up as a whole.
 function buildSucculent() {
   const g = new THREE.Group();
   const pot = [
@@ -664,15 +665,16 @@ function buildSucculent() {
     [0.0248, 0.04],
     [0, 0.04],
   ].map(([x, y]) => new THREE.Vector2(x, y));
-  g.add(new THREE.Mesh(new THREE.LatheGeometry(pot, 40), std(0xb06a4c, 0.85)));
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(pot, 48), std(0xeeebe5, 0.55)));
   const soil = new THREE.Mesh(new THREE.CircleGeometry(0.0246, 32), std(0x2b1f18, 1));
   soil.rotation.x = -Math.PI / 2;
   soil.position.y = 0.0405;
   g.add(soil);
   const leafGeo = new THREE.SphereGeometry(1, 14, 10);
-  const mats = [0x6f9c84, 0x83ad95, 0x9cc2a6].map((c) => std(c, 0.75));
+  const mats = [0x678f7b, 0x6f9c84, 0x83ad95, 0x9cc2a6].map((c) => std(c, 0.75));
   const rings = [
-    { n: 13, len: 0.034, wid: 0.014, thick: 0.0042, rise: 0.3 },
+    { n: 21, len: 0.036, wid: 0.0135, thick: 0.004, rise: 0.16 },
+    { n: 13, len: 0.032, wid: 0.0135, thick: 0.0042, rise: 0.34 },
     { n: 8, len: 0.025, wid: 0.012, thick: 0.0046, rise: 0.68 },
     { n: 5, len: 0.016, wid: 0.0095, thick: 0.0045, rise: 1.05 },
   ];
@@ -682,7 +684,7 @@ function buildSucculent() {
     for (let i = 0; i < ring.n; i++, k++) {
       const holder = new THREE.Group();
       holder.rotation.y = k * golden;
-      holder.position.y = 0.043 + j * 0.003;
+      holder.position.y = 0.042 + j * 0.0025;
       const tilt = new THREE.Group();
       tilt.rotation.x = -ring.rise;
       const leaf = new THREE.Mesh(leafGeo, mats[j]);
@@ -693,6 +695,7 @@ function buildSucculent() {
       g.add(holder);
     }
   });
+  g.scale.setScalar(1.9);
   return g;
 }
 
