@@ -1,15 +1,16 @@
 # Portfolio v2 — Grégoire Tinnes
 
-Grégoire Tinnes's portfolio site. The v3 mockup, built in a Claude Design canvas, was validated on 23 October 2026;
-next come the update of the main spec to v3, then the site itself, built from the specs in `docs/specs/`.
+Grégoire Tinnes's portfolio site. The v3 mockup, built in a Claude Design canvas, was validated on 23 October 2026,
+and the main spec now includes it. Next come a performance-measurement prototype, then the site itself, built from the
+specs in `docs/specs/`.
 `docs/etat-du-projet.md` says where things stand and what comes next: read it first.
 
 ## Repository map
 
 - `docs/etat-du-projet.md` — where the project stands, what comes next, what Grégoire still has to provide.
 - `docs/specs/` — design specs, in French, the source of truth. Read the relevant one before any change.
-  - `2026-10-14-portfolio-design.md` — main spec: content, art direction, stack and architecture (§7), content
-    Grégoire provides (§8.2), quality checks (§9), deployment (§10), build steps (§11).
+  - `2026-10-14-portfolio-design.md` — main spec: content, art direction, 3D scenes (§6), stack and architecture
+    (§7), content Grégoire provides (§8.2), quality checks (§9), deployment (§10), build steps (§11).
   - `2026-10-20-maquette-v3-parcours.md` — v3 mockup: the home page as one scroll-driven camera move through the
     projects. It overrides the main spec's home layout.
   - `2026-10-21-maquette-v3-bureau.md` — v3 mockup: the office scene that ends the journey (Contact). §12 gives the
@@ -43,12 +44,18 @@ next come the update of the main spec to v3, then the site itself, built from th
 
 ## Conventions
 
-- Specs, READMEs and commit messages are in French; code and code comments are in English.
+- Everything written in the repository is in English: code, comments, specs, READMEs, commit messages, branch names
+  and pull requests (Grégoire's rule, 23 October 2026). Docs still in French are translated when Grégoire asks.
+- Commit messages follow Conventional Commits with a gitmoji: `<gitmoji> <type>(<scope>): <subject>`, e.g.
+  `📝 docs(specs): update the main spec to the v3 mockup` or `✨ feat(journey): add anchor scrolling`.
+- Never mention or link Claude in commits, pull requests or branch names: no co-author or session trailers, no
+  "Generated with" footers, no `claude/` branch prefixes.
 - One branch per task, opened from `main`, with one pull request per task; Grégoire reviews and merges. Never push
   to `main`.
 - When a design decision changes, update the spec that holds it in the same change.
-- Never commit Grégoire's photos (keep them in `.design-assets/`, which is gitignored) or the Blender export
-  `projet2.glb`.
+- Never commit the originals of Grégoire's photos or of third-party images (keep them in `.design-assets/`, which is
+  gitignored), nor the Blender export `projet2.glb`. The site may commit only the web versions it publishes, at
+  display size, with their credits (main spec §7.3, decided by Grégoire on 23 October 2026).
 - The contact email is contact@gregoiretinn.es. Never write any other address of Grégoire's (his personal ones
   included), and keep his phone number out of everything published.
 
