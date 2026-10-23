@@ -12,12 +12,12 @@ Grégoire l'a validée le 23 octobre 2026 : c'est la fin de l'étape 0 de la spe
   - `docs/specs/2026-10-14-portfolio-design.md`, la spec principale : contenu, direction artistique, architecture, qualité, mise en ligne, étapes de construction ;
   - `docs/specs/2026-10-20-maquette-v3-parcours.md` : l'accueil en un seul mouvement de caméra à travers les projets ;
   - `docs/specs/2026-10-21-maquette-v3-bureau.md` : le bureau qui termine le parcours, c'est-à-dire la section Contact (écran, mur d'images, cartels, Corbeille).
-- **Les images de la maquette** (couches rendues du bureau, captures des pages, logos, images du mur, icône de la Corbeille, fond d'écran) sont dans les fichiers de l'artefact, appelées par leur adresse `/_blob/…` dans le code des composants. Les photos de Grégoire et les images de tiers ne sont jamais versionnées.
+- **Les images de la maquette** (couches rendues du bureau, captures des pages, logos, images du mur, icône de la Corbeille, fond d'écran) sont dans les fichiers de l'artefact, appelées par leur adresse `/_blob/…` dans le code des composants. Dans la maquette, les photos de Grégoire et les images de tiers ne sont pas versionnées ; le site, lui, versionne seulement leurs versions web, celles qu'il publie (spec principale, section 7.3).
 
 ## La suite, dans l'ordre
 
 1. ~~Fusionner la pull request #1 dans `main`~~ : fait.
-2. **Mettre la spec principale à jour avec la v3** : fait le 23 octobre 2026, à valider par Grégoire. La spec principale reprend le parcours et le bureau (sections 4, 5.4, 5.5, 6.4, 6.5, 7.4), les images du mur et leurs crédits (7.3, 8.2), les budgets du bureau, de l'écran et du mur (9.4), les étapes de construction réécrites (11) et les risques du bureau (12). Les deux points laissés « à l'intégration » par la spec du parcours sont tranchés en 7.4 : cartes en HTML et CSS 3D par défaut, plongée par le routeur d'Astro avec une transition de vue.
+2. **Mettre la spec principale à jour avec la v3** : fait et validé par Grégoire le 23 octobre 2026. La spec principale reprend le parcours et le bureau (sections 4, 5.4, 5.5, 6.4, 6.5, 7.4), les images du mur et leurs crédits (7.3, 8.2), les budgets du bureau, de l'écran et du mur (9.4), les étapes de construction réécrites (11) et les risques du bureau (12). Les deux points laissés « à l'intégration » par la spec du parcours sont tranchés en 7.4 : cartes en HTML et CSS 3D par défaut, plongée par le routeur d'Astro avec une transition de vue.
 3. **Mesurer avant de choisir** (étape 1 de la spec principale). Un prototype de mesure, sur un téléphone et sur un ordinateur de milieu de gamme (images par seconde, poids, mémoire) :
    - le bureau rendu en temps réel par la scène de `docs/prototypes/bureau/` ;
    - le parcours avec ses cartes floutées.

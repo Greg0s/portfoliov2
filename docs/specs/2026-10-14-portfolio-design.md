@@ -2,7 +2,7 @@
 
 - **Date** : 14 octobre 2026, révisée le 18 octobre 2026, mise à jour avec la maquette v3 le 23 octobre 2026
 - **Auteur** : Grégoire Tinnes, avec Claude
-- **Statut** : direction « Musée de nuit », charte graphique et maquette v3 validées par Grégoire (la maquette v3 le 23 octobre 2026)
+- **Statut** : direction « Musée de nuit », charte graphique et maquette v3 validées par Grégoire (la maquette v3 le 23 octobre 2026) ; cette mise à jour v3 validée le 23 octobre 2026
 - **Méthode** : la maquette est affinée jusqu'à être parfaite avant d'intégrer quoi que ce soit. Pas de page « bientôt » : le site réel n'est pas prioritaire.
 - **Maquette de référence** : le canevas Claude Design « Maquette portfolio v3 » ([lien privé](https://claude.ai/artifact/Qm7HYAAf7d991WuXECGZue)) : le parcours de l'accueil sur ordinateur et sur mobile, jusqu'au bureau, l'étude de cas, le bureau aux deux moments, le titre animé et la charte. Le canevas de la v2 n'est plus une référence. Une évolution du design se fait d'abord sur la maquette, puis dans le code.
 - **Specs détaillées de la v3**, qui font référence pour le détail : `2026-10-20-maquette-v3-parcours.md` (l'accueil en un seul mouvement de caméra à travers les projets) et `2026-10-21-maquette-v3-bureau.md` (le bureau qui termine le parcours, c'est-à-dire le contact). Cette spec en reprend l'essentiel et tranche ce qu'elles laissaient à l'intégration.
@@ -249,7 +249,7 @@ La position, la largeur nette et la rotation des 8 cartes dans le parcours sont 
 
 **Vidéos** : les boucles des cartes et des études de cas (muettes, `playsinline`, 4 Mo au plus, avec une image fixe) sont hébergées dans le repo. Dans le parcours, seule la carte nette et ses deux voisines chargent leur vidéo, et seule la carte nette la joue. Avec « réduire les animations », on n'affiche que l'image fixe. Les vidéos longues restent sur YouTube, chargées au clic (`youtube-nocookie.com`).
 
-**Médias de tiers et de Grégoire** : le site publie forcément les versions web des images du mur, du fond d'écran et des captures des pages. Seules ces versions web, à la taille où le site les montre, sont versionnées, avec leurs crédits ; les originaux en haute définition restent hors du dépôt (`.design-assets/`). À confirmer par Grégoire, car la règle actuelle du `CLAUDE.md` exclut toutes ses photos du dépôt.
+**Médias de tiers et de Grégoire** : le site publie forcément les versions web des images du mur, du fond d'écran et des captures des pages. Seules ces versions web, à la taille où le site les montre, sont versionnées, avec leurs crédits ; les originaux en haute définition restent hors du dépôt (`.design-assets/`). Décision de Grégoire du 23 octobre 2026.
 
 ### 7.4 Navigation et scène
 
