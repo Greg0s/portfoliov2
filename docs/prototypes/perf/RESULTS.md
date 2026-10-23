@@ -72,8 +72,33 @@ first-time costs (shaders, buffer uploads) that the second test no longer pays.
 - **Layers budget**: lighten the windows layer (246 kB) to bring a computer set under 500 kB, since the layers remain
   the fallback.
 
+## Diagnostic on the Pixel 9
+
+Run on 23 October 2026, on battery, right after opening the page.
+
+| Test                                   | Opening       | Projects      |
+| -------------------------------------- | ------------- | ------------- |
+| Journey CSS (all of it)                | 50 · 13 %     | 45 · 19 %     |
+| without stars, small worlds and video  | 60 · 1 %      | 60 · 0 %      |
+| without video                          | 50 · 15 %     | 45 · 20 %     |
+| without small worlds                   | 51 · 15 %     | 48 · 18 %     |
+| without stars                          | 60 · 0 %      | 60 · 0 %      |
+
+| Test                     | Arrival   | Seated    | First frame |
+| ------------------------ | --------- | --------- | ----------- |
+| Office live, warmed up   | 60 · 0 %  | 60 · 0 %  | 7 ms        |
+
+- **The stars slow the journey on the phone, nothing else does.** The 120 stars are HTML elements, each with its own
+  endless opacity animation, in three layers scaled at every frame: without them the journey holds 60 fps, video and
+  blurred small worlds included. In the site, the stars and their twinkling are drawn in WebGL (one cloud of points,
+  the twinkle in the shader), never as animated HTML elements.
+- **The warm-up removes the office's arrival hitches**: 60 fps from the first frame (7 ms), for 0.8 s of warm-up
+  done while the visitor is still in the journey.
+
 ## Decision
 
 - **Office**: Grégoire chose real time with the layers as fallback (23 October 2026). Main spec §6.5 updated.
 - **Cards**: HTML and CSS. Main spec §7.4 updated.
-- **Journey on phones**: open until the diagnostic run.
+- **Journey on phones**: the stars are drawn in WebGL; the cards, small worlds and videos stay as they are. Main spec
+  §7.4 updated.
+- **Office warm-up**: confirmed, part of §6.5.
