@@ -54,7 +54,7 @@ On repart d'un repo vide : `Greg0s/portfoliov2`.
 - **Étude de cas** : lien « Retour aux projets », numéro (01 / 08), média d'ouverture (la carte dans laquelle on a plongé), tag (année et type), titre, chapeau, fiche (année, rôle, stack, liens), puis _Contexte_, _Ce que j'ai fait_, _Défis techniques_ (chaque défi en trois temps : problème, solution, résultat), images et vidéos, le projet suivant (le dernier renvoie au premier) et, en bas, un lien « Contact » qui mène au bureau par le noir.
 - **404** : message en français et en anglais, avec des liens vers les deux accueils.
 - **Langues** : français à la racine, anglais sous `/en/` ; le sélecteur mène à la page équivalente ; aucune redirection automatique ; chaque page déclare `<html lang>` et ses alternatives `hreflang` (`x-default` vers le français).
-- **Adresses dans l'accueil** : chaque ancre a un fragment (`#projets`, `#<slug>`, `#contact` ; en anglais `#projects`, `#<slug>`, `#contact`), pour pouvoir partager un endroit du parcours et y arriver directement.
+- **Adresses dans l'accueil** : chaque ancre a un fragment (`#accueil`, `#projets`, `#<slug>`, `#contact` ; en anglais `#home`, `#projects`, `#<slug>`, `#contact` ; le sélecteur de langue traduit le fragment), pour pouvoir partager un endroit du parcours et y arriver directement.
 - **Anciennes URL** : des pages de redirection statiques renvoient les pages des projets retenus vers leur étude de cas, `about.html` vers l'accueil et `contact.html` vers `/#contact`. Les autres aboutissent à la 404.
 
 ## 5. Direction artistique : « Musée de nuit »

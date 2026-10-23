@@ -5,7 +5,7 @@
 - **Sources**: the main spec (`docs/specs/2026-10-14-portfolio-design.md`), the v3 specs (journey and office), the
   measurement results (`docs/prototypes/perf/RESULTS.md`). When this plan and a spec disagree, the spec wins and this
   plan is fixed in the same change.
-- **Status**: in progress; step 2 (foundations) is done. Each step is updated here when it is done.
+- **Status**: in progress; step 2 (foundations) is done, step 3 (design system) waits for Grégoire's validation. Each step is updated here when it is done.
 
 ## 1. What is already decided
 
@@ -129,6 +129,14 @@ a console error; step 3 replaces it.
 
 **Goal**: the charter in code, the header and mobile menu, FR/EN routing, typed interface strings, the visitor's
 moment.
+
+**Status**: built (`feat/design-system`, on top of `feat/foundations`), waiting for Grégoire's validation of the
+header and menu. As built: the moment's tint is a registered custom property (`--page-tint`) on the root background, so
+that the change at noon fades; the inline moment script is `applyMoment` from `src/scene/time.ts`, inlined from its
+source; the menu is a native modal `<dialog>` with a Tab loop; header and menu links to an anchor of the current page
+go through the blackout, links to another page navigate; the language links read "FR — Français" to screen readers
+(visible text first, as WCAG 2.5.3 asks) and keep the anchor, translated. The home page shows three placeholder
+sections (`#accueil`, `#projets`, `#contact`) until step 5.
 
 **Pull request**: `feat/design-system`; commits in order: tokens, fonts, base styles and moment; then layout, header, menu,
 language switch and blackout.
