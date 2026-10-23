@@ -60,9 +60,9 @@ it.
 
 ## 3. How each step is delivered
 
-- **Branches and pull requests**: one branch per task, opened from `main`, named `<type>/<topic>` (e.g.
-  `feat/foundations`). A large step is split into several pull requests (listed per step below), each mergeable on its
-  own with CI green.
+- **Branches and pull requests**: one branch and one pull request per step (Grégoire's choice, 23 October 2026),
+  opened from `main` and named `feat/<step>` (e.g. `feat/foundations`). Within a step, the work lands as a series of
+  commits in the order listed per step below, each leaving CI green.
 - **Done means**: CI green (lint, format, `astro check`, unit tests, build with content checks, e2e, budgets), the
   preview at `https://greg0s.github.io/portfoliov2/` up to date, the spec updated if a decision moved, this plan's
   status updated, and for anything visible, side-by-side pictures with the mockup validated by Grégoire.
@@ -85,7 +85,7 @@ Step 10 runs alongside the build as soon as the content schema exists; it must b
 
 **Goal**: an empty Astro site that builds, is checked and deploys to the preview.
 
-**Pull requests**: `feat/foundations` (project, tooling, CI, deployment, README, CLAUDE.md).
+**Pull request**: `feat/foundations`, in one go: project, tooling, CI, deployment, README, CLAUDE.md.
 
 **Files**
 
@@ -116,7 +116,7 @@ Step 10 runs alongside the build as soon as the content schema exists; it must b
 
 **Done when** the skeleton deploys to the preview and CI is green on the pull request.
 
-**Needs from Grégoire**: GitHub Pages enabled on the repository with "GitHub Actions" as the source.
+**From Grégoire**: GitHub Pages enabled with "GitHub Actions" as the source (done, 23 October 2026).
 
 ---
 
@@ -125,8 +125,8 @@ Step 10 runs alongside the build as soon as the content schema exists; it must b
 **Goal**: the charter in code, the header and mobile menu, FR/EN routing, typed interface strings, the visitor's
 moment.
 
-**Pull requests**: `feat/design-tokens` (tokens, fonts, base styles, moment), `feat/header-menu` (layout, header,
-menu, language switch, blackout).
+**Pull request**: `feat/design-system`; commits in order: tokens, fonts, base styles and moment; then layout, header, menu,
+language switch and blackout.
 
 **Files**
 
@@ -163,8 +163,8 @@ next to the mockup.
 **Goal**: the content collections with their build-time checks, the case study page, the 8 projects drafted, the wall
 collection.
 
-**Pull requests**: `feat/content-schema` (collections, checks, case study page), `content/projects-draft` (the 8
-drafts), `content/wall` (frames and images).
+**Pull request**: `feat/content`; commits in order: collections, checks and case study page; the 8 drafts; the wall frames
+and images.
 
 **Files**
 
@@ -204,8 +204,8 @@ years and roles for Le Petit Prince and Obaine; Lyrix's address.
 
 **Goal**: the complete home without animation, usable without JavaScript, SEO basics, old URLs redirected.
 
-**Pull requests**: `feat/static-home` (opening, list, contact, still office), `feat/seo-redirects` (meta, 404,
-redirects, robots).
+**Pull request**: `feat/static-home`; commits in order: opening, list, contact and still office; then meta, 404, redirects
+and robots.
 
 **Files**
 
@@ -239,9 +239,8 @@ redirects, robots).
 **Goal**: the scroll-driven camera move, anchor to anchor, with stars in WebGL, focus, cartels, motion and reduced
 motion.
 
-**Pull requests**: `feat/journey-camera` (camera, anchors, steps, snapping, keyboard), `feat/journey-stars` (renderer,
-star cloud, small worlds), `feat/journey-motion` (floating, cursor, tilt, drift, job title, blackout jump, reduced
-motion).
+**Pull request**: `feat/journey`; commits in order: camera, anchors, steps, snapping and keyboard; renderer, star cloud and
+small worlds; floating, cursor, tilt, drift, job title, blackout jump and reduced motion.
 
 **Files**
 
@@ -280,9 +279,9 @@ test passes, and the Pixel 9 run holds 60 fps on the journey.
 
 **Goal**: the live planet, then the live office with its arrival, warm-up, layers fallback and light version.
 
-**Pull requests**: `feat/planet` (model, relief in the worker, lights, wind, handoff to image), `feat/office-live`
-(ported scene, town in the worker, warm-up, arrival, head, room life), `feat/quality-fallbacks` (quality module, office
-layers, light version).
+**Pull request**: `feat/3d-scenes`; commits in order: the planet (model, relief in the worker, lights, wind, handoff to
+image); the live office (ported scene, town in the worker, warm-up, arrival, head, room life); the quality module,
+office layers and light version.
 
 **Files**
 
@@ -322,8 +321,8 @@ and the Pixel 9 and laptop runs hold 60 fps from the arrival on.
 **Goal**: the screen (Windows desktop, Firefox, Thunderbird, Recycle Bin), the wall (draw, placement, cartels), the
 email actions.
 
-**Pull requests**: `feat/office-screen` (desktop, taskbar, apps, captures, Recycle Bin), `feat/office-wall` (wall
-pictures, cartels, mobile small frame), `feat/email-actions` (copy button states, mobile bubble).
+**Pull request**: `feat/interactive-office`; commits in order: the screen (desktop, taskbar, apps, captures, Recycle Bin); the
+wall (pictures, cartels, mobile small frame); the email actions (copy button states, mobile bubble).
 
 **Files**
 
@@ -354,7 +353,7 @@ pictures, cartels, mobile small frame), `feat/email-actions` (copy button states
 
 **Goal**: card videos, the dive into a case study and back, next project, scenes kept by the router.
 
-**Pull requests**: `feat/card-videos`, `feat/dive-transition`.
+**Pull request**: `feat/media-transitions`; commits in order: card videos, then the dive transition.
 
 **Files**
 
