@@ -57,6 +57,7 @@ const PLACES = {
   lamp: [-0.5, -1.04],
   plant: [-0.68, -0.6, 0.4],
   frame: [0.19, -1.07, 0.16],
+  succulent: [0.075, -1.08, 0.3],
   rose: [0.85, -1.04, 4.26],
   pencils: [0.8, -0.86, 0],
 };
@@ -168,15 +169,15 @@ function buildRoom() {
 
   // The pictures stuck straight onto the wall with blu-tack (nothing shows), filling the wall left of the window,
   // behind the contact text, the lamp and the plant if need be. Each one holds a type of image (film poster, film
-  // still, painting, photo, album cover) in a format close to that of its own pictures, so that they are barely
-  // cropped; the site lays one of them over it, picked at random, so their faces are white here and take the light of
-  // the room. `at` is the top-left corner as a fraction of the desktop frame, `w` the width of the picture in metres,
-  // `ratio` its width over its height. Posters and covers are printed to the edge; photos and film stills have a thin
-  // white border, paintings a wide one, as art prints.
+  // still, painting, photo, album cover) in a format that suits its own pictures, which may be cropped to it but never
+  // from portrait to landscape or from 16:9 to square; the site lays one of them over it, picked at random, so their
+  // faces are white here and take the light of the room. `at` is the top-left corner as a fraction of the desktop
+  // frame, `w` the width of the picture in metres, `ratio` its width over its height. Posters and covers are printed to
+  // the edge; photos and film stills have a thin white border, paintings a wide one, as art prints.
   const cam = makeCamera('desktop');
   const frames = [
     { id: 'film', type: 'film', kind: 'print', at: [-0.0347, 0.0178], w: 0.36, ratio: 16 / 9 },
-    { id: 'peinture', type: 'peinture', kind: 'art', at: [0.1424, 0.0178], w: 0.29, ratio: 16 / 9 },
+    { id: 'peinture', type: 'peinture', kind: 'art', at: [0.1424, 0.0178], w: 0.29, ratio: 3 / 2 },
     { id: 'affiche', type: 'affiche', kind: 'poster', at: [-0.0208, 0.1889], w: 0.417, ratio: 2 / 3 },
     { id: 'photo', type: 'photo', kind: 'print', at: [0.1819, 0.1911], w: 0.195, ratio: 4 / 5 },
     { id: 'photo-paysage', type: 'photo', kind: 'print', at: [0.1819, 0.3911], w: 0.21, ratio: 4 / 3 },
@@ -648,6 +649,53 @@ function buildDeskFrame() {
   return g;
 }
 
+// A mini succulent in a small terracotta pot, beside the photo frame: an echeveria, its thick leaves in a rosette, in
+// rings of 13, 8 and 5 turned by the golden angle, the outer ones longer and flatter, the inner ones short and upright.
+function buildSucculent() {
+  const g = new THREE.Group();
+  const pot = [
+    [0, 0],
+    [0.019, 0],
+    [0.02, 0.002],
+    [0.0245, 0.035],
+    [0.0275, 0.036],
+    [0.0275, 0.046],
+    [0.0255, 0.046],
+    [0.0248, 0.04],
+    [0, 0.04],
+  ].map(([x, y]) => new THREE.Vector2(x, y));
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(pot, 40), std(0xb06a4c, 0.85)));
+  const soil = new THREE.Mesh(new THREE.CircleGeometry(0.0246, 32), std(0x2b1f18, 1));
+  soil.rotation.x = -Math.PI / 2;
+  soil.position.y = 0.0405;
+  g.add(soil);
+  const leafGeo = new THREE.SphereGeometry(1, 14, 10);
+  const mats = [0x6f9c84, 0x83ad95, 0x9cc2a6].map((c) => std(c, 0.75));
+  const rings = [
+    { n: 13, len: 0.034, wid: 0.014, thick: 0.0042, rise: 0.3 },
+    { n: 8, len: 0.025, wid: 0.012, thick: 0.0046, rise: 0.68 },
+    { n: 5, len: 0.016, wid: 0.0095, thick: 0.0045, rise: 1.05 },
+  ];
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  let k = 0;
+  rings.forEach((ring, j) => {
+    for (let i = 0; i < ring.n; i++, k++) {
+      const holder = new THREE.Group();
+      holder.rotation.y = k * golden;
+      holder.position.y = 0.043 + j * 0.003;
+      const tilt = new THREE.Group();
+      tilt.rotation.x = -ring.rise;
+      const leaf = new THREE.Mesh(leafGeo, mats[j]);
+      leaf.scale.set(ring.wid / 2, ring.thick, ring.len / 2);
+      leaf.position.z = ring.len * 0.45;
+      tilt.add(leaf);
+      holder.add(tilt);
+      g.add(holder);
+    }
+  });
+  return g;
+}
+
 // Stands the rose of the planet upright, from the foot of its stem toward its bloom, at the given height.
 function standRose(model, height, y0) {
   const rose = model.clone(true);
@@ -790,6 +838,7 @@ function buildDesk(roseModel) {
     rose: buildRose(roseModel),
     pencils: buildPencils(),
     frame: buildDeskFrame(),
+    succulent: buildSucculent(),
   };
   for (const [name, o] of Object.entries(objects)) {
     const [x, z, turn, lift = 0] = PLACES[name];
