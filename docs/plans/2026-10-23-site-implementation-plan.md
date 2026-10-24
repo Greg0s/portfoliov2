@@ -6,7 +6,7 @@
   measurement results (`docs/prototypes/perf/RESULTS.md`). When this plan and a spec disagree, the spec wins and this
   plan is fixed in the same change.
 - **Status**: in progress; step 2 (foundations) is done, step 3 (design system) waits for Grégoire's validation, step 4
-  (content) is built and its drafts wait for Grégoire's review. Each step is updated here when it is done.
+  (content) is built and its drafts wait for Grégoire's review, step 5 (static home) is built. Each step is updated here when it is done.
 
 ## 1. What is already decided
 
@@ -228,6 +228,16 @@ years and roles for Le Petit Prince and Obaine; Lyrix's address.
 ## Step 5 — Static home
 
 **Goal**: the complete home without animation, usable without JavaScript, SEO basics, old URLs redirected.
+
+**Status**: built (`feat/static-home`, on top of `feat/content`). As built: the planet of the opening is the
+prototype's render for each moment, with the mockup's decor as an eager image (the page's largest paint) and the right
+planet preloaded by an inline script, since only the browser knows the moment and the width; the office is one flat
+picture per moment and framing, rendered from the mockup's layers with `docs/prototypes/outils`, and kept in
+`.design-assets/office/` at full size; the projects are the list the journey will animate at step 6, placed from
+`src/scene/slots.ts` (journey spec §5); the copy button of the email appears only with JavaScript; the sitemap comes
+from `@astrojs/sitemap` and `robots.txt` points to it; `src/redirects.ts` builds the old URLs for the base path, since
+Astro adds the base to the old path but not to its target, and `/index.html` is left out (it would collide with the
+home). No `Seo.astro`: the layout already writes the title, the description, the canonical and the alternates.
 
 **Pull request**: `feat/static-home`; commits in order: opening, list, contact and still office; then meta, 404, redirects
 and robots.

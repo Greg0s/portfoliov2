@@ -54,7 +54,8 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
 - Node 24 and pnpm, pinned in `package.json` (`corepack enable`); `.npmrc` sets `engine-strict`. Stack and layout:
   main spec §7 (static Astro, strict TypeScript, Three.js, GSAP, Lenis).
 - Commands: `pnpm dev`, `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm format` / `pnpm format:check`, `pnpm check`,
-  `pnpm test`, `pnpm test:e2e`, `pnpm budgets`, `pnpm optimize-media` (wall originals → web versions);
+  `pnpm test`, `pnpm test:e2e`, `pnpm budgets`, `pnpm optimize-media` (wall originals → web versions),
+  `pnpm render-planet-fallbacks` (the planet's still images, from `docs/prototypes/petit-prince`);
   Lighthouse with `pnpm exec lhci autorun` (after a build).
 - Before calling a change done, run what CI runs, in this order: lint, format:check, check, test, build, budgets,
   test:e2e (main spec §9). Lighthouse warns until step 7 and fails from step 7 on.

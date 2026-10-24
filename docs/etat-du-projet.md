@@ -1,6 +1,6 @@
 # Où en est le projet
 
-- **Mis à jour** : 24 octobre 2026 (contenu du site, étape 4)
+- **Mis à jour** : 24 octobre 2026 (accueil statique, étape 5)
 - **À lire en premier** dans une nouvelle conversation, juste après `CLAUDE.md`.
 
 ## La maquette v3 est terminée
@@ -24,7 +24,7 @@ Grégoire l'a validée le 23 octobre 2026 : c'est la fin de l'étape 0 de la spe
 
    Le résultat fixe l'architecture du bureau (temps réel partout, couches pré-rendues comme dans la maquette, ou un mélange) et celle des cartes (CSS ou WebGL).
 
-4. **Construire le site** étape par étape (spec principale, section 11), à partir de l'étape 2 : les fondations (Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement) sont en place (branche `feat/foundations`) ; le design system (étape 3, `feat/design-system`) attend la validation de Grégoire ; le contenu (étape 4, `feat/content`) est construit : les 8 études de cas en français et en anglais, rédigées en brouillon à partir de l'ancien site et des repos, attendent sa relecture. Le plan détaillé, avec les fichiers, les tâches et les tests de chaque étape, est dans `docs/plans/2026-10-23-site-implementation-plan.md`.
+4. **Construire le site** étape par étape (spec principale, section 11), à partir de l'étape 2 : les fondations (Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement) sont en place (branche `feat/foundations`) ; le design system (étape 3, `feat/design-system`) attend la validation de Grégoire ; le contenu (étape 4, `feat/content`) est construit : les 8 études de cas en français et en anglais, rédigées en brouillon à partir de l'ancien site et des repos, attendent sa relecture ; l'accueil statique (étape 5, `feat/static-home`) est construit : l'ouverture, les 8 projets en liste et le contact dans le bureau, lisibles sans JavaScript, avec les anciennes URL redirigées. Le plan détaillé, avec les fichiers, les tâches et les tests de chaque étape, est dans `docs/plans/2026-10-23-site-implementation-plan.md`.
 
 ## Performance et qualité du code
 
