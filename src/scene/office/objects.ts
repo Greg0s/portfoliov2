@@ -907,7 +907,8 @@ export interface Desk {
   lampAxis: Vector3;
 }
 
-export function buildDesk(roseModel: Object3D | null): Desk {
+/** The desk and its objects; `pause` lets a frame through between the objects. */
+export async function buildDesk(roseModel: Object3D | null, pause: () => Promise<void>): Promise<Desk> {
   const g = new Group();
   const { deskY, deskFront, wallZ } = ROOM;
   const wood = woodTexture();
@@ -925,18 +926,23 @@ export function buildDesk(roseModel: Object3D | null): Desk {
     ),
   );
   const lamp = buildLamp(Math.hypot(LAMP_AIM[0] - PLACES.lamp[0], LAMP_AIM[1] - PLACES.lamp[1]));
-  const objects: Record<keyof typeof PLACES, Object3D> = {
-    monitor: buildMonitor(),
-    keyboard: buildKeyboard(),
-    pad: buildPad(),
-    mouse: buildMouse(),
-    lamp: lamp.group,
-    plant: buildPlant(),
-    rose: buildRose(roseModel),
-    pencils: buildPencils(),
-    frame: buildDeskFrame(),
-    succulent: buildSucculent(),
+  const builders: Record<keyof typeof PLACES, () => Object3D> = {
+    monitor: buildMonitor,
+    keyboard: buildKeyboard,
+    pad: buildPad,
+    mouse: buildMouse,
+    lamp: () => lamp.group,
+    plant: buildPlant,
+    rose: () => buildRose(roseModel),
+    pencils: buildPencils,
+    frame: buildDeskFrame,
+    succulent: buildSucculent,
   };
+  const objects = {} as Record<keyof typeof PLACES, Object3D>;
+  for (const [name, build] of Object.entries(builders) as [keyof typeof PLACES, () => Object3D][]) {
+    await pause();
+    objects[name] = build();
+  }
   for (const [name, object] of Object.entries(objects) as [keyof typeof PLACES, Object3D][]) {
     const place: readonly number[] = PLACES[name];
     const [x = 0, z = 0, turn = 0, lift = 0] = place;

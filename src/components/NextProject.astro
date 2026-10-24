@@ -16,7 +16,7 @@ const href = withBase(pathFor({ id: 'project', slug: next.slug }, locale));
 ---
 
 <nav class="next" aria-label={label('case.next')}>
-  <a href={href}>
+  <a href={href} data-dive data-slug={next.slug}>
     <span class="float">
       <span class="media">
         <Image

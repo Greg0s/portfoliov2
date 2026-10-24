@@ -31,7 +31,7 @@ import {
   type Texture,
 } from 'three';
 import { layerFade, type ArrivalState } from './arrival';
-import { DEG, isMesh, LAYERS } from './common';
+import { breathe, DEG, isMesh, LAYERS } from './common';
 import { anchorsOf, placement, type Anchors, type Placement } from './corners';
 import type { Fit, FrameSpec } from './frame';
 import { FRAMINGS, makeCamera, type Framing } from './framings';
@@ -147,6 +147,8 @@ export interface LiveOptions {
 
 export async function createLiveOffice(options: LiveOptions): Promise<OfficeScene> {
   const { framing, frame } = options;
+  // Each part in a task of its own, between two frames: the context, then the scene (createOffice pauses too).
+  await breathe();
   const canvas = document.createElement('canvas');
   canvas.className = 'office-canvas';
   canvas.setAttribute('aria-hidden', 'true');
@@ -157,7 +159,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
 
-  const office: Office = createOffice(renderer, options.moment, options.town, options.rose);
+  const office: Office = await createOffice(renderer, options.moment, options.town, options.rose, breathe);
   const spec = FRAMINGS[framing];
   const rest = makeCamera(framing);
   const anchors: Anchors = anchorsOf(office);
@@ -315,6 +317,8 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
           material.map = texture;
           material.color = new Color(0xffffff);
           material.needsUpdate = true;
+          // Sent to the GPU now, rather than in the first frame of the arrival that shows it.
+          renderer.initTexture(texture);
           textures.push(texture);
           loaded();
         });

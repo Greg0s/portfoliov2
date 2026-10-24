@@ -74,6 +74,7 @@ const momentScript = `(${applyMoment.toString()})();`;
 </html>
 
 <script>
+  import { initDive } from '../motion/dive';
   import { initMenu } from '../motion/menu';
   import { initNav } from '../motion/nav';
   import { applyMoment, onMomentChange } from '../scene/time';
@@ -81,6 +82,7 @@ const momentScript = `(${applyMoment.toString()})();`;
   // Module scripts run once per visit; the client router keeps the document, so delegated listeners stay.
   initMenu();
   initNav();
+  initDive();
   // The router swaps the root element's attributes for the new page's: the moment is set again on each page.
   document.addEventListener('astro:after-swap', applyMoment);
   onMomentChange((moment) => {

@@ -9,6 +9,7 @@ import { loadPlanetModel } from '../planet/load';
 import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
 import { runGeometry } from '../workers/client';
+import { breathe } from './common';
 import { FRAMES, framingOf } from './frame';
 import { createLayersOffice } from './layers';
 import { createLiveOffice, type OfficeScene } from './live';
@@ -97,9 +98,13 @@ async function viewOf(
     pools,
     planetName: 'B 612',
   });
-  // One draw at rest, out of sight: textures, shadow maps and buffers go to the GPU now, not on the way in.
+  // One draw at rest, out of sight: textures, shadow maps and buffers go to the GPU now, not on the way in; each draw
+  // in a task of its own, between two frames.
+  await breathe();
   view.update(1, performance.now(), 16);
+  await breathe();
   view.update(0, performance.now(), 16);
+  await breathe();
   // The page's style and layout settled now, in this task: left for the next frame, the journey's first read there
   // (the glide's scroll) would have to do it in the middle of that frame.
   section.getBoundingClientRect();

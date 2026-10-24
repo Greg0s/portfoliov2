@@ -451,6 +451,8 @@ function reliefGround(): BufferGeometry {
 export interface PackedGeometry {
   attributes: Record<string, { array: Float32Array; itemSize: number }>;
   index: Uint32Array | null;
+  /** The bounding sphere (centre, radius), computed in the worker rather than at the first draw. */
+  sphere: [number, number, number, number];
 }
 
 export function pack(geometry: BufferGeometry): PackedGeometry {
@@ -459,7 +461,13 @@ export function pack(geometry: BufferGeometry): PackedGeometry {
     attributes[name] = { array: Float32Array.from(attribute.array), itemSize: attribute.itemSize };
   }
   const index = geometry.getIndex();
-  return { attributes, index: index ? Uint32Array.from(index.array) : null };
+  geometry.computeBoundingSphere();
+  const { center, radius } = geometry.boundingSphere ?? { center: { x: 0, y: 0, z: 0 }, radius: 0 };
+  return {
+    attributes,
+    index: index ? Uint32Array.from(index.array) : null,
+    sphere: [center.x, center.y, center.z, radius],
+  };
 }
 
 export function packedBuffers(packed: PackedGeometry): ArrayBuffer[] {

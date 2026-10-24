@@ -21,6 +21,7 @@ import {
   PlaneGeometry,
   Shape,
   ShapeGeometry,
+  Sphere,
   SphereGeometry,
   BoxGeometry,
   Vector2,
@@ -102,7 +103,8 @@ export function unpack(packed: PackedGeometry): BufferGeometry {
     geometry.setAttribute(name, new BufferAttribute(array, itemSize));
   }
   if (packed.index) geometry.setIndex(new BufferAttribute(packed.index, 1));
-  geometry.computeBoundingSphere();
+  const [x, y, z, radius] = packed.sphere;
+  geometry.boundingSphere = new Sphere(new Vector3(x, y, z), radius);
   return geometry;
 }
 
