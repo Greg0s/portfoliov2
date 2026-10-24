@@ -53,7 +53,13 @@ async function picture(src: string, parent: HTMLElement): Promise<HTMLImageEleme
   image.alt = '';
   image.decoding = 'async';
   image.src = src;
-  await image.decode();
+  // WebKit may refuse to decode a large picture ahead of time: it is then decoded when first drawn.
+  await image.decode().catch(async () => {
+    if (!image.complete)
+      await new Promise((resolve) => {
+        image.addEventListener('load', resolve, { once: true });
+      });
+  });
   return image;
 }
 

@@ -17,7 +17,8 @@ const hash = (town: TownGeometry): string => {
 };
 
 describe('the town', () => {
-  it('is the same town from one build to the next', () => {
+  // Two whole towns: a few seconds, more on a busy machine.
+  it('is the same town from one build to the next', { timeout: 30_000 }, () => {
     expect(hash(buildTownGeometry())).toBe(hash(buildTownGeometry()));
   });
 });

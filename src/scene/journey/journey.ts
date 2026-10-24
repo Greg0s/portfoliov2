@@ -811,6 +811,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let officeLoading = false;
   let officeSampler: FrameSampler | null = null;
   let officeSlow = officeMode === 'layers' || !options.webgl || (officeMode !== 'live' && isSlow('office'));
+  let officeFailed = false;
   let lastOfficeDraw = 0;
   let officeFraming = '';
 
@@ -851,7 +852,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       })
       .catch(() => {
         officeLoading = false;
-        // Without the model, the worker or the layers, the still image stays.
+        // Without the model, the worker or the layers, the still image stays, for the rest of the page.
+        officeFailed = true;
       });
   }
 
@@ -866,7 +868,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   /** Prepares the office past the middle of the journey and draws it while the contact shows. */
   function drawOffice(now: number, u: number, arrival: number): void {
     if (!officeView) {
-      if (u >= OFFICE_WARM - 0.01) loadOffice();
+      if (u >= OFFICE_WARM - 0.01 && !officeFailed) loadOffice();
       return;
     }
     const previousDraw = lastOfficeDraw;
