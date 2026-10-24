@@ -232,7 +232,7 @@ docs/
 
 **Un dossier par projet** (`src/content/projects/<slug>/`) :
 
-- `project.yaml`, les données qui ne se traduisent pas : `order`, `year`, `stack`, `links` (`live`, `code`, `video`, facultatifs), `cover`, `coverFocus` (facultatif), `loop` (vidéo de la carte, facultative) ;
+- `project.yaml`, les données qui ne se traduisent pas : `order`, `year`, `stack`, `links` (`live`, `code`, `video`, `gallery` pour une galerie comme Behance, facultatifs), `cover`, `coverFocus` (facultatif), `loop` (vidéo de la carte, facultative) ;
 - `fr.md` et `en.md` : en en-tête `title`, `kind`, `role`, `summary` (la description courte du cartel, reprise pour le SEO) et `coverAlt` ; dans le corps, l'étude de cas en Markdown.
 
 La position, la largeur nette et la rotation des 8 cartes dans le parcours sont définies dans le code, par emplacement, dans l'ordre des projets (spec du parcours, section 5), comme les petits mondes.
