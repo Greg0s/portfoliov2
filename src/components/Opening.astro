@@ -3,6 +3,7 @@
  * The opening (main spec §4, journey spec §6): the planet on the left (above the text on mobile), the name, the job
  * title, the tagline and the one call, "See the projects". Until the 3D planet arrives (step 6), and without WebGL,
  * the planet is its fallback render for the visitor's moment: a CSS background, so that only the moment's image loads.
+ * In the journey, the planet recedes to a point of light (`.planet-glow`) and the text fades out.
  */
 import { config } from '../config';
 import { preloadPlanet } from '../scene/preload';
@@ -41,14 +42,19 @@ const images = [
     />
     <div class="halo"></div>
   </div>
-  <div class="planet-image" role="img" aria-label={label('opening.planet')}></div>
+  <div class="planet-frame">
+    <div class="planet-image" role="img" aria-label={label('opening.planet')}></div>
+  </div>
+  <div class="planet-glow" aria-hidden="true"></div>
 
   <div class="intro">
     <div class="titles">
       <h1 id="opening-name">{config.name}</h1>
       <p class="job">
         <span class="visually-hidden">{jobs.join(', ')}</span>
-        <span aria-hidden="true">{jobs[0]}</span>
+        <span class="job-visual" aria-hidden="true" data-jobs={jobs.join('|')}>
+          {jobs[0]}
+        </span>
       </p>
     </div>
     <p class="tagline">{label('opening.tagline')}</p>
@@ -147,6 +153,29 @@ const images = [
     line-height: 1.25;
     letter-spacing: -0.01em;
     color: var(--color-muted);
+  }
+
+  .job-visual {
+    display: inline-grid;
+    vertical-align: top;
+  }
+
+  .job-visual :global(.job-layer) {
+    grid-area: 1 / 1;
+    white-space: pre;
+  }
+
+  .job-visual :global(.job-layer span) {
+    display: inline-block;
+    white-space: pre;
+  }
+
+  .planet-glow {
+    display: none;
+  }
+
+  .planet-frame {
+    display: contents;
   }
 
   .tagline {
@@ -265,5 +294,46 @@ const images = [
     .cta-line span {
       animation: none;
     }
+  }
+
+  /* In the journey, the opening is the scene's back: the planet and its decor, the text, the call to action. */
+  :global(html[data-journey='on']) .opening {
+    min-height: 0;
+    overflow: visible;
+    background: none;
+  }
+
+  /* The planet's blur applies on screen, after its scale, like the cards' depth of field. */
+  :global(html[data-journey='on']) .planet-frame {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .planet-glow {
+    position: absolute;
+    left: var(--planet-x);
+    top: var(--planet-y);
+    display: block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgb(255 255 255 / 55%) 0%,
+      rgb(255 255 255 / 34%) 30%,
+      rgb(255 255 255 / 12%) 56%,
+      rgb(255 255 255 / 0%) 72%
+    );
+    opacity: 0;
+    translate: -50% -50%;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .cta {
+    transition:
+      opacity 400ms ease,
+      visibility 400ms;
   }
 </style>

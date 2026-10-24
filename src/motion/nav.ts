@@ -1,11 +1,13 @@
 /**
  * Links marked `data-cut` go through the night (main spec §5.5): the view goes dark, the page jumps to the anchor, the
  * view comes back. To an anchor of the current page (header, menu), the jump is a scroll; to another page (a case
- * study's Contact link), the client router loads the page in the dark, the veil persisting across the swap.
+ * study's Contact link), the client router loads the page in the dark, the veil persisting across the swap. When the
+ * home plays its journey, the camera lands on the anchor instead (journey spec §6).
  */
 import { navigate } from 'astro:transitions/client';
 import { translateFragment, type Locale } from '../i18n/routes';
 import { blackout } from './blackout';
+import { currentJourney } from '../scene/journey/registry';
 import { closeMenu, isMenuOpen } from './menu';
 
 function isPlainClick(event: MouseEvent): boolean {
@@ -27,11 +29,25 @@ export function initNav(): void {
         void blackout(() => navigate(url.href));
         return;
       }
-      const anchor = document.getElementById(decodeURIComponent(url.hash.slice(1)));
+      const id = decodeURIComponent(url.hash.slice(1));
+      const menuOpen = isMenuOpen();
+      const journey = currentJourney();
+      if (journey?.has(id)) {
+        event.preventDefault();
+        // Already there, a click does nothing.
+        if (journey.isAt(id) && !menuOpen) return;
+        void blackout(() => {
+          closeMenu({ instant: true });
+          journey.jumpTo(id);
+          history.pushState(history.state, '', url.hash);
+        });
+        return;
+      }
+
+      const anchor = document.getElementById(id);
       if (!anchor) return;
       event.preventDefault();
 
-      const menuOpen = isMenuOpen();
       const there = location.hash === url.hash && Math.abs(anchor.getBoundingClientRect().top) < 2;
       // Already there, a click does nothing.
       if (there && !menuOpen) return;

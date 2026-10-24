@@ -2,7 +2,8 @@
 /**
  * One project of the journey (journey spec §5): its cartel (title, tag, short description) and its card, a 16:9 link to
  * the case study. Its `id` is the project's slug, the fragment that leads to it in the home. Without the journey's
- * animation (no JavaScript, "reduce motion", step 5), the projects are a list, alternating sides.
+ * animation (no JavaScript, "reduce motion", the light version), the projects are a list, alternating sides; in the
+ * journey, `src/scene/journey/journey.ts` places the card in 3D (`.place`), floats it (`.float`) and sets its focus.
  */
 import { Image } from 'astro:assets';
 import Cartel from './Cartel.astro';
@@ -25,26 +26,30 @@ const cartelId = `cartel-${slug}`;
 const href = withBase(pathFor({ id: 'project', slug }, locale));
 ---
 
-<li id={slug} class:list={['project', slot.side]} style={`--card-width: ${String(slot.width)}vw`}>
+<li id={slug} class:list={['project', slot.side]} style={`--card-width: ${String(slot.width)}vw`} data-project={index}>
   <Cartel id={cartelId} title={text.data.title} tag={projectTag(project)} summary={text.data.summary} />
-  <a class="card" href={href} aria-describedby={cartelId}>
-    <Image
-      src={data.cover}
-      alt=""
-      widths={[480, 720, 1120].filter((width) => width <= data.cover.width)}
-      sizes="(width < 768px) 78vw, 38vw"
-      style={data.coverFocus ? `object-position: ${data.coverFocus}` : undefined}
-    />
-    <span class="visually-hidden">
-      {label('card.see')} : {text.data.title}
-    </span>
-    <span class="pill" aria-hidden="true">
-      <svg width="12" height="12" viewBox="0 0 12 12">
-        <path d="M6 1v10M1 6h10"></path>
-      </svg>
-      {label('card.see')}
-    </span>
-  </a>
+  <div class="place">
+    <div class="float">
+      <a class="card" href={href} aria-describedby={cartelId}>
+        <Image
+          src={data.cover}
+          alt=""
+          widths={[480, 720, 1120].filter((width) => width <= data.cover.width)}
+          sizes="(width < 768px) 78vw, 38vw"
+          style={data.coverFocus ? `object-position: ${data.coverFocus}` : undefined}
+        />
+        <span class="visually-hidden">
+          {label('card.see')} : {text.data.title}
+        </span>
+        <span class="pill" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 12 12">
+            <path d="M6 1v10M1 6h10"></path>
+          </svg>
+          {label('card.see')}
+        </span>
+      </a>
+    </div>
+  </div>
 </li>
 
 <style>
@@ -63,6 +68,11 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
 
   .project.right {
     justify-content: flex-end;
+  }
+
+  .place,
+  .float {
+    display: contents;
   }
 
   .card {
@@ -140,6 +150,78 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
   @media (prefers-reduced-motion: reduce) {
     .card {
       transition: none;
+    }
+  }
+
+  /* The journey (journey spec §4 and §5): the card in 3D at the vanishing point, its cartel beside it, on screen. */
+  :global(html[data-journey='on']) .project {
+    position: absolute;
+    inset: 0;
+    display: block;
+    padding: 0;
+    transform-style: preserve-3d;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .place {
+    position: absolute;
+    left: var(--vp-x);
+    top: var(--vp-y);
+    display: block;
+    width: 0;
+    height: 0;
+    transform-style: preserve-3d;
+  }
+
+  :global(html[data-journey='on']) .float {
+    position: absolute;
+    display: block;
+    transform-style: preserve-3d;
+  }
+
+  :global(html[data-journey='on']) .card {
+    position: absolute;
+    width: auto;
+    box-shadow:
+      0 0 0 1px rgb(243 243 241 / 14%),
+      0 40px 80px -24px rgb(0 0 0 / 75%);
+    pointer-events: auto;
+    transition:
+      transform 450ms var(--ease-ui),
+      box-shadow 450ms ease;
+    translate: none;
+    backface-visibility: hidden;
+  }
+
+  :global(html[data-journey='on']) .project.lit .card {
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 55%),
+      0 50px 120px -24px rgb(255 255 255 / 10%),
+      0 30px 60px -12px rgb(0 0 0 / 85%);
+    cursor: none;
+  }
+
+  :global(html[data-journey='on']) .card:hover {
+    opacity: inherit;
+  }
+
+  :global(html[data-journey='on']) .pill {
+    display: inline-flex;
+    opacity: 0;
+    translate: 0 6px;
+    transition:
+      opacity 300ms var(--ease-ui),
+      translate 300ms var(--ease-ui);
+  }
+
+  @media (width < 768px) {
+    :global(html[data-journey='on']) .project.lit .pill {
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    :global(html[data-journey='on']) .project.lit .card {
+      cursor: pointer;
     }
   }
 </style>

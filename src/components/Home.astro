@@ -1,17 +1,136 @@
 ---
-// The home (main spec §4): the opening, the 8 projects, then the contact in the office.
+/**
+ * The home (main spec §4, journey spec): the opening, the 8 projects, then the contact in the office. Without
+ * JavaScript and with "reduce motion", they follow one another as a list; with the journey (`src/scene/journey/`),
+ * they share one scene on screen (`.stage`) while the page scrolls over a track of 12.5 screens.
+ */
 import Contact from './Contact.astro';
 import Journey from './Journey.astro';
 import Opening from './Opening.astro';
-import type { Locale } from '../i18n';
+import { t, type Locale } from '../i18n';
+import { applyJourneyMode } from '../scene/journey/mode';
 
 interface Props {
   locale: Locale;
 }
 
 const { locale } = Astro.props;
+const label = t(locale);
+// The journey or the list is decided before the first paint.
+const modeScript = `(${applyJourneyMode.toString()})();`;
 ---
 
-<Opening locale={locale} />
-<Journey locale={locale} />
-<Contact locale={locale} />
+<script is:inline set:html={modeScript} />
+<div class="home" data-journey-root>
+  <div class="stage" data-stage>
+    <Opening locale={locale} />
+    <Journey locale={locale} />
+    <Contact locale={locale} />
+    <div class="cursor" data-cursor aria-hidden="true">
+      <span>{label('card.see')}</span>
+    </div>
+  </div>
+  <div class="track" data-track aria-hidden="true"></div>
+</div>
+
+<script>
+  import { initHome } from '../scene/journey/home';
+
+  document.addEventListener('astro:page-load', initHome);
+</script>
+
+<style>
+  .stage {
+    display: contents;
+  }
+
+  .track,
+  .cursor {
+    display: none;
+  }
+
+  /* The journey: one scene on screen, the page scrolling over the track, snapped on the anchors. */
+  :global(html[data-journey='on']) {
+    scroll-snap-type: y mandatory;
+    overflow-anchor: none;
+  }
+
+  :global(html[data-journey='on']) .stage {
+    position: fixed;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% var(--vp-y-ratio, 50%), #0f0f11 0%, rgb(10 10 11 / 0%) 52%);
+  }
+
+  @media (width < 768px) {
+    :global(html[data-journey='on']) .stage {
+      --vp-y-ratio: 29%;
+    }
+  }
+
+  :global(html[data-journey='on']) .stage > :global(*) {
+    position: absolute;
+    inset: 0;
+  }
+
+  :global(html[data-journey='on']) .stage :global(.scene-canvas) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .track {
+    position: relative;
+    display: block;
+    height: 1250vh;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .track :global(.journey-anchor) {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* The "See the project" disc, over the sharp card, on desktop. */
+  :global(html[data-journey='on']) .cursor {
+    position: absolute;
+    inset: auto;
+    left: -48px;
+    top: -48px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 96px;
+    padding: 12px;
+    border-radius: 50%;
+    background: var(--color-text);
+    color: #0c0c0d;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    scale: 0.4;
+    transition:
+      opacity 200ms ease,
+      scale 300ms var(--ease-ui);
+  }
+
+  :global(html[data-journey='on']) .cursor:global(.on) {
+    opacity: 1;
+    scale: 1;
+  }
+</style>
