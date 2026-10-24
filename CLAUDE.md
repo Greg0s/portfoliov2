@@ -85,7 +85,8 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
   gitignored), nor the Blender export `projet2.glb`. The site may commit only the web versions it publishes, at
   display size, with their credits (main spec §7.3, decided by Grégoire on 23 October 2026).
 - The contact email is contact@gregoiretinn.es. Never write any other address of Grégoire's (his personal ones
-  included), and keep his phone number out of everything published.
+  included), and keep his phone number out of everything published. One exception, his decision of 24 October
+  2026: the CV (`public/cv/`, and its capture on the office's screen) is published as he made it, with its address.
 
 ## Working with Grégoire
 
