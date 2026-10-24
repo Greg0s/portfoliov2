@@ -25,7 +25,7 @@ import {
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { buildCity, type City } from './city';
-import { isMesh, LAYERS } from './common';
+import { isMesh, LAYERS, noPause } from './common';
 import { buildLights, type OfficeLights } from './lighting';
 import { MOMENTS, type OfficeMoment } from './moments';
 import { buildDesk, type Desk } from './objects';
@@ -96,21 +96,26 @@ function fader() {
   };
 }
 
-export function createOffice(
+/** Builds the office; `pause` lets frames through between its parts, so that preparing it never holds the page. */
+export async function createOffice(
   renderer: WebGLRenderer,
   momentName: Moment,
   town: TownGeometry,
   rose: Object3D | null,
-): Office {
+  pause: () => Promise<void> = noPause,
+): Promise<Office> {
   if (!rectAreaReady) {
     RectAreaLightUniformsLib.init();
     rectAreaReady = true;
   }
   const moment = MOMENTS[momentName];
   const scene = new Scene();
+  await pause();
   const room = buildRoom();
-  const desk = buildDesk(rose);
+  const desk = await buildDesk(rose, pause);
+  await pause();
   const city = buildCity(town, moment);
+  await pause();
   scene.add(room, desk.group, city.group);
   const roomLights = buildLights(moment, desk);
   const deskLights = buildLights(moment, desk);
@@ -120,10 +125,12 @@ export function createOffice(
   const pmrem = new PMREMGenerator(renderer);
   const sky = skyTexture(moment);
   const skyEnv = pmrem.fromEquirectangular(sky).texture;
+  await pause();
   const roomScene = roomEnvironmentScene(moment);
   const roomEnv: Texture = pmrem.fromScene(roomScene, 0.04, 0.05, 20, { position: new Vector3(0, 1.2, -0.4) }).texture;
   pmrem.dispose();
   sky.dispose();
+  await pause();
   roomScene.traverse((node) => {
     if (isMesh(node)) node.geometry.dispose();
   });

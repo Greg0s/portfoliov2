@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   document.body.append(renderer.domElement);
 
   const model = await loadPlanetModel('/models/petit-prince.glb');
-  const office = createOffice(renderer, moment, buildTownGeometry(), model.rose);
+  const office = await createOffice(renderer, moment, buildTownGeometry(), model.rose);
   const camera = makeCamera(framing, overscan);
   const meta = { moment, framing, w: W, h: H, overscan, scale, ...placement(office, camera, W, H) };
 

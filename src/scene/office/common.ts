@@ -22,6 +22,17 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 
 export const DEG = Math.PI / 180;
 
+/** Waits for the next frame to be drawn, then for a task of its own: long work cut into such steps never holds a frame. */
+export const breathe = (): Promise<void> =>
+  new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      setTimeout(resolve);
+    });
+  });
+
+/** No pause: building at once, where nothing else is drawn (the layers' render). */
+export const noPause = (): Promise<void> => Promise.resolve();
+
 /** The render layers: the town is drawn under its own lights, the room and the desk under theirs. */
 export const LAYERS = { city: 1, room: 2, desk: 3 } as const;
 
