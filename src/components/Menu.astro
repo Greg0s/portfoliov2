@@ -1,0 +1,147 @@
+---
+import { fragments, pathFor, t, type Locale } from '../i18n';
+import { withBase } from '../lib/url';
+import LanguageSwitch from './LanguageSwitch.astro';
+
+interface Props {
+  locale: Locale;
+  path: string;
+}
+
+const { locale, path } = Astro.props;
+const label = t(locale);
+const home = pathFor({ id: 'home' }, locale);
+const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#${fragments[fragment][locale]}`);
+---
+
+<!-- The mobile menu opens like the lights dimming in a museum (journey spec §8); motion/menu.ts drives it. -->
+<dialog class="menu" aria-label={label('menu.label')} data-menu>
+  <div class="top item" style="--i: 0">
+    <span class="label">Grégoire Tinnes</span>
+    <button class="close" type="button" data-menu-close>
+      {label('menu.close')}
+    </button>
+  </div>
+  <nav class="links" aria-label={label('nav.label')}>
+    <a class="item" style="--i: 1" href={anchor('projects')} data-cut>
+      {label('nav.projects')}
+    </a>
+    <a class="item" style="--i: 2" href={anchor('contact')} data-cut>
+      {label('nav.contact')}
+    </a>
+  </nav>
+  <div class="languages item" style="--i: 3">
+    <LanguageSwitch locale={locale} path={path} variant="menu" />
+  </div>
+</dialog>
+
+<style>
+  .menu {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--color-menu);
+    color: var(--color-text);
+    opacity: 0;
+    transition: opacity var(--duration-menu-in) var(--ease-ui);
+  }
+
+  .menu[open] {
+    display: flex;
+  }
+
+  .menu::backdrop {
+    background: transparent;
+  }
+
+  .menu[data-state='in'] {
+    opacity: 1;
+  }
+
+  .menu[data-state='out'] {
+    opacity: 0;
+    transition-duration: var(--duration-menu-out);
+  }
+
+  /* The words rise 10 px one after the other; on the way out they stay in place while the menu fades. */
+  .item {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity var(--duration-menu-item) var(--ease-ui) calc(var(--i) * var(--stagger-menu-item)),
+      transform var(--duration-menu-item) var(--ease-ui) calc(var(--i) * var(--stagger-menu-item));
+  }
+
+  .menu[data-state] .item {
+    opacity: 1;
+    transform: none;
+  }
+
+  .menu[data-state='out'] .item {
+    transition: none;
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--header-height);
+    padding-inline: var(--gutter);
+  }
+
+  .close {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 999px;
+    background: transparent;
+    font-size: var(--size-nav);
+    cursor: pointer;
+    transition: opacity 200ms ease;
+  }
+
+  .close:hover {
+    opacity: 0.6;
+  }
+
+  .links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 48px var(--gutter) 0;
+  }
+
+  .links a {
+    font-family: var(--font-display);
+    font-size: var(--size-menu-link);
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: var(--tracking-title);
+  }
+
+  .links a:hover {
+    opacity: 0.6;
+  }
+
+  .languages {
+    margin-top: auto;
+    padding: 32px var(--gutter);
+    font-size: var(--size-nav);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .item {
+      transform: none;
+    }
+  }
+</style>

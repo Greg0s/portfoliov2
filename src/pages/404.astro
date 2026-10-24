@@ -1,20 +1,54 @@
 ---
+import Placeholder from '../components/Placeholder.astro';
+import { pathFor, t } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { withBase } from '../lib/url';
+
+// One page for both languages (main spec §4): French first, then English.
+const fr = t('fr');
+const en = t('en');
 ---
 
 <Base
-  lang="fr"
-  title="Page introuvable · Page not found"
-  description="Cette page n'existe pas. This page does not exist."
+  locale="fr"
+  title={`${fr('notFound.title')} · ${en('notFound.title')}`}
+  description={`${fr('notFound.text')} ${en('notFound.text')}`}
+  indexable={false}
 >
-  <h1>Page introuvable</h1>
-  <p>Cette page n'existe pas, ou plus.</p>
-  <a href={withBase('/')}>Retour à l'accueil</a>
-  <hr />
-  <h2 lang="en">Page not found</h2>
-  <p lang="en">This page does not exist, or no longer does.</p>
-  <a href={withBase('/en/')} lang="en" hreflang="en">
-    Back to the home page
-  </a>
+  <Placeholder id="introuvable" label={fr('notFound.title')}>
+    <h1>{fr('notFound.title')}</h1>
+    <p class="text">{fr('notFound.text')}</p>
+    <a href={withBase(pathFor({ id: 'home' }, 'fr'))}>{fr('notFound.back')}</a>
+    <hr />
+    <h2 lang="en">{en('notFound.title')}</h2>
+    <p class="text" lang="en">
+      {en('notFound.text')}
+    </p>
+    <a href={withBase(pathFor({ id: 'home' }, 'en'))} lang="en" hreflang="en">
+      {en('notFound.back')}
+    </a>
+  </Placeholder>
 </Base>
+
+<style>
+  h1,
+  h2 {
+    font-size: 40px;
+  }
+
+  .text {
+    color: var(--color-muted);
+  }
+
+  a {
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+
+  hr {
+    width: 64px;
+    margin: 32px auto;
+    border: 0;
+    border-top: 1px solid var(--color-line);
+  }
+</style>

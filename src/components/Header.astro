@@ -1,0 +1,83 @@
+---
+import { fragments, pathFor, t, type Locale } from '../i18n';
+import { withBase } from '../lib/url';
+import LanguageSwitch from './LanguageSwitch.astro';
+
+interface Props {
+  locale: Locale;
+  path: string;
+}
+
+const { locale, path } = Astro.props;
+const label = t(locale);
+const home = pathFor({ id: 'home' }, locale);
+const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#${fragments[fragment][locale]}`);
+---
+
+<header class="header">
+  <a class="label name" href={anchor('opening')} data-cut>
+    Grégoire Tinnes
+  </a>
+  <nav class="links" aria-label={label('nav.label')}>
+    <a href={anchor('projects')} data-cut>
+      {label('nav.projects')}
+    </a>
+    <a href={anchor('contact')} data-cut>
+      {label('nav.contact')}
+    </a>
+    <LanguageSwitch locale={locale} path={path} />
+  </nav>
+  <button class="menu-button" type="button" aria-haspopup="dialog" aria-expanded="false" data-menu-open>
+    {label('menu.open')}
+  </button>
+</header>
+
+<style>
+  .header {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 32px;
+    min-height: var(--header-height);
+    padding-inline: var(--gutter);
+  }
+
+  .links {
+    display: flex;
+    align-items: center;
+    gap: 8px 32px;
+    font-size: var(--size-nav);
+    font-weight: 500;
+  }
+
+  .menu-button {
+    display: none;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 999px;
+    background: transparent;
+    font-size: var(--size-nav);
+    cursor: pointer;
+    transition: opacity 200ms ease;
+  }
+
+  .menu-button:hover {
+    opacity: 0.6;
+  }
+
+  @media (width < 768px) {
+    .links {
+      display: none;
+    }
+
+    .menu-button {
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+</style>

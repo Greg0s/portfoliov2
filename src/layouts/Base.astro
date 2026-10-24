@@ -1,69 +1,91 @@
 ---
+import { ClientRouter } from 'astro:transitions';
+import Header from '../components/Header.astro';
+import Menu from '../components/Menu.astro';
+import { alternate, defaultLocale, locales, t, type Locale } from '../i18n';
+import { stripBase } from '../i18n';
 import { withBase } from '../lib/url';
+import { applyMoment } from '../scene/time';
+import { fontFaceCss, preloadedFonts } from '../styles/fonts';
+import '../styles/tokens.css';
+import '../styles/base.css';
 
-// Skeleton layout (step 2). Step 3 adds the design tokens, fonts, header, hreflang and the client router.
 interface Props {
-  lang: 'fr' | 'en';
+  locale: Locale;
   title: string;
   description: string;
+  /** False for a page with no equivalent in the other language (the 404): no canonical, no alternates. */
+  indexable?: boolean;
 }
 
-const { lang, title, description } = Astro.props;
+const { locale, title, description, indexable = true } = Astro.props;
+const label = t(locale);
+const path = indexable ? stripBase(Astro.url.pathname) : '/';
+const absolute = (sitePath: string): string => new URL(withBase(sitePath), Astro.site).href;
+const alternates = locales.map((lang) => ({ lang, href: absolute(lang === locale ? path : alternate(path, lang)) }));
+const xDefault = alternates.find(({ lang }) => lang === defaultLocale)?.href;
+// The moment is set before the first paint, from the same function the tests cover.
+const momentScript = `(${applyMoment.toString()})();`;
 ---
 
 <!doctype html>
-<html lang={lang}>
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="color-scheme" content="dark" />
-    <title>{title}</title>
+    <meta name="theme-color" content="#0c0c0d" />
+    {indexable ? (
+      <>
+        <link rel="canonical" href={absolute(path)} />
+        {alternates.map(({ lang, href }) => (
+          <link rel="alternate" hreflang={lang} href={href} />
+        ))}
+        <link rel="alternate" hreflang="x-default" href={xDefault} />
+      </>
+    ) : (
+      <meta name="robots" content="noindex" />
+    )}
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
+    {preloadedFonts.map((href) => (
+      <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />
+    ))}
+    <style is:inline set:html={fontFaceCss} />
+    <script is:inline set:html={momentScript} />
+    <ClientRouter />
   </head>
   <body>
-    <main id="contenu">
+    <a class="skip-link" href="#contenu">
+      {label('skip.content')}
+    </a>
+    <Header locale={locale} path={path} />
+    <Menu locale={locale} path={path} />
+    <main id="contenu" tabindex="-1">
       <slot />
     </main>
+    <div class="veil" aria-hidden="true" data-veil></div>
   </body>
 </html>
 
-<style is:global>
-  :root {
-    color-scheme: dark;
-    background: #0c0c0d;
-    color: #f3f3f1;
-    font-family: system-ui, sans-serif;
-  }
+<script>
+  import { initMenu } from '../motion/menu';
+  import { initNav } from '../motion/nav';
+  import { applyMoment, onMomentChange } from '../scene/time';
 
-  body {
-    min-height: 100svh;
-    margin: 0;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(#0c0c0d, #060607);
-  }
+  // Module scripts run once per visit; the client router keeps the document, so delegated listeners stay.
+  initMenu();
+  initNav();
+  // The router swaps the root element's attributes for the new page's: the moment is set again on each page.
+  document.addEventListener('astro:after-swap', applyMoment);
+  onMomentChange((moment) => {
+    document.documentElement.dataset.moment = moment;
+  });
+</script>
 
-  main {
-    max-width: 40rem;
-    padding: 2rem 1rem;
-    text-align: center;
-  }
-
-  a {
-    color: #fff;
-  }
-
-  a:hover {
-    opacity: 0.6;
-  }
-
-  a:focus-visible {
-    outline: 2px solid #f3f3f1;
-    outline-offset: 2px;
-  }
-
-  p {
-    color: #8f8f8b;
+<style>
+  main:focus {
+    outline: none;
   }
 </style>
