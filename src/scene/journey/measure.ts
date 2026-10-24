@@ -3,6 +3,9 @@
  * opening to the contact and records its frame times with the phases of the step 1 bench
  * (`docs/prototypes/perf/src/meter.js`): the opening, the projects, the end, and a rest on a project. The result
  * shows on the page as text to copy into the bench. Headless Chromium never proves a frame rate: only devices count.
+ * Each frame over 100 ms is listed too, with what the browser says held it where it can (Chromium's long animation
+ * frames: the scripts that ran, the style and layout, the rendering), and the office's state at the end: whether the
+ * live scene stayed, or gave way to its layers.
  */
 import { anchors } from './anchors';
 import { currentJourney } from './registry';
@@ -19,6 +22,42 @@ interface Summary {
   worstMs: number;
   /** Frames that missed the 60 Hz deadline by more than half a frame. */
   slowPct: number;
+}
+
+/** A long animation frame, as Chromium reports it (not yet in TypeScript's DOM types). */
+interface LongFrame extends PerformanceEntry {
+  blockingDuration: number;
+  renderStart: number;
+  styleAndLayoutStart: number;
+  scripts: {
+    duration: number;
+    invoker: string;
+    sourceFunctionName: string;
+    sourceURL: string;
+    sourceCharPosition: number;
+    forcedStyleAndLayoutDuration: number;
+  }[];
+}
+
+/** A frame over 100 ms: in which phase, how far into it, and what held it. */
+interface Hitch {
+  phase: Phase;
+  atMs: number;
+  ms: number;
+  /** What the browser says: blocking time, then the rendering, the style and layout, and the longest scripts. */
+  why: string | null;
+}
+
+const HITCH_MS = 100;
+const MAX_HITCHES = 20;
+
+/** The scenes found too slow during the visit (`src/scene/quality.ts`). */
+function slowScenes(): string {
+  try {
+    return sessionStorage.getItem('portfolio:slow') ?? '';
+  } catch {
+    return '';
+  }
 }
 
 const round = (x: number, digits = 0): number => Math.round(x * 10 ** digits) / 10 ** digits;
@@ -107,12 +146,52 @@ export function startMeasure(root: HTMLElement): () => void {
   const phases = new Map<Phase, number[]>();
   let last = 0;
   let frame = 0;
+  /** When each phase began (its first entry, for the projects that come back after the rest). */
+  const phaseStarts = new Map<Phase, number>();
+  const hitches: { phase: Phase; start: number; ms: number }[] = [];
+  const longFrames: LongFrame[] = [];
   const out = panel();
 
+  let observer: PerformanceObserver | null = null;
+  if (PerformanceObserver.supportedEntryTypes.includes('long-animation-frame')) {
+    observer = new PerformanceObserver((list) => {
+      longFrames.push(...(list.getEntries() as LongFrame[]).filter((entry) => entry.duration >= HITCH_MS - 20));
+    });
+    observer.observe({ type: 'long-animation-frame' });
+  }
+
   const tick = (now: number): void => {
-    if (phase && last) phases.get(phase)?.push(now - last);
+    if (phase && last) {
+      phases.get(phase)?.push(now - last);
+      if (now - last >= HITCH_MS) hitches.push({ phase, start: last, ms: now - last });
+    }
     last = now;
     frame = requestAnimationFrame(tick);
+  };
+
+  /** What held a hitch, from the long animation frame that ends with it. */
+  const explain = (start: number, ms: number): string | null => {
+    const entry = longFrames.find((e) => e.startTime < start + ms && e.startTime + e.duration > start + ms / 2);
+    if (!entry) return null;
+    const finish = entry.startTime + entry.duration;
+    const scripts = [...entry.scripts]
+      .sort((a, b) => b.duration - a.duration)
+      .slice(0, 3)
+      .map((script) => {
+        const file = script.sourceURL.split('/').pop() ?? '';
+        const where = `${script.sourceFunctionName || '?'}@${file}:${String(script.sourceCharPosition)}`;
+        const forced =
+          script.forcedStyleAndLayoutDuration >= 1
+            ? ` +${String(round(script.forcedStyleAndLayoutDuration))} layout`
+            : '';
+        return `${String(round(script.duration))} ${script.invoker.slice(0, 40)} ${where}${forced}`;
+      });
+    return [
+      `block ${String(round(entry.blockingDuration))}`,
+      `render ${String(round(entry.renderStart ? finish - entry.renderStart : 0))}`,
+      `style ${String(round(entry.styleAndLayoutStart ? finish - entry.styleAndLayoutStart : 0))}`,
+      ...scripts,
+    ].join(' | ');
   };
 
   const anchorIs = (index: number): boolean => root.dataset.anchor === String(index);
@@ -124,6 +203,7 @@ export function startMeasure(root: HTMLElement): () => void {
     phase = name;
     if (!phases.has(name)) phases.set(name, []);
     last = 0;
+    if (!phaseStarts.has(name)) phaseStarts.set(name, performance.now());
     out.show(`mesure : ${name}…`);
   };
 
@@ -153,6 +233,7 @@ export function startMeasure(root: HTMLElement): () => void {
     }
     phase = null;
     cancelAnimationFrame(frame);
+    observer?.disconnect();
     if (stopped) return;
     const result = {
       date: new Date().toISOString(),
@@ -162,6 +243,17 @@ export function startMeasure(root: HTMLElement): () => void {
       refreshHz: refresh,
       gpu: gpu(),
       phases: Object.fromEntries([...phases].map(([name, times]) => [name, summarize(times)])),
+      office: document.documentElement.dataset.office ?? '',
+      slow: slowScenes(),
+      // The worst ones, in the order they came.
+      hitches: [...hitches]
+        .sort((a, b) => b.ms - a.ms)
+        .slice(0, MAX_HITCHES)
+        .sort((a, b) => a.start - b.start)
+        .map(({ phase: name, start, ms }): Hitch => {
+          const begun = phaseStarts.get(name) ?? start;
+          return { phase: name, atMs: round(start - begun), ms: round(ms), why: explain(start, ms) };
+        }),
     };
     const text = JSON.stringify(result, null, 2);
     console.info('mesure', result);

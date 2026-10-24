@@ -162,6 +162,13 @@ export function initDive(): void {
     void dive(link.href, image, fromHome ? (link.closest('[data-project]')?.id ?? null) : null, slug);
   });
 
+  // A view transition the browser skips (the viewport changed meanwhile, as a phone's address bar does) is no error:
+  // the page has changed, without the animation. The router leaves that rejection unhandled.
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason: unknown = event.reason;
+    if (reason instanceof DOMException && reason.message.startsWith('Transition was')) event.preventDefault();
+  });
+
   // Leaving a case study for the home: the picture comes back over it.
   document.addEventListener('astro:before-preparation', () => {
     returning = document.querySelector<HTMLElement>('[data-case-slug]')?.dataset.caseSlug ?? null;
