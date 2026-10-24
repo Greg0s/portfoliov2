@@ -21,7 +21,8 @@
     "budgets": "node scripts/budgets.ts",
     "optimize-media": "node scripts/optimize-media.ts",
     "render-planet-fallbacks": "node scripts/render-planet-fallbacks.ts",
-    "render-office-layers": "node scripts/render-office-layers.ts"
+    "render-office-layers": "node scripts/render-office-layers.ts",
+    "optimize-screen": "node scripts/optimize-screen.ts"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "7.3.4",

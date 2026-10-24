@@ -10,7 +10,11 @@ import type { Framing } from './framings';
 import { drawJump, jumpStars, prepareJump } from './jump';
 import type { Head, OfficeScene, PictureSource } from './live';
 import { MOMENTS } from './moments';
+import { createScreen, type Screen } from './screen';
+import { createCartels, type WallPicture } from './wall';
 import { quadMatrix } from '../../lib/quad';
+import { draw, frames } from '../../lib/wall';
+import { blackout } from '../../motion/blackout';
 import { rng } from './common';
 import type { Moment } from '../time';
 
@@ -21,9 +25,12 @@ export interface ViewOptions {
   moment: Moment;
   framing: Framing;
   still: boolean;
-  /** The screen's picture until the screen comes alive (step 8): the wallpaper and the taskbar. */
-  screen: string;
-  pictures: ReadonlyMap<string, PictureSource>;
+  /** The screen's template (`src/components/office/Screen.astro`), and the contact whose links it shows. */
+  screen: HTMLTemplateElement | null;
+  links: ParentNode;
+  locale: string;
+  /** Each frame's pictures, one of which it draws on each visit and each time the Recycle Bin is emptied. */
+  pools: ReadonlyMap<string, readonly WallPicture[]>;
   /** The planet's name, on its label. */
   planetName: string;
 }
@@ -228,11 +235,40 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
 
   // ---- In front of the canvas: the screen, then the planet's button.
   const screen = el('div', 'office-screen', front);
-  const desktop = el('img', '', screen);
-  desktop.src = options.screen;
-  desktop.alt = '';
-  desktop.decoding = 'async';
+  // Emptying the Recycle Bin: the view goes dark, every frame draws a new picture, and the view comes back.
+  const empty = (): void => {
+    void blackout(async () => {
+      picks = draw(options.pools, picks);
+      cartels.set(picks);
+      // The new pictures, ready before the view comes back (or after a second at most).
+      await new Promise<void>((resolve) => {
+        let waiting = picks.size;
+        const timer = setTimeout(resolve, 1000);
+        live.setPictures(sourcesOf(picks), () => {
+          sized += 1;
+          repaint = true;
+          waiting -= 1;
+          if (waiting <= 0) {
+            clearTimeout(timer);
+            resolve();
+          }
+        });
+      });
+      desktop?.redrawn();
+    });
+  };
+  const desktop: Screen | null = options.screen
+    ? createScreen(options.screen, options.links, {
+        mobile: mob,
+        still: options.still,
+        reduce,
+        locale: options.locale,
+        onEmpty: empty,
+      })
+    : null;
+  if (desktop) screen.append(desktop.element);
   el('div', 'office-glare', screen);
+  const cartels = createCartels(front, rest, framing, frame, new Set(frames.filter((f) => f.cartel).map((f) => f.id)));
   const skyFront = el('div', 'office-layer', front);
   const planet = el('div', 'office-planet', skyFront);
   Object.assign(planet.style, { left: px(frame.planet[0]), top: px(frame.planet[1]) });
@@ -365,7 +401,11 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
   let lastArrival = 1;
   // A picture that arrives once the scene is at rest needs one more draw.
   let repaint = false;
-  live.setPictures(options.pictures, () => {
+  const sourcesOf = (pictures: ReadonlyMap<string, WallPicture>): Map<string, PictureSource> =>
+    new Map([...pictures].map(([id, picture]) => [id, { src: picture.src, focus: picture.focus }]));
+  let picks = draw(options.pools);
+  cartels.set(picks);
+  live.setPictures(sourcesOf(picks), () => {
     sized += 1;
     repaint = true;
   });
@@ -413,6 +453,10 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       setStyle(life, 'opacity', state.skyLifeOp.toFixed(3));
       setStyle(live.element, 'opacity', state.cityOp.toFixed(3));
       setStyle(button, 'pointer-events', arrival > 0.95 ? 'auto' : 'none');
+      // The screen, the Recycle Bin and the cartels answer once the camera is at rest.
+      const atRest = arrival > 0.95 && !options.still;
+      desktop?.setLive(atRest);
+      cartels.setLive(atRest);
       if (arrival <= 0.95) label.classList.remove('on');
       // The jump.
       const key = state.jump.on ? arrival.toFixed(4) : 'off';
@@ -434,6 +478,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
         drawnScene = sceneKey;
         repaint = false;
         const drawn = live.draw(state, head);
+        cartels.move(head);
         setStyle(screen, 'visibility', drawn.screenShown ? 'visible' : 'hidden');
         if (drawn.screenShown) {
           setStyle(screen, 'transform', quadMatrix(SCREEN_PX[0], SCREEN_PX[1], drawn.placement.screen));
@@ -480,6 +525,8 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       });
       window.removeEventListener('pointermove', onMove);
       document.documentElement.removeEventListener('pointerleave', onLeave);
+      desktop?.dispose();
+      cartels.dispose();
       live.dispose();
       root.remove();
     },

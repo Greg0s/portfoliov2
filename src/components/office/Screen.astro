@@ -1,0 +1,885 @@
+---
+/**
+ * The office's screen (office spec §6), 1280 × 800 like the 16:10 monitor: the Windows 11 desktop with its wallpaper,
+ * the Recycle Bin alone in its corner and the dark taskbar; Firefox with the four pages in four tabs, Thunderbird on a
+ * message to the contact address; the Recycle Bin's two dialogs. It is a template: the office view lays a copy of it onto
+ * the screen's corners (`src/scene/office/screen.ts` runs it), so nothing of it loads before the office does, and the
+ * pages' captures only on the first hover of their link (`data-src`).
+ */
+import { config } from '../../config';
+import { t, type Locale } from '../../i18n';
+import { withBase } from '../../lib/url';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const label = t(locale);
+const image = (path: string): string => withBase(`/images/${path}`);
+const cvFile = config.cv.split('/').at(-1) ?? '';
+
+/** The taskbar's apps, in the order of Grégoire's own (validated on 22 October 2026): their place in the icon strip. */
+const APPS = [
+  'Windows',
+  'File Explorer',
+  'VS Code',
+  'Thunderbird',
+  'Figma',
+  'Blender',
+  'Spotify',
+  'Lightroom Classic',
+  'Firefox',
+  'Notion',
+  'Windows Terminal',
+  'Discord',
+];
+/** The four pages: their tab, their address, their favicon in the strip, their capture (slices) and its height. */
+const PAGES = [
+  {
+    name: 'LinkedIn',
+    title: 'Grégoire Tinnes | LinkedIn',
+    url: 'linkedin.com/in/grégoire-tinnes-6776a41a1',
+    icon: 12,
+    slices: ['linkedin-1.webp', 'linkedin-2.webp'],
+    height: 6595,
+    background: '#000000',
+  },
+  {
+    name: 'GitHub',
+    title: 'Greg0s · GitHub',
+    url: 'github.com/Greg0s',
+    icon: 13,
+    slices: ['github.webp'],
+    height: 1583,
+    background: '#0d1117',
+  },
+  { name: 'CV', title: cvFile, url: cvFile, icon: 14, slices: [], height: 1183, background: '#2a2a2e' },
+  {
+    name: 'Instagram',
+    title: 'Grégoire (@gregoire.raw) · Instagram',
+    url: 'instagram.com/gregoire.raw',
+    icon: 15,
+    slices: ['instagram.webp'],
+    height: 2353,
+    background: '#0c1014',
+  },
+];
+const strip = image('taskbar/logos.webp');
+const icon = (index: number, size: number): string =>
+  `background-image: url(${strip}); background-size: ${String(size * 16)}px ${String(size)}px; background-position: ${String(-index * size)}px 0`;
+const binIcon = image('taskbar/recycle-bin.webp');
+---
+
+<template data-screen-template>
+  <div class="desktop">
+    <img class="wallpaper" src={image('screen/wallpaper.webp')} alt="" />
+    <div class="bin" data-bin>
+      <img src={binIcon} alt="" width="48" height="48" />
+      <span>{label('screen.bin')}</span>
+    </div>
+
+    <div class="firefox" data-firefox>
+      <div class="tabs">
+        {PAGES.map((page) => (
+          <span class="tab" data-tab={page.name} data-url={page.url}>
+            <span class="favicon" style={icon(page.icon, 16)} />
+            <span class="tab-title">{page.title}</span>
+            <svg width="10" height="10" viewBox="0 0 10 10">
+              <path d="M2 2l6 6M8 2L2 8" />
+            </svg>
+          </span>
+        ))}
+        <svg class="new-tab" width="32" height="32" viewBox="0 0 32 32">
+          <path d="M16 10v12M10 16h12"></path>
+        </svg>
+        <span class="grow"></span>
+        <svg width="138" height="42" viewBox="0 0 138 42" class="controls">
+          <path d="M18 21h10"></path>
+          <rect x="64.5" y="16.5" width="9" height="9"></rect>
+          <path d="M110 16.5l9 9M119 16.5l-9 9"></path>
+        </svg>
+      </div>
+      <div class="toolbar">
+        <svg width="28" height="28" viewBox="0 0 28 28">
+          <path d="M19 14H9M13 9.5L8.5 14l4.5 4.5"></path>
+        </svg>
+        <svg width="28" height="28" viewBox="0 0 28 28" class="dim">
+          <path d="M9 14h10M15 9.5l4.5 4.5-4.5 4.5"></path>
+        </svg>
+        <svg width="28" height="28" viewBox="0 0 28 28">
+          <path d="M19.2 13.2a5.4 5.4 0 1 1-1.6-3.8M18.4 7.6v3.4H15"></path>
+        </svg>
+        <span class="address">
+          <svg width="12" height="14" viewBox="0 0 12 14" class="thin">
+            <rect x="1.5" y="6" width="9" height="6.5" rx="1.2"></rect>
+            <path d="M3.6 6V4.2a2.4 2.4 0 0 1 4.8 0V6"></path>
+          </svg>
+          <span class="url" data-address></span>
+          <svg width="16" height="16" viewBox="0 0 16 16" class="thin">
+            <path d="M8 2.2l1.7 3.6 3.9.5-2.9 2.7.8 3.9L8 11l-3.5 1.9.8-3.9-2.9-2.7 3.9-.5z"></path>
+          </svg>
+        </span>
+        <span class="avatar"></span>
+        <svg width="28" height="28" viewBox="0 0 28 28">
+          <path d="M8 10h12M8 14h12M8 18h12"></path>
+        </svg>
+      </div>
+      <div class="view">
+        {PAGES.map((page) => (
+          <div class="page" data-page={page.name} data-height={page.height} style={`background: ${page.background}`}>
+            <div class="scroll" style={`height: ${String(page.height)}px`}>
+              {page.name === 'CV' ? (
+                <img class="cv" data-src={image('screen/cv.webp')} alt="" width="794" height="1123" />
+              ) : (
+                page.slices.map((slice) => <img data-src={image(`screen/${slice}`)} alt="" width="1280" />)
+              )}
+            </div>
+            {page.name === 'CV' && (
+              <div class="pdf-bar">
+                <span class="box">1</span>
+                <span>{label('screen.pages')}</span>
+                <span class="rule" />
+                <span>−</span>
+                <span class="box">100 %</span>
+                <span>+</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="mail" data-mail>
+      <div class="mail-title">
+        <span class="favicon-mail" style={icon(3, 18)}></span>
+        <span>{label('screen.compose')}</span>
+        <span class="grow"></span>
+        <svg width="138" height="40" viewBox="0 0 138 40" class="controls">
+          <path d="M18 20h10"></path>
+          <rect x="64.5" y="15.5" width="9" height="9"></rect>
+          <path d="M110 15.5l9 9M119 15.5l-9 9"></path>
+        </svg>
+      </div>
+      <div class="mail-bar">
+        <span class="send">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M2 8.2l11.4-5.4-3.9 11.4-2.3-4.2z"></path>
+          </svg>
+          {label('screen.send')}
+        </span>
+        <span class="action">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M10.5 5.5l-4.8 4.8a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3L3.6 8.4"></path>
+          </svg>
+          {label('screen.attach')}
+        </span>
+        <span class="action">{label('screen.format')}</span>
+      </div>
+      <div class="fields">
+        <span class="field">
+          <span class="key">{label('screen.to')}</span>
+          <span class="to">{config.email}</span>
+        </span>
+        <span class="field">
+          <span class="key">Cc</span>
+        </span>
+        <span class="field">
+          <span class="key">{label('screen.subject')}</span>
+          <span class="hint">{label('screen.addSubject')}</span>
+        </span>
+        <span class="caret"></span>
+      </div>
+    </div>
+
+    <div class="dialog" data-dialog="ask">
+      <div class="dialog-title">
+        <span>{label('screen.bin')}</span>
+        <span class="close" data-answer="no">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 1l8 8M9 1L1 9"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="dialog-body">
+        <img src={binIcon} alt="" width="32" height="32" />
+        <span>{label('screen.empty')}</span>
+      </div>
+      <div class="dialog-buttons">
+        <span class="button accent" data-answer="yes">
+          {label('screen.yes')}
+        </span>
+        <span class="button" data-answer="no">
+          {label('screen.no')}
+        </span>
+      </div>
+    </div>
+
+    <div class="dialog wide" data-dialog="done">
+      <div class="dialog-title">
+        <span>{label('screen.bin')}</span>
+        <span class="close" data-answer="ok">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 1l8 8M9 1L1 9"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="dialog-body">
+        <img src={binIcon} alt="" width="32" height="32" />
+        <span>{label('screen.emptied')}</span>
+      </div>
+      <div class="dialog-buttons">
+        <span class="button accent" data-answer="ok">
+          {label('screen.ok')}
+        </span>
+      </div>
+    </div>
+
+    <div class="taskbar"></div>
+    <div class="apps">
+      {APPS.map((_, index) => (
+        <span class="app" style={icon(index, 26)} />
+      ))}
+    </div>
+    <span class="pill" data-pill="firefox"></span>
+    <span class="pill" data-pill="mail"></span>
+    <div class="tray">
+      <svg width="16" height="16" viewBox="0 0 16 16" class="thin">
+        <path d="M4 10l4-4 4 4"></path>
+      </svg>
+      <svg width="16" height="16" viewBox="0 0 16 16">
+        <path d="M8 1.5l5 2v4c0 3.2-2.2 5.6-5 7-2.8-1.4-5-3.8-5-7v-4z" fill="#2f7ed8" stroke="none"></path>
+        <path d="M5.6 8.2l1.7 1.7 3.2-3.4" stroke="#7ee08a"></path>
+      </svg>
+      <span>FRA</span>
+      <svg width="16" height="16" viewBox="0 0 16 16" class="thin">
+        <rect x="2" y="3" width="12" height="8" rx="1"></rect>
+        <path d="M6 14h4M8 11v3"></path>
+      </svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" class="thin">
+        <path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z"></path>
+        <path d="M11 5.5a3.5 3.5 0 0 1 0 5"></path>
+      </svg>
+      <span class="battery">
+        <svg width="20" height="16" viewBox="0 0 20 16" class="thin">
+          <rect x="1.5" y="4" width="15" height="8" rx="2"></rect>
+          <rect x="3" y="5.5" width="12" height="5" rx="1" fill="#7ee08a" stroke="none"></rect>
+          <rect x="17" y="6.3" width="1.6" height="3.4" rx="0.6" fill="#ffffff" stroke="none"></rect>
+        </svg>
+        100%
+      </span>
+      <span class="time">
+        <span data-clock></span>
+        <span data-date></span>
+      </span>
+      <svg width="16" height="16" viewBox="0 0 16 16" class="thin">
+        <path d="M4 11V7.5a4 4 0 0 1 8 0V11l1 1.2H3z"></path>
+        <path d="M6.6 13.6a1.5 1.5 0 0 0 2.8 0"></path>
+      </svg>
+    </div>
+  </div>
+</template>
+
+<style>
+  .desktop {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #050507;
+    color: #fbfbfe;
+    font-family: 'Segoe UI', var(--font-body);
+    font-size: 12px;
+    line-height: normal;
+    letter-spacing: normal;
+    cursor: default;
+  }
+
+  .desktop svg {
+    display: block;
+    flex: none;
+    fill: none;
+    stroke: #fbfbfe;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .desktop svg.thin {
+    stroke-width: 1.2;
+  }
+
+  .desktop svg.dim {
+    opacity: 0.4;
+  }
+
+  .desktop img {
+    display: block;
+    max-width: none;
+  }
+
+  .wallpaper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .grow {
+    flex: 1;
+  }
+
+  /* The Recycle Bin: a clear frame under the mouse, a blue one while its dialog is open. It answers only when live. */
+  .bin {
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    box-sizing: border-box;
+    width: 76px;
+    height: 78px;
+    padding-top: 5px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    line-height: 16px;
+    pointer-events: none;
+  }
+
+  .bin span {
+    text-shadow:
+      0 1px 2px rgb(0 0 0 / 90%),
+      0 0 4px rgb(0 0 0 / 60%);
+  }
+
+  :global([data-bin-live]) .bin {
+    pointer-events: auto;
+  }
+
+  :global([data-bin-live]) .bin:hover {
+    border-color: rgb(255 255 255 / 18%);
+    background: rgb(255 255 255 / 12%);
+  }
+
+  :global([data-dialog-open='ask']) .bin {
+    border-color: rgb(170 215 255 / 45%);
+    background: rgb(140 200 255 / 24%);
+  }
+
+  /* Firefox, from its icon in the taskbar to the full screen in 0.4 s; back in 0.26 s. */
+  .firefox,
+  .mail {
+    position: absolute;
+    overflow: hidden;
+    opacity: 0;
+    scale: 0.05;
+    transition:
+      scale 260ms cubic-bezier(0.55, 0, 1, 0.45),
+      opacity 260ms cubic-bezier(0.55, 0, 1, 0.45);
+  }
+
+  .firefox {
+    left: 0;
+    top: 0;
+    width: 1280px;
+    height: 752px;
+    background: #1c1b22;
+    transform-origin: 740px 776px;
+  }
+
+  :global([data-open='firefox']) .firefox,
+  :global([data-open='mail']) .mail {
+    opacity: 1;
+    scale: 1;
+    transition:
+      scale 400ms cubic-bezier(0.23, 1, 0.32, 1),
+      opacity 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .tabs {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    padding-left: 8px;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 220px;
+    height: 32px;
+    margin-right: 2px;
+    padding: 0 10px;
+    border-radius: 6px;
+    color: rgb(251 251 254 / 72%);
+  }
+
+  .tab svg {
+    stroke-width: 1.2;
+    opacity: 0.55;
+  }
+
+  .tab[data-active] {
+    background: #42414d;
+    box-shadow: 0 0 4px rgb(0 0 0 / 40%);
+    color: #fbfbfe;
+  }
+
+  .tab[data-active] svg {
+    opacity: 1;
+  }
+
+  .favicon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    opacity: 0.8;
+  }
+
+  .tab[data-active] .favicon {
+    opacity: 1;
+  }
+
+  .tab-title {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .new-tab {
+    margin-left: 4px;
+  }
+
+  .controls {
+    stroke-width: 1 !important;
+    stroke-linecap: butt !important;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 40px;
+    padding: 0 8px;
+    background: #2b2a33;
+  }
+
+  .address {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    height: 30px;
+    margin: 0 6px;
+    padding: 0 12px;
+    border-radius: 4px;
+    background: #1c1b22;
+    font-size: 13px;
+  }
+
+  .url {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .avatar {
+    width: 22px;
+    height: 22px;
+    margin: 0 6px;
+    border-radius: 50%;
+    background: #8f8f9d;
+  }
+
+  .view {
+    position: absolute;
+    inset: 82px 0 0;
+    overflow: hidden;
+  }
+
+  .page {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+  }
+
+  .page[data-active] {
+    visibility: visible;
+  }
+
+  .scroll {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+  }
+
+  .cv {
+    position: absolute;
+    left: 243px;
+    top: 48px;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 50%);
+  }
+
+  .pdf-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    height: 36px;
+    background: #38383d;
+    box-shadow: 0 1px 0 #0c0c0d;
+  }
+
+  .pdf-bar .box {
+    padding: 3px 10px;
+    border-radius: 3px;
+    background: #2a2a2e;
+  }
+
+  .pdf-bar .rule {
+    width: 1px;
+    height: 18px;
+    margin: 0 8px;
+    background: #5b5b66;
+  }
+
+  /* Thunderbird, smaller than the screen, from its own icon. */
+  .mail {
+    left: 200px;
+    top: 64px;
+    width: 880px;
+    height: 570px;
+    border-radius: 8px;
+    background: #fff;
+    color: #1b1b1b;
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 20%),
+      0 26px 64px rgb(0 0 0 / 50%);
+    transform-origin: 340px 712px;
+  }
+
+  .mail svg {
+    stroke: #1b1b1b;
+  }
+
+  .mail-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 40px;
+    padding-left: 14px;
+    background: #eef1f6;
+    font-size: 13px;
+  }
+
+  .favicon-mail {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+
+  .mail-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 52px;
+    padding: 0 18px;
+    box-shadow: 0 1px 0 #e6e6e6;
+  }
+
+  .send {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 18px;
+    border-radius: 6px;
+    background: #1a73e8;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .send svg path {
+    fill: #fff;
+    stroke: none;
+  }
+
+  .action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 14px;
+    font-size: 14px;
+    color: #444;
+  }
+
+  .action svg {
+    stroke: #444;
+    stroke-width: 1.2;
+  }
+
+  .fields {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 28px 0;
+    font-size: 15px;
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 52px;
+    box-shadow: 0 1px 0 #ececec;
+  }
+
+  .key {
+    width: 56px;
+    color: #6b6b6b;
+  }
+
+  .to {
+    padding: 5px 12px;
+    border-radius: 16px;
+    background: #e8f0fe;
+    color: #174ea6;
+  }
+
+  .hint {
+    color: #9a9a9a;
+  }
+
+  .caret {
+    width: 2px;
+    height: 22px;
+    margin-top: 22px;
+    background: #1b1b1b;
+  }
+
+  /* The Recycle Bin's dialogs, as in Windows 11 in dark mode: in 180 ms, out in 120 ms. */
+  .dialog {
+    position: absolute;
+    left: 430px;
+    top: 286px;
+    width: 420px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #2b2b2b;
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 8%),
+      0 16px 48px rgb(0 0 0 / 55%);
+    font-size: 14px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    scale: 0.96;
+    transition:
+      opacity 120ms cubic-bezier(0.23, 1, 0.32, 1),
+      scale 120ms cubic-bezier(0.23, 1, 0.32, 1),
+      visibility 120ms;
+  }
+
+  .dialog.wide {
+    left: 420px;
+    top: 280px;
+    width: 440px;
+  }
+
+  :global([data-dialog-open='ask']) [data-dialog='ask'],
+  :global([data-dialog-open='done']) [data-dialog='done'] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    scale: 1;
+    transition-duration: 180ms;
+  }
+
+  .dialog-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    padding-left: 12px;
+    font-size: 12px;
+  }
+
+  .close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 32px;
+  }
+
+  .close svg {
+    stroke: #fff;
+    stroke-width: 1;
+  }
+
+  .close:hover {
+    background: #c42b1c;
+  }
+
+  .dialog-body {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px 26px;
+    line-height: 20px;
+  }
+
+  .dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 20px 24px;
+    background: #202020;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+  }
+
+  .button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 120px;
+    height: 32px;
+    border: 1px solid rgb(255 255 255 / 9%);
+    border-radius: 4px;
+    background: rgb(255 255 255 / 6%);
+  }
+
+  .button:hover {
+    background: rgb(255 255 255 / 9%);
+  }
+
+  .button.accent {
+    border: 0;
+    background: #60cdff;
+    color: #000;
+  }
+
+  .button.accent:hover {
+    background: #5bbdea;
+  }
+
+  /* The taskbar: the twelve apps in the middle, the tray on the right; under an open app, its line grows and turns blue. */
+  .taskbar,
+  .apps {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 48px;
+  }
+
+  .taskbar {
+    background: rgb(28 28 30 / 92%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+  }
+
+  .apps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .app {
+    flex: none;
+    width: 26px;
+    height: 26px;
+  }
+
+  .pill {
+    position: absolute;
+    bottom: 3px;
+    left: 0;
+    width: 6px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgb(255 255 255 / 55%);
+    transition:
+      translate 200ms ease,
+      width 200ms ease,
+      background-color 200ms ease;
+  }
+
+  [data-pill='firefox'] {
+    translate: 737px 0;
+  }
+
+  [data-pill='mail'] {
+    width: 0;
+    translate: 540px 0;
+  }
+
+  :global([data-mail-seen]) [data-pill='mail'] {
+    width: 6px;
+    translate: 537px 0;
+  }
+
+  :global([data-open='firefox']) [data-pill='firefox'],
+  :global([data-open='mail']) [data-pill='mail'] {
+    width: 16px;
+    background: #60cdff;
+  }
+
+  :global([data-open='firefox']) [data-pill='firefox'] {
+    translate: 732px 0;
+  }
+
+  :global([data-open='mail']) [data-pill='mail'] {
+    translate: 532px 0;
+  }
+
+  .tray {
+    position: absolute;
+    right: 14px;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 48px;
+  }
+
+  .tray svg {
+    stroke: #fff;
+  }
+
+  .battery {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .time {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* With reduced motion, the windows only fade. */
+  @media (prefers-reduced-motion: reduce) {
+    .firefox,
+    .mail,
+    .dialog {
+      scale: 1 !important;
+    }
+  }
+</style>

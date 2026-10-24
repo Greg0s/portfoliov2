@@ -41,8 +41,10 @@ async function main(): Promise<void> {
     moment,
     framing,
     still: true,
-    screen: '/images/office/screen.webp',
-    pictures: new Map(),
+    screen: null,
+    links: document,
+    locale: 'fr',
+    pools: new Map(),
     planetName: 'B 612',
   });
   window.__show = (e, hx = 0, hy = 0) => {

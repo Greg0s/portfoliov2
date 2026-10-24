@@ -118,7 +118,7 @@ for (const { dir, pattern, limit, label } of perFile) {
 // Sets with a size limit in total.
 const sets: { dir: string; pattern: RegExp; limit: number; label: string }[] = [
   { dir: 'images/screen', pattern: /\.(?:avif|webp)$/, limit: 1536 * KB, label: 'screen captures' },
-  { dir: 'images/taskbar', pattern: /\.svg$/, limit: 40 * KB, label: 'taskbar icons' },
+  { dir: 'images/taskbar', pattern: /\.(?:svg|webp)$/, limit: 40 * KB, label: 'taskbar icons' },
 ];
 for (const { dir, pattern, limit, label } of sets) {
   const files = listFiles(join(dist, dir)).filter((path) => pattern.test(path));
@@ -128,16 +128,19 @@ for (const { dir, pattern, limit, label } of sets) {
   }
 }
 
-// The office's layers: what one visitor loads (one moment, one framing), with the screen's picture (main spec §9.4).
+// The office's layers: what one visitor loads (one moment, one framing), with the screen at rest: its wallpaper, the
+// taskbar's icons and the Recycle Bin (main spec §9.4).
 const layers = join(dist, 'images/office/layers');
-const screen = join(dist, 'images/office/screen.webp');
+const screen = ['images/screen/wallpaper.webp', 'images/taskbar/logos.webp', 'images/taskbar/recycle-bin.webp']
+  .map((path) => join(dist, path))
+  .filter((path) => existsSync(path));
 const layerSets = new Map<string, string[]>();
 for (const file of listFiles(layers)) {
   const match = /([a-z]+-(?:desktop|mobile))-[a-z]+\.webp$/.exec(file);
   if (match?.[1]) layerSets.set(match[1], [...(layerSets.get(match[1]) ?? []), file]);
 }
 for (const [name, files] of layerSets) {
-  const all = existsSync(screen) ? [...files, screen] : files;
+  const all = [...files, ...screen];
   const bytes = all.reduce((sum, file) => sum + statSync(file).size, 0);
   measures.push({ name: `office layers, ${name} (${String(all.length)} files)`, bytes, limit: 500 * KB });
 }
