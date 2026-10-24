@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://greg0s.github.io/portfoliov2/sitemap-index.xml
