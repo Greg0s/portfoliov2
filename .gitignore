@@ -1,2 +1,10 @@
 # Grégoire's photos, used locally for the mockup, are never versioned.
 .design-assets/
+
+# Site
+node_modules/
+dist/
+.astro/
+test-results/
+playwright-report/
+.lighthouseci/

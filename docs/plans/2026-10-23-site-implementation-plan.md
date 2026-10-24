@@ -5,7 +5,7 @@
 - **Sources**: the main spec (`docs/specs/2026-10-14-portfolio-design.md`), the v3 specs (journey and office), the
   measurement results (`docs/prototypes/perf/RESULTS.md`). When this plan and a spec disagree, the spec wins and this
   plan is fixed in the same change.
-- **Status**: proposed; each step is updated here when it is done.
+- **Status**: in progress; step 2 (foundations) is done. Each step is updated here when it is done.
 
 ## 1. What is already decided
 
@@ -85,6 +85,11 @@ Step 10 runs alongside the build as soon as the content schema exists; it must b
 
 **Goal**: an empty Astro site that builds, is checked and deploys to the preview.
 
+**Status**: done (`feat/foundations`). Astro 7, TypeScript 6 (typescript-eslint does not support TypeScript 7 yet),
+ESLint 10 with `eslint-plugin-jsx-a11y-x` (the ESLint 10 fork of `jsx-a11y` that `eslint-plugin-astro` accepts),
+Vitest 5, Playwright. Lighthouse scores 100 in every category on both placeholder homes. A placeholder favicon avoids
+a console error; step 3 replaces it.
+
 **Pull request**: `feat/foundations`, in one go: project, tooling, CI, deployment, README, CLAUDE.md.
 
 **Files**
@@ -103,7 +108,7 @@ Step 10 runs alongside the build as soon as the content schema exists; it must b
 | `src/pages/index.astro`, `en/index.astro`, `404.astro` | placeholders                                                                                                                              |
 | `scripts/budgets.ts`                                   | reads `dist/`, prints and asserts the budgets of main spec §9.4 that exist yet                                                            |
 | `lighthouserc.json`                                    | mobile preset, home FR and EN; warnings only                                                                                              |
-| `.github/workflows/ci.yml`                             | on push and pull request: install (cached), lint, format, check, unit, build, budgets, e2e, Lighthouse                                    |
+| `.github/workflows/ci.yml`                             | on push to `main` and pull request: install (cached), lint, format, check, unit, build, budgets, e2e, Lighthouse                          |
 | `.github/workflows/deploy.yml`                         | on push to `main`: build, `actions/upload-pages-artifact`, `actions/deploy-pages`                                                         |
 | `README.md`                                            | in English, for recruiters: what the site is, stack, how to run, how to add a project                                                     |
 | `CLAUDE.md`                                            | the site's commands and layout, the checks of §9, the existing rules kept                                                                 |

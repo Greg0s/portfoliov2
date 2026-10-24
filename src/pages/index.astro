@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import { withBase } from '../lib/url';
+---
+
+<Base
+  lang="fr"
+  title="Grégoire Tinnes"
+  description="Entre l’image et le code, je conçois des interfaces et des expériences web interactives."
+>
+  <h1>Grégoire Tinnes</h1>
+  <p>Le portfolio est en construction.</p>
+  <a href={withBase('/en/')} hreflang="en" lang="en">
+    English
+  </a>
+</Base>
