@@ -8,7 +8,7 @@
         "http://localhost:4322/portfoliov2/en/",
         "http://localhost:4322/portfoliov2/projets/la-fabrique-des-mondes/"
       ],
-      "numberOfRuns": 1,
+      "numberOfRuns": 3,
       "settings": {
         "chromeFlags": "--no-sandbox"
       }
