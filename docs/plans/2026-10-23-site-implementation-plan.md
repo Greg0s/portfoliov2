@@ -387,13 +387,15 @@ wall (pictures, cartels, mobile small frame); the email actions (copy button sta
 
 **Files**
 
-| File                                                                                                            | Content                                                                                                              |
-| --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `src/lib/quad.ts`                                                                                               | `quadMatrix(w, h, corners)`, from `docs/prototypes/perf/src/quad.js`                                                 |
-| `src/components/office/Screen.astro`, `Taskbar.astro`, `Firefox.astro`, `Thunderbird.astro`, `RecycleBin.astro` | the Windows 11 dark desktop                                                                                          |
-| `src/scene/office/screen.ts`                                                                                    | open from the icon in 0.4 s, tabs, address bar, slow scroll after 1 s (≤ 140 px/s), close after 0.6 s, taskbar clock |
-| `src/components/office/Wall.astro`, `src/scene/office/wall.ts`                                                  | pictures placed on their corners, multiplied, cartels, redraw in the blackout                                        |
-| `public/images/screen/`, `public/images/taskbar/`                                                               | captures (WebP/AVIF, 1280 px, LinkedIn in slices), wallpaper, SVG icons                                              |
+| File                                              | Content                                                                                                                                        |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/quad.ts`                                 | `quadMatrix(w, h, corners)`, from `docs/prototypes/perf/src/quad.js` (done at step 7)                                                          |
+| `src/components/office/Screen.astro`              | the Windows 11 dark desktop, taskbar, Firefox, Thunderbird and the Recycle Bin's dialogs, as a template the office view copies onto the screen |
+| `src/scene/office/screen.ts`                      | open from the icon in 0.4 s, tabs, address bar, slow scroll after 1.1 s (≤ 140 px/s), close after 0.6 s, the Recycle Bin, the taskbar clock    |
+| `src/scene/office/wall.ts`                        | the cartels over the pictures, moved with the head; the draw and the redraw in the blackout run in `view.ts`                                   |
+| `src/components/EmailActions.astro`               | the copy button, and the mobile bubble ("Copier \| Envoyer un mail")                                                                           |
+| `scripts/optimize-screen.ts`                      | `pnpm optimize-screen`: the originals in `.design-assets/screen/` → `public/images/screen/` and `public/images/taskbar/`                       |
+| `public/images/screen/`, `public/images/taskbar/` | captures (WebP, 1280 px, LinkedIn in two slices), wallpaper; the icons as one WebP strip, from the mockup's                                    |
 
 **Tests**
 

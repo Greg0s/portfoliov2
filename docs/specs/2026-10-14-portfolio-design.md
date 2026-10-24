@@ -341,7 +341,7 @@ Déjà fournis, gardés dans les fichiers du canevas : le CV (en anglais seuleme
 - LCP de 2,5 s au plus (Lighthouse, mobile), l'image de repli de la planète servant d'élément LCP ;
 - deux fichiers de police préchargés au plus ;
 - **le bureau** : 500 Ko au plus pour ce que charge un visiteur (un moment, un cadrage), qu'il s'agisse de la scène en temps réel (code et géométrie compressés) ou des couches (trois couches et celle des fenêtres) ; rien n'est chargé avant le premier projet ;
-- **l'écran** : 1,5 Mo au plus pour les quatre captures des pages (WebP ou AVIF, 1 280 px de large, découpées en tranches pour la longue page de LinkedIn), chargées au premier survol d'un lien ; les icônes de la barre des tâches en SVG, 40 Ko au plus en tout ;
+- **l'écran** : 1,5 Mo au plus pour les quatre captures des pages (WebP ou AVIF, 1 280 px de large, découpées en tranches pour la longue page de LinkedIn), chargées au premier survol d'un lien ; les icônes de la barre des tâches, 40 Ko au plus en tout (une bande WebP, reprise de la maquette, depuis l'étape 8) ;
 - **les images du mur** : 40 Ko au plus chacune, à la taille où le site les montre ; seules les images tirées sont chargées ;
 - **la cadence** : 60 images par seconde sur un ordinateur de milieu de gamme pendant tout le parcours et l'arrivée au bureau ; sur mobile, la version allégée prend le relais sous 40 images par seconde ;
 - les budgets de mémoire et de nombre d'objets de la scène du bureau sont fixés par la mesure (étape 1).
