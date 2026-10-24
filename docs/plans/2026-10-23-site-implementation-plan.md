@@ -5,7 +5,8 @@
 - **Sources**: the main spec (`docs/specs/2026-10-14-portfolio-design.md`), the v3 specs (journey and office), the
   measurement results (`docs/prototypes/perf/RESULTS.md`). When this plan and a spec disagree, the spec wins and this
   plan is fixed in the same change.
-- **Status**: in progress; step 2 (foundations) is done, step 3 (design system) waits for Grégoire's validation. Each step is updated here when it is done.
+- **Status**: in progress; step 2 (foundations) is done, step 3 (design system) waits for Grégoire's validation, step 4
+  (content) is built and its drafts wait for Grégoire's review. Each step is updated here when it is done.
 
 ## 1. What is already decided
 
@@ -175,6 +176,17 @@ next to the mockup.
 
 **Goal**: the content collections with their build-time checks, the case study page, the 8 projects drafted, the wall
 collection.
+
+**Status**: built (`feat/content`, on top of `feat/design-system`); the drafts wait for Grégoire's review. As built:
+Astro 7's default Markdown processor (Sätteri) runs no remark plugins, so the site uses the `unified` processor of
+`@astrojs/markdown-remark` for `remark-directive` and `:::challenge`; a rehype plugin wraps each `##` of a case study in
+its section. A case study brings its own header and footer through the layout's `header` and `footer` slots; its
+Contact link goes through the blackout to the home's `#contact` (the veil persists across the client router's swap).
+`links` gains `gallery` (Behance for Le Petit Prince and Obaine). The challenges are styled by `CaseStudy.astro`, no
+`Challenge.astro` is needed. The case study's images and videos section waits for Grégoire's media (main spec §8.2);
+the wall has no picture yet, since the canvas only holds versions under 600 px: `pnpm optimize-media` makes the web
+versions once the originals are in `.design-assets/wall/<frame>/`. Covers are the canvas's web versions (Obaine's is
+566 px wide, blurry full width until a better one).
 
 **Pull request**: `feat/content`; commits in order: collections, checks and case study page; the 8 drafts; the wall frames
 and images.

@@ -1,0 +1,168 @@
+---
+// "Next project" at the end of a case study (main spec §4): the last one leads back to the first.
+import { Image } from 'astro:assets';
+import { pathFor, t, type Locale } from '../i18n';
+import { projectTag, type Project } from '../lib/projects';
+import { withBase } from '../lib/url';
+
+interface Props {
+  locale: Locale;
+  next: Project;
+}
+
+const { locale, next } = Astro.props;
+const label = t(locale);
+const href = withBase(pathFor({ id: 'project', slug: next.slug }, locale));
+---
+
+<nav class="next" aria-label={label('case.next')}>
+  <a href={href}>
+    <span class="float">
+      <span class="media">
+        <Image
+          src={next.data.cover}
+          alt=""
+          widths={[560, 1120].filter((width) => width <= next.data.cover.width)}
+          sizes="(width < 768px) 100vw, 560px"
+          style={next.data.coverFocus ? `object-position: ${next.data.coverFocus}` : undefined}
+        />
+      </span>
+    </span>
+    <span class="text">
+      <span class="label">{label('case.next')}</span>
+      <span class="title">{next.text.data.title}</span>
+      <span class="tag">{projectTag(next)}</span>
+      <span class="cta">
+        {label('case.nextCta')} <span aria-hidden="true">→</span>
+      </span>
+    </span>
+  </a>
+</nav>
+
+<style>
+  .next {
+    position: relative;
+    max-width: 1100px;
+    margin-inline: auto;
+    padding: 160px var(--gutter) 120px;
+    box-sizing: content-box;
+  }
+
+  a {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 32px 64px;
+  }
+
+  a:hover {
+    opacity: 1;
+  }
+
+  .float {
+    display: block;
+    flex: 1 1 420px;
+    max-width: 560px;
+    animation: float 9s var(--ease-float) -3s infinite alternate;
+  }
+
+  .media {
+    display: block;
+    overflow: hidden;
+    border-radius: 28px;
+    background: var(--color-surface);
+    box-shadow:
+      0 0 0 1px rgb(243 243 241 / 8%),
+      0 40px 80px -24px rgb(0 0 0 / 75%);
+    transition:
+      transform 450ms var(--ease-ui),
+      box-shadow 450ms ease;
+  }
+
+  .media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  .text {
+    display: flex;
+    flex: 1 1 280px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .label {
+    color: var(--color-muted);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: 52px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: var(--tracking-title);
+  }
+
+  .tag {
+    font-family: var(--font-display);
+    font-size: var(--size-tag);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tag);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .cta {
+    margin-top: 4px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-accent);
+  }
+
+  @media (hover: hover) {
+    a:hover .media,
+    a:focus-visible .media {
+      transform: scale(1.03);
+      box-shadow:
+        0 0 0 1px rgb(255 255 255 / 55%),
+        0 40px 100px -20px rgb(255 255 255 / 10%);
+    }
+  }
+
+  @keyframes float {
+    from {
+      transform: translateY(-12px);
+    }
+
+    to {
+      transform: translateY(12px);
+    }
+  }
+
+  @media (width < 768px) {
+    .next {
+      padding: 96px var(--gutter) 80px;
+    }
+
+    .media {
+      border-radius: var(--radius-card);
+    }
+
+    .title {
+      font-size: 36px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .float {
+      animation: none;
+    }
+
+    .media {
+      transition: none;
+    }
+  }
+</style>

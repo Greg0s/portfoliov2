@@ -3,7 +3,11 @@
     "collect": {
       "startServerCommand": "pnpm preview --port 4322 --ignore-lock",
       "startServerReadyPattern": "localhost:4322",
-      "url": ["http://localhost:4322/portfoliov2/", "http://localhost:4322/portfoliov2/en/"],
+      "url": [
+        "http://localhost:4322/portfoliov2/",
+        "http://localhost:4322/portfoliov2/en/",
+        "http://localhost:4322/portfoliov2/projets/la-fabrique-des-mondes/"
+      ],
       "numberOfRuns": 1,
       "settings": {
         "chromeFlags": "--no-sandbox"

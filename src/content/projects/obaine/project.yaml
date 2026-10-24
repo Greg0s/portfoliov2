@@ -1,0 +1,6 @@
+order: 8
+year: 2023
+stack: [Vue 3, Pinia, Vue Router, Vitest, Swiper, Docker]
+links:
+  gallery: https://www.behance.net/gallery/241600003/Obaine
+cover: ./cover.jpg

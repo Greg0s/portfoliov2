@@ -60,12 +60,16 @@ const momentScript = `(${applyMoment.toString()})();`;
     <a class="skip-link" href="#contenu">
       {label('skip.content')}
     </a>
-    <Header locale={locale} path={path} />
-    <Menu locale={locale} path={path} />
+    {/* A case study brings its own header in this slot; every other page has the site's header and menu. */}
+    <slot name="header">
+      <Header locale={locale} path={path} />
+      <Menu locale={locale} path={path} />
+    </slot>
     <main id="contenu" tabindex="-1">
       <slot />
     </main>
-    <div class="veil" aria-hidden="true" data-veil></div>
+    <slot name="footer" />
+    <div class="veil" aria-hidden="true" data-veil transition:persist="veil"></div>
   </body>
 </html>
 

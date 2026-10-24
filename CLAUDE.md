@@ -7,8 +7,10 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
 
 ## Repository map
 
-- `src/` — the site: `pages/`, `layouts/`, `lib/url.ts` (`withBase`, the only way to build an internal URL); main
-  spec §7.2 gives the full layout to come.
+- `src/` — the site: `pages/`, `layouts/`, `components/`, `lib/url.ts` (`withBase`, the only way to build an internal
+  URL), `content/` (one folder per project: `project.yaml`, `fr.md`, `en.md`, cover; the wall's frames), checked by
+  `content.config.ts` and, across files, by `integrations/content-checks.ts` at build start; main spec §7.2 gives the
+  full layout to come.
 - `public/` — files served as they are. `scripts/budgets.ts` — the budgets of main spec §9.4, checked on `dist/`.
 - `tests/unit/` (Vitest) and `tests/e2e/` (Playwright, on the built site, `desktop` 1440 × 900 and `mobile` Pixel 7).
 - `.github/workflows/` — `ci.yml` (every push and pull request) and `deploy.yml` (push to `main` → GitHub Pages,
@@ -52,7 +54,8 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
 - Node 24 and pnpm, pinned in `package.json` (`corepack enable`); `.npmrc` sets `engine-strict`. Stack and layout:
   main spec §7 (static Astro, strict TypeScript, Three.js, GSAP, Lenis).
 - Commands: `pnpm dev`, `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm format` / `pnpm format:check`, `pnpm check`,
-  `pnpm test`, `pnpm test:e2e`, `pnpm budgets`; Lighthouse with `pnpm exec lhci autorun` (after a build).
+  `pnpm test`, `pnpm test:e2e`, `pnpm budgets`, `pnpm optimize-media` (wall originals → web versions);
+  Lighthouse with `pnpm exec lhci autorun` (after a build).
 - Before calling a change done, run what CI runs, in this order: lint, format:check, check, test, build, budgets,
   test:e2e (main spec §9). Lighthouse warns until step 7 and fails from step 7 on.
 - The site lives under the base path `/portfoliov2/` until it goes live (`BASE_PATH` overrides it). Never write an

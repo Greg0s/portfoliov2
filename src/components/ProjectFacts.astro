@@ -1,0 +1,100 @@
+---
+// The case study's facts (main spec §4): year, role, stack and links, four columns on desktop, two on mobile.
+import { t, type Locale } from '../i18n';
+import type { Project } from '../lib/projects';
+
+interface Props {
+  locale: Locale;
+  project: Project;
+}
+
+const { locale, project } = Astro.props;
+const label = t(locale);
+const { year, stack, links } = project.data;
+const linkKeys = ['live', 'code', 'video', 'gallery'] as const;
+const linkLabels = {
+  live: label('case.link.live'),
+  code: label('case.link.code'),
+  video: label('case.link.video'),
+  gallery: label('case.link.gallery'),
+};
+const shown = linkKeys.flatMap((key) => {
+  const href = links[key];
+  return href ? [{ href, text: linkLabels[key] }] : [];
+});
+---
+
+<dl class="facts">
+  <div>
+    <dt>{label('case.year')}</dt>
+    <dd>{year}</dd>
+  </div>
+  <div>
+    <dt>{label('case.role')}</dt>
+    <dd>{project.text.data.role}</dd>
+  </div>
+  <div>
+    <dt>{label('case.stack')}</dt>
+    <dd>{stack.join(', ')}</dd>
+  </div>
+  {shown.length > 0 && (
+    <div>
+      <dt>{label('case.links')}</dt>
+      <dd class="links">
+        {shown.map(({ href, text }) => (
+          <a href={href} target="_blank" rel="noopener">
+            {text} <span aria-hidden="true">↗</span>
+            <span class="visually-hidden">{label('case.newTab')}</span>
+          </a>
+        ))}
+      </dd>
+    </div>
+  )}
+</dl>
+
+<style>
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 32px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 64px var(--gutter) 0;
+    box-sizing: content-box;
+  }
+
+  .facts > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 20px;
+    border-top: 1px solid rgb(243 243 241 / 12%);
+  }
+
+  dt {
+    font-size: var(--size-label);
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+  }
+
+  @media (width < 768px) {
+    .facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding-top: 48px;
+    }
+  }
+</style>
