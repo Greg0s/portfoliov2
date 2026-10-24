@@ -686,8 +686,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   // At rest, only the weightless motions move, by a few px per second: drawn 20 times a second, they look the same
   // and leave the main thread free. A glide, the camera catching up, the mouse or a hover draw at every frame.
   let lastDraw = 0;
+  // The glide scrolls first in the frame, before the job title or anything else writes a style.
+  const stopGlideTick = onTick(stepGlide, { first: true });
   const stopTick = onTick((now, delta) => {
-    stepGlide(now);
     pointer.update(delta);
     followCamera(delta);
     const atRest = !glide && current === target && pointer.settled() && !redraw;
@@ -713,6 +714,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   return () => {
     stopped = true;
     stopTick();
+    stopGlideTick();
     endGlide();
     pointer.stop();
     clearTimeout(settleTimer);
