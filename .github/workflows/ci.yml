@@ -47,8 +47,8 @@ jobs:
       - name: Budgets
         run: pnpm budgets
 
-      - name: Install Playwright's Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright's Chromium and WebKit
+        run: pnpm exec playwright install --with-deps chromium webkit
 
       - name: End-to-end tests
         run: pnpm test:e2e

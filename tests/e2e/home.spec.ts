@@ -31,18 +31,18 @@ for (const { lang, path, dir, projects, first } of homes) {
 test('the copy button copies the address and says so', async ({ page, context, browserName }) => {
   test.skip(browserName !== 'chromium', 'the clipboard permission is a Chromium one');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto('./');
+  // The contact ends the journey: the anchor leads there.
+  await page.goto('./#contact');
   const button = page.getByRole('button', { name: 'Copier l’adresse' });
-  await button.scrollIntoViewIfNeeded();
   await button.click();
   await expect(page.getByText('Adresse copiée')).toBeAttached();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('contact@gregoiretinn.es');
 });
 
 test('a card leads to its case study, and the back link returns to it', async ({ page }) => {
-  await page.goto('./');
+  // Frozen time: the card in focus stops floating, so that the click can wait for it to be still.
+  await page.goto('./?still=1#lyrix');
   const card = page.getByRole('listitem').filter({ hasText: 'Lyrix' }).getByRole('link');
-  await card.scrollIntoViewIfNeeded();
   await card.click();
   await expect(page).toHaveURL(/\/projets\/lyrix\/$/);
   await page.getByRole('link', { name: 'Retour aux projets' }).click();

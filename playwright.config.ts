@@ -16,6 +16,12 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // Safari, which many recruiters use: a smoke test of the journey (implementation plan §2.11).
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } },
+      testMatch: /smoke/,
+    },
   ],
   // The suite runs on the built site, as visitors get it.
   webServer: {
