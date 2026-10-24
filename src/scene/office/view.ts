@@ -7,8 +7,8 @@
 import { arrivalState, type ArrivalState } from './arrival';
 import { coverFit, FRAMES, type Fit, type FrameSpec } from './frame';
 import type { Framing } from './framings';
-import { drawJump, jumpStars } from './jump';
-import type { Head, LiveOffice, PictureSource } from './live';
+import { drawJump, jumpStars, prepareJump } from './jump';
+import type { Head, OfficeScene, PictureSource } from './live';
 import { MOMENTS } from './moments';
 import { quadMatrix } from '../../lib/quad';
 import { rng } from './common';
@@ -110,7 +110,7 @@ const SEAS = [
   [62, 46, 20, 22, 0.5],
 ] as const;
 
-export function createOfficeView(section: HTMLElement, live: LiveOffice, options: ViewOptions): OfficeView {
+export function createOfficeView(section: HTMLElement, live: OfficeScene, options: ViewOptions): OfficeView {
   const { framing, moment } = options;
   const frame = FRAMES[framing];
   const M = MOMENTS[moment];
@@ -125,7 +125,7 @@ export function createOfficeView(section: HTMLElement, live: LiveOffice, options
   const root = el('div', 'office-live');
   root.setAttribute('aria-hidden', 'true');
   const back = el('div', 'office-frame', root);
-  root.append(live.canvas);
+  root.append(live.element);
   const front = el('div', 'office-frame', root);
   [back, front].forEach((node) => {
     Object.assign(node.style, { width: px(frame.w), height: px(frame.h) });
@@ -252,7 +252,6 @@ export function createOfficeView(section: HTMLElement, live: LiveOffice, options
   });
 
   section.append(root);
-  live.setPictures(options.pictures);
 
   // ---- Quiet life, on the compositor.
   const anims: Animation[] = [];
@@ -313,9 +312,14 @@ export function createOfficeView(section: HTMLElement, live: LiveOffice, options
   const play = (on: boolean): void => {
     if (on === playing) return;
     playing = on;
-    anims.forEach((a) => {
-      if (on) a.play();
-      else a.pause();
+    // After the frame: playing or pausing an animation brings the page's style up to date.
+    setTimeout(() => {
+      anims.forEach((a) => {
+        if (playing) a.play();
+        else a.pause();
+      });
+      // Settled now rather than by the next frame's first read.
+      section.getBoundingClientRect();
     });
   };
 
@@ -359,10 +363,17 @@ export function createOfficeView(section: HTMLElement, live: LiveOffice, options
   let sized = 0;
   let welcomed = false;
   let lastArrival = 1;
+  // A picture that arrives once the scene is at rest needs one more draw.
+  let repaint = false;
+  live.setPictures(options.pictures, () => {
+    sized += 1;
+    repaint = true;
+  });
   const setStyle = (node: HTMLElement, property: string, value: string): void => {
     if (node.style.getPropertyValue(property) !== value) node.style.setProperty(property, value);
   };
   const jumpCtx = jumpCanvas.getContext('2d');
+  prepareJump(frame);
 
   resize();
 
@@ -400,7 +411,7 @@ export function createOfficeView(section: HTMLElement, live: LiveOffice, options
       setStyle(sky, 'opacity', state.skyOp.toFixed(3));
       setStyle(glow, 'opacity', (M.glow.strength * state.glowK).toFixed(3));
       setStyle(life, 'opacity', state.skyLifeOp.toFixed(3));
-      setStyle(live.canvas, 'opacity', state.cityOp.toFixed(3));
+      setStyle(live.element, 'opacity', state.cityOp.toFixed(3));
       setStyle(button, 'pointer-events', arrival > 0.95 ? 'auto' : 'none');
       if (arrival <= 0.95) label.classList.remove('on');
       // The jump.
@@ -421,6 +432,7 @@ export function createOfficeView(section: HTMLElement, live: LiveOffice, options
       const sceneKey = `${arrival.toFixed(5)} ${head.x.toFixed(4)} ${head.y.toFixed(4)} ${String(sized)}`;
       if (sceneKey !== drawnScene) {
         drawnScene = sceneKey;
+        repaint = false;
         const drawn = live.draw(state, head);
         setStyle(screen, 'visibility', drawn.screenShown ? 'visible' : 'hidden');
         if (drawn.screenShown) {
@@ -457,7 +469,7 @@ export function createOfficeView(section: HTMLElement, live: LiveOffice, options
       lastArrival = arrival;
     },
     resize,
-    busy: () => head.x !== head.tx || head.y !== head.ty,
+    busy: () => repaint || head.x !== head.tx || head.y !== head.ty,
     setHead(x, y) {
       head.x = head.tx = x;
       head.y = head.ty = y;

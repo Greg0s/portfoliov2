@@ -71,7 +71,7 @@ try {
         const file = join(OUT, `${name}.${PREVIEW ? 'png' : 'webp'}`);
         if (PREVIEW) writeFileSync(file, png);
         else await sharp(png).webp({ quality: 86, alphaQuality: 90, effort: 6 }).toFile(file);
-        placement[framing] ??= result.meta;
+        placement[`${moment}-${framing}`] ??= result.meta;
         const seconds = ((Date.now() - started) / 1000).toFixed(1);
         console.log(`${file}: ${String(Math.round(statSync(file).size / 1024))} kB, ${seconds} s`);
       }

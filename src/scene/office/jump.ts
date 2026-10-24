@@ -144,19 +144,9 @@ export function drawJump(
     const w = frame.flare;
     const left = px - w / 2;
     ctx.globalAlpha = flare;
-    // The soft band: an ellipse, blurred.
-    const band = ctx.createLinearGradient(left, 0, left + w, 0);
-    band.addColorStop(0, 'rgba(90, 140, 255, 0)');
-    band.addColorStop(0.3, 'rgba(110, 160, 255, 0.35)');
-    band.addColorStop(0.5, 'rgba(170, 205, 255, 0.6)');
-    band.addColorStop(0.7, 'rgba(110, 160, 255, 0.35)');
-    band.addColorStop(1, 'rgba(90, 140, 255, 0)');
-    ctx.filter = 'blur(5px)';
-    ctx.fillStyle = band;
-    ctx.beginPath();
-    ctx.ellipse(px, py, w / 2, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.filter = 'none';
+    // The soft band: an ellipse, blurred, drawn once beforehand (see `prepareJump`).
+    const sprite = bands.get(w) ?? bandSprite(w);
+    ctx.drawImage(sprite, left - BAND_MARGIN, py - BAND_H / 2 - BAND_MARGIN);
     // The thin bright line.
     const line = ctx.createLinearGradient(left + w * 0.06, 0, left + w * 0.94, 0);
     line.addColorStop(0, 'rgba(120, 170, 255, 0)');
@@ -168,4 +158,39 @@ export function drawJump(
     ctx.fillRect(left + w * 0.06, py - 1, w * 0.88, 2);
     ctx.globalAlpha = 1;
   }
+}
+
+const BAND_H = 14;
+const BAND_MARGIN = 16;
+const bands = new Map<number, HTMLCanvasElement>();
+
+/**
+ * The flare's soft band, blurred once: a canvas filter set during a frame resolves against the page's style and
+ * forces it to be computed in the middle of the frame.
+ */
+function bandSprite(w: number): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(w + 2 * BAND_MARGIN);
+  canvas.height = BAND_H + 2 * BAND_MARGIN;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const band = ctx.createLinearGradient(BAND_MARGIN, 0, BAND_MARGIN + w, 0);
+    band.addColorStop(0, 'rgba(90, 140, 255, 0)');
+    band.addColorStop(0.3, 'rgba(110, 160, 255, 0.35)');
+    band.addColorStop(0.5, 'rgba(170, 205, 255, 0.6)');
+    band.addColorStop(0.7, 'rgba(110, 160, 255, 0.35)');
+    band.addColorStop(1, 'rgba(90, 140, 255, 0)');
+    ctx.filter = 'blur(5px)';
+    ctx.fillStyle = band;
+    ctx.beginPath();
+    ctx.ellipse(BAND_MARGIN + w / 2, canvas.height / 2, w / 2, BAND_H / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  bands.set(w, canvas);
+  return canvas;
+}
+
+/** Prepares what the jump draws once, out of the frames. */
+export function prepareJump(frame: Pick<FrameSpec, 'flare'>): void {
+  if (!bands.has(frame.flare)) bandSprite(frame.flare);
 }

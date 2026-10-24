@@ -60,14 +60,16 @@ export interface Drawn {
   sun: [number, number, number] | null;
 }
 
-export interface LiveOffice {
-  canvas: HTMLCanvasElement;
+/** The office's scene behind its HTML: the live one (a canvas over the section) or its layers (in the frame). */
+export interface OfficeScene {
+  element: HTMLElement;
   /** Where things land in the frame at rest (for the HTML laid over the scene). */
   rest: Placement;
   /** Draws a frame; returns where the screen and the pictures land now, in frame px, and how visible they are. */
   draw(state: ArrivalState, head: Head): Drawn;
   resize(width: number, height: number, fit: Fit): void;
-  setPictures(pictures: ReadonlyMap<string, PictureSource>): void;
+  /** Puts the pictures on their frames; `loaded` is called as each one is ready to show. */
+  setPictures(pictures: ReadonlyMap<string, PictureSource>, loaded: () => void): void;
   dispose(): void;
 }
 
@@ -143,7 +145,7 @@ export interface LiveOptions {
   rose: Object3D | null;
 }
 
-export async function createLiveOffice(options: LiveOptions): Promise<LiveOffice> {
+export async function createLiveOffice(options: LiveOptions): Promise<OfficeScene> {
   const { framing, frame } = options;
   const canvas = document.createElement('canvas');
   canvas.className = 'office-canvas';
@@ -237,7 +239,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<LiveOffice
   };
 
   return {
-    canvas,
+    element: canvas,
     rest: restPlacement,
     draw(state, head) {
       // The town: seated, shifted by the tilt and the head, zoomed from 1.6× about the sun (or the axis on phones).
@@ -289,7 +291,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<LiveOffice
       renderer.setPixelRatio(cappedPixelRatio(window.devicePixelRatio || 1, framing === 'mobile'));
       renderer.setSize(width, height, false);
     },
-    setPictures(pictures) {
+    setPictures(pictures, loaded) {
       for (const [id, picture] of pictures) {
         const face = faces.get(id);
         if (!face) continue;
@@ -314,6 +316,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<LiveOffice
           material.color = new Color(0xffffff);
           material.needsUpdate = true;
           textures.push(texture);
+          loaded();
         });
       }
     },

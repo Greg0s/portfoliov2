@@ -2,7 +2,7 @@
 
 Grégoire Tinnes's portfolio site: a static Astro site at the root of this repository, built step by step from the
 specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a Claude Design canvas, was validated on
-23 October 2026; the performance measurement (step 1) is done; the foundations (step 2) are in place.
+23 October 2026; the performance measurement (step 1) is done; steps 2 to 7 (foundations to the 3D scenes) are built.
 `docs/etat-du-projet.md` says where things stand and what comes next: read it first.
 
 ## Repository map
@@ -55,7 +55,8 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
   main spec §7 (static Astro, strict TypeScript, Three.js; native scroll, no Lenis or GSAP).
 - Commands: `pnpm dev`, `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm format` / `pnpm format:check`, `pnpm check`,
   `pnpm test`, `pnpm test:e2e`, `pnpm budgets`, `pnpm optimize-media` (wall originals → web versions),
-  `pnpm render-planet-fallbacks` (the planet's still images, from `docs/prototypes/petit-prince`);
+  `pnpm render-planet-fallbacks` (the planet's still images, from `docs/prototypes/petit-prince`), `pnpm render-office-layers`
+  (the office's layers and `placement.json`, from the site's own scene);
   Lighthouse with `pnpm exec lhci autorun` (after a build).
 - Before calling a change done, run what CI runs, in this order: lint, format:check, check, test, build, budgets,
   test:e2e (main spec §9). Lighthouse warns until step 7 and fails from step 7 on.

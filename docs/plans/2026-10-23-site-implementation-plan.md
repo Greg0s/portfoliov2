@@ -31,7 +31,7 @@ it.
    (main spec §7.2). The prototypes stay separate npm packages; pnpm, ESLint and Prettier ignore `docs/prototypes/`.
 2. **One canvas, one renderer, one loop.** A single full-screen `WebGLRenderer` behind the HTML draws the stars, the
    planet and the office, each its own scene. One `requestAnimationFrame` loop (`src/motion/ticker.ts`) drives the
-   glides, the journey camera, the CSS transforms and the render (main spec §7.4); no Lenis or GSAP (step 6). The canvas is kept across pages with `transition:persist`. One exception (step 7): the live planet draws in its own small canvas inside the opening's planet square, so that the CSS places, floats and blurs it exactly like its fallback image; it lives only near the opening and is released past the middle of the journey.
+   glides, the journey camera, the CSS transforms and the render (main spec §7.4); no Lenis or GSAP (step 6). The canvas is kept across pages with `transition:persist`. One exception (step 7): the live planet draws in its own small canvas inside the opening's planet square, so that the CSS places, floats and blurs it exactly like its fallback image; it lives only near the opening and is released past the middle of the journey. The live office is the second exception: it draws in its own canvas over the contact section, between its HTML sky and its HTML screen, and only while the contact shows; its layers need no canvas at all.
 3. **One camera for CSS and WebGL.** The journey camera is a pure function of the scroll progress. It produces both
    the CSS `perspective` and transforms of the cards and small worlds, and the matching Three.js `PerspectiveCamera`
    (field of view derived from the CSS perspective), so that the stars, the planet and the cards share one space.
@@ -245,18 +245,18 @@ and robots.
 
 **Files**
 
-| File                                                 | Content                                                                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `src/components/Opening.astro`                       | planet fallback per moment (LCP, `fetchpriority="high"`), name, job title, tagline, "See the projects"  |
-| `src/components/Journey.astro`                       | the projects as an ordered list of cards with their cartel: the same DOM the journey animates at step 6 |
-| `src/components/ProjectCard.astro`, `Cartel.astro`   | card (cover, link, `id` for the fragment), cartel                                                       |
-| `src/components/Contact.astro`, `EmailActions.astro` | "On s'écrit ?", `mailto:` link, copy button (shown only with JavaScript), links, CV, copyright          |
-| `src/components/OfficeStill.astro`                   | the office layers stacked as a still image per moment and framing                                       |
-| `scripts/render-planet-fallbacks.ts`                 | renders the planet at its opening pose per moment, desktop and mobile sizes, WebP ≤ 50 kB               |
-| `public/images/planet/`, `public/images/office/`     | committed renders; office layers with the windows layer lightened (computer set under 500 kB)           |
-| `src/redirects.ts`, `astro.config.ts`                | old URLs → case studies, `about.html` → `/`, `contact.html` → `/#contact`                               |
-| `src/components/Seo.astro`, `public/robots.txt`      | title, description (from `summary`), canonical, alternates                                              |
-| `src/pages/404.astro`                                | bilingual, links to both homes                                                                          |
+| File                                                 | Content                                                                                                                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/Opening.astro`                       | planet fallback per moment (LCP, `fetchpriority="high"`), name, job title, tagline, "See the projects"                                                           |
+| `src/components/Journey.astro`                       | the projects as an ordered list of cards with their cartel: the same DOM the journey animates at step 6                                                          |
+| `src/components/ProjectCard.astro`, `Cartel.astro`   | card (cover, link, `id` for the fragment), cartel                                                                                                                |
+| `src/components/Contact.astro`, `EmailActions.astro` | "On s'écrit ?", `mailto:` link, copy button (shown only with JavaScript), links, CV, copyright                                                                   |
+| `src/components/Office.astro`                        | the office layers stacked as a still image per moment and framing (renamed from `OfficeStill.astro` at step 7, when the live office and its layers came over it) |
+| `scripts/render-planet-fallbacks.ts`                 | renders the planet at its opening pose per moment, desktop and mobile sizes, WebP ≤ 50 kB                                                                        |
+| `public/images/planet/`, `public/images/office/`     | committed renders; office layers with the windows layer lightened (computer set under 500 kB)                                                                    |
+| `src/redirects.ts`, `astro.config.ts`                | old URLs → case studies, `about.html` → `/`, `contact.html` → `/#contact`                                                                                        |
+| `src/components/Seo.astro`, `public/robots.txt`      | title, description (from `summary`), canonical, alternates                                                                                                       |
+| `src/pages/404.astro`                                | bilingual, links to both homes                                                                                                                                   |
 
 **Tests**
 
@@ -357,7 +357,7 @@ office layers and light version.
 | `src/scene/office/warmup.ts`                                                               | from mid-journey (or at once on `#contact`): build, compile (`compileAsync`), upload, one draw culling off                                                                                  |
 | `src/scene/office/arrival.ts`                                                              | the 3.5 s arrival on its own clock: light-speed jump (star trails, anamorphic flare), sky rising, town rising, window frame, room unfolding, town receding from 1.6×, welcome shooting star |
 | `src/scene/office/head.ts`, `life.ts`                                                      | head follows the mouse (damped 0.5 s), clouds, town windows, shooting stars                                                                                                                 |
-| `src/scene/office/layers.ts`, `src/components/OfficeLayers.astro`                          | the layers fallback, as in the mockup                                                                                                                                                       |
+| `src/scene/office/layers.ts`                                                               | the layers fallback, as in the mockup, behind the same HTML as the live office (`view.ts`), in place of its canvas                                                                          |
 | `src/scene/quality.ts`                                                                     | frame sampling, light version, office switch, URL overrides                                                                                                                                 |
 | `scripts/render-office-layers.ts`                                                          | renders the layers and `placement.json` from `src/scene/office/`                                                                                                                            |
 

@@ -1,9 +1,11 @@
 /**
  * Shows the live office at a given point of its arrival, for comparisons with the mockup and checks of the arrival
- * frame by frame. Query: moment, e (arrival, 0 to 1, several separated by commas: one picture each), hx, hy (head).
+ * frame by frame. Query: moment, scene (live or layers). `__show(e, hx, hy)` draws the arrival at `e` (0 to 1), the head
+ * leaning by (hx, hy).
  */
 import '../../src/styles/office.css';
-import { createLiveOffice } from '../../src/scene/office/live';
+import { createLayersOffice } from '../../src/scene/office/layers';
+import { createLiveOffice, type OfficeScene } from '../../src/scene/office/live';
 import { FRAMES, framingOf } from '../../src/scene/office/frame';
 import { createOfficeView } from '../../src/scene/office/view';
 import { buildTownGeometry } from '../../src/scene/office/town';
@@ -25,14 +27,16 @@ async function main(): Promise<void> {
   const host = document.querySelector<HTMLElement>('.office');
   if (!host) return;
   const framing = framingOf(host.clientWidth);
-  const model = await loadPlanetModel('/models/petit-prince.glb');
-  const live = await createLiveOffice({
-    moment,
-    framing,
-    frame: FRAMES[framing],
-    town: buildTownGeometry(),
-    rose: model.rose,
-  });
+  const live: OfficeScene =
+    q.get('scene') === 'layers'
+      ? await createLayersOffice({ moment, framing, frame: FRAMES[framing], base: '/images/office/layers' })
+      : await createLiveOffice({
+          moment,
+          framing,
+          frame: FRAMES[framing],
+          town: buildTownGeometry(),
+          rose: (await loadPlanetModel('/models/petit-prince.glb')).rose,
+        });
   const view = createOfficeView(host, live, {
     moment,
     framing,

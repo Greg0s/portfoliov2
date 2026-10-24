@@ -38,6 +38,7 @@ for (const entry of await getCollection('wall')) {
   class="office"
   aria-hidden="true"
   data-screen={withBase('/images/office/screen.webp')}
+  data-layers={withBase('/images/office/layers')}
   data-pictures={JSON.stringify(pictures)}
 >
   {moments.map((moment) => (

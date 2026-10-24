@@ -104,6 +104,8 @@ export interface JourneyOptions {
   still: boolean;
   /** Draw the stars in WebGL (unless `?gl=0` or without WebGL). */
   webgl: boolean;
+  /** Called when this device is found too slow for the journey, at its start: the page turns to the list. */
+  onLite?: () => void;
 }
 
 /** Starts the journey in `root`; returns a function that stops it and gives the page back its list. */
@@ -355,6 +357,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         planetSlow = true;
         markSlow('planet');
         freePlanet();
+        // The light version, for the rest of the visit (main spec §6.3): the list, without 3D. This page turns to it
+        // only while the visitor is still at the opening, so that nothing moves under their eyes.
+        markSlow('lite');
+        if (current < (anchors[1] ?? 0) * 0.5) options.onLite?.();
       }
     }
   }
@@ -796,14 +802,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   // ---------- The live office ----------
 
   // It is prepared from the middle of the journey on (at once on `#contact`), once the planet is let go, and drawn
-  // while the contact shows. Its first seconds on screen are measured: too slow, it gives way to its image.
+  // while the contact shows. Its first seconds on screen are measured: too slow, it gives way to its layers, which
+  // also stand in without WebGL.
   const OFFICE_WARM = anchors[5] ?? 0.5;
-  // `?office=live` keeps it whatever the rate; `?office=layers` keeps it out (its fallback shows).
+  // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
   const officeMode = new URLSearchParams(location.search).get('office');
   let officeView: OfficeView | null = null;
   let officeLoading = false;
   let officeSampler: FrameSampler | null = null;
-  let officeSlow = officeMode === 'layers' || (officeMode !== 'live' && isSlow('office'));
+  let officeSlow = officeMode === 'layers' || !options.webgl || (officeMode !== 'live' && isSlow('office'));
   let lastOfficeDraw = 0;
   let officeFraming = '';
 
@@ -812,32 +819,39 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const host = office;
     officeLoading = true;
     officeFraming = scene.view.mobile ? 'mobile' : 'desktop';
-    void import('../office/warmup')
-      .then(async ({ prepareOffice, SlowOffice }) => {
-        const created = await prepareOffice(host, host, {
-          modelUrl: withBase('/models/petit-prince.glb'),
-          moment: html.dataset.moment === 'aube' ? 'aube' : 'crepuscule',
-          still: options.still,
-          forced: officeMode === 'live',
-        }).catch((error: unknown) => {
-          if (error instanceof SlowOffice) {
-            officeSlow = true;
-            markSlow('office');
-          }
-          throw error;
-        });
+    const layers = officeSlow;
+    const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
+    // Out of the frame: preparing reads the section's size, which would force a layout in the middle of a frame.
+    void new Promise((resolve) => setTimeout(resolve))
+      .then(() => import('../office/warmup'))
+      .then(async ({ prepareOffice, prepareLayers, SlowOffice }) => {
+        const created = await (layers
+          ? prepareLayers(host, host, { moment, still: options.still })
+          : prepareOffice(host, host, {
+              modelUrl: withBase('/models/petit-prince.glb'),
+              moment,
+              still: options.still,
+              forced: officeMode === 'live',
+            }).catch((error: unknown) => {
+              if (error instanceof SlowOffice) {
+                officeSlow = true;
+                markSlow('office');
+                return prepareLayers(host, host, { moment, still: options.still });
+              }
+              throw error;
+            }));
         if (stopped || !officeLoading) {
           created.dispose();
           return;
         }
         officeView = created;
-        officeSampler = officeMode === 'live' ? null : frameSampler();
+        officeSampler = officeSlow || officeMode === 'live' ? null : frameSampler();
         html.dataset.office = 'live';
         redraw = true;
       })
       .catch(() => {
         officeLoading = false;
-        // Without WebGL, the model or the worker, the still image stays.
+        // Without the model, the worker or the layers, the still image stays.
       });
   }
 
@@ -851,7 +865,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   /** Prepares the office past the middle of the journey and draws it while the contact shows. */
   function drawOffice(now: number, u: number, arrival: number): void {
-    if (!options.webgl || officeSlow) return;
     if (!officeView) {
       if (u >= OFFICE_WARM - 0.01) loadOffice();
       return;
@@ -865,9 +878,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       const verdict = officeSampler.add(now - previousDraw);
       if (verdict === 'fast') officeSampler = null;
       else if (verdict === 'slow') {
+        // Too slow: the layers take over, from the same point of the arrival.
         officeSlow = true;
         markSlow('office');
         freeOffice();
+        loadOffice();
       }
     }
   }

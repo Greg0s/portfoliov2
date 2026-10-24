@@ -1,13 +1,20 @@
 /**
  * Whether the home plays the journey or shows the list (journey spec §9, main spec §5.6). The list is the version
- * without JavaScript, with "reduce motion", for the light version (`?lite=1`) and for a browser without 3D CSS.
+ * without JavaScript, with "reduce motion", for the light version (`?lite=1`, or once the device is found too slow
+ * during the visit, see `quality.ts`) and for a browser without 3D CSS.
  *
  * `applyJourneyMode` is self-contained: the home inlines its source before its content, so that the first paint is
  * already the journey's or the list's.
  */
 export function applyJourneyMode(): void {
   const root = document.documentElement;
-  const lite = new URLSearchParams(location.search).get('lite') === '1';
+  let slow = false;
+  try {
+    slow = (sessionStorage.getItem('portfolio:slow') ?? '').split(',').includes('lite');
+  } catch {
+    // Without storage, only the URL decides.
+  }
+  const lite = new URLSearchParams(location.search).get('lite') === '1' || slow;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const has3d = typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d');
   if (!lite && !reduce && has3d) root.dataset.journey = 'on';

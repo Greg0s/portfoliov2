@@ -212,3 +212,54 @@ test('?mesure=1 plays the journey and gives its frame rates', async ({ page, isM
   for (const phase of ['ouverture', 'projets', 'repos', 'fin']) expect(text).toContain(`"${phase}"`);
   await expectAnchor(page, CONTACT);
 });
+
+test('nothing of the office loads before the first project', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await openJourney(page);
+  await expectAnchor(page, 0);
+  await page.mouse.move(200, 200);
+  await page.waitForTimeout(1500);
+  expect(requests.filter((url) => url.includes('/images/office/'))).toEqual([]);
+});
+
+test('?office=layers arrives at the seat over the layers, and logs no error', async ({ page }) => {
+  const errors = trackErrors(page);
+  await openJourney(page, './?office=layers#contact');
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('html')).toHaveAttribute('data-office', 'live', { timeout: 20_000 });
+  await expect(page.locator('.office-layers .office-layer-image')).toHaveCount(3);
+  await expect(page.locator('.office-canvas')).toHaveCount(0);
+  await expect(page.locator('.office-screen')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'contact@gregoiretinn.es' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('?gl=0 shows the office over its layers', async ({ page }) => {
+  await openJourney(page, './?gl=0#contact');
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('.office-layers .office-layer-image')).toHaveCount(3, { timeout: 20_000 });
+  await expect(page.locator('.office-canvas')).toHaveCount(0);
+});
+
+test('?office=live arrives at the seat in the live office, and logs no error', async ({ page }) => {
+  test.slow();
+  const errors = trackErrors(page);
+  // Forced live: without a GPU, the office would go to its layers.
+  await openJourney(page, './?office=live#contact');
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('html')).toHaveAttribute('data-office', 'live', { timeout: 90_000 });
+  await expect(page.locator('.office-canvas')).toHaveCount(1);
+  await expect(page.locator('.office-layers')).toHaveCount(0);
+  await expect(page.locator('.office-screen')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('once the device is found too slow, the visit goes on in the light version', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('portfolio:slow', 'planet,lite');
+  });
+  await page.goto('./');
+  await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
+  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(8);
+});

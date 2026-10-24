@@ -36,7 +36,20 @@ function start(root: HTMLElement): void {
   const started = generation;
   void import('./journey').then(({ startJourney }) => {
     if (started !== generation || !root.isConnected) return;
-    stops.push(startJourney(root, { still, webgl: webglAllowed(location.search) }));
+    stops.push(
+      startJourney(root, {
+        still,
+        webgl: webglAllowed(location.search),
+        onLite: () => {
+          // After this frame: the journey stops, and the page starts again as the list.
+          requestAnimationFrame(() => {
+            if (started !== generation) return;
+            stop();
+            start(root);
+          });
+        },
+      }),
+    );
     // The measurement run, on a real device (`?mesure=1`): loaded only when asked for.
     if (new URLSearchParams(location.search).get('mesure') !== '1') return;
     void import('./measure').then(({ startMeasure }) => {
