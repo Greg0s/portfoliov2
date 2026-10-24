@@ -19,16 +19,17 @@ const { locale } = Astro.props;
 const label = t(locale);
 // The CV joins the links once its PDF is in public/ (main spec §8.2).
 const hasCv = existsSync(`public${config.cv}`);
+// Each link shows its page on the office's screen when hovered (office spec §6).
 const links = [
-  { text: 'LinkedIn', href: config.links.linkedin },
-  { text: 'GitHub', href: config.links.github },
-  ...(hasCv ? [{ text: `${label('contact.cv')} (PDF)`, href: withBase(config.cv) }] : []),
-  { text: 'Instagram', href: config.links.instagram },
+  { text: 'LinkedIn', href: config.links.linkedin, page: 'LinkedIn' },
+  { text: 'GitHub', href: config.links.github, page: 'GitHub' },
+  ...(hasCv ? [{ text: `${label('contact.cv')} (PDF)`, href: withBase(config.cv), page: 'CV' }] : []),
+  { text: 'Instagram', href: config.links.instagram, page: 'Instagram' },
 ];
 ---
 
 <section id={fragments.contact[locale]} class="contact" aria-labelledby="contact-label">
-  <Office />
+  <Office locale={locale} />
   <div class="text">
     <h2 id="contact-label" class="label">
       {label('contact.label')}
@@ -36,9 +37,9 @@ const links = [
     <p class="title">{label('contact.title')}</p>
     <EmailActions locale={locale} />
     <ul class="links" aria-label={label('contact.links')}>
-      {links.map(({ text, href }) => (
+      {links.map(({ text, href, page }) => (
         <li>
-          <a href={href} target="_blank" rel="noopener">
+          <a href={href} target="_blank" rel="noopener" data-screen-page={page}>
             {text} <span aria-hidden="true">↗</span>
           </a>
         </li>

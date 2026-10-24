@@ -5,15 +5,15 @@
  * needs (the screen's picture and the pictures) comes from the contact section's data attributes. Its layers, the
  * fallback, are prepared the same way: their pictures loaded and decoded before they show.
  */
-import { draw as drawPictures } from '../../lib/wall';
 import { loadPlanetModel } from '../planet/load';
 import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
 import { runGeometry } from '../workers/client';
 import { FRAMES, framingOf } from './frame';
 import { createLayersOffice } from './layers';
-import { createLiveOffice, type OfficeScene, type PictureSource } from './live';
+import { createLiveOffice, type OfficeScene } from './live';
 import { createOfficeView, type OfficeView } from './view';
+import type { Cartel, WallPicture } from './wall';
 
 /** Thrown when the device draws WebGL in software: the office stays an image. */
 export class SlowOffice extends Error {}
@@ -29,6 +29,7 @@ export interface OfficeOptions {
 interface PictureData {
   src: string;
   focus?: string;
+  cartel?: Cartel;
 }
 
 const focusOf = (focus: string | undefined): [number, number] => {
@@ -80,18 +81,20 @@ async function viewOf(
   // the view in the page reads its size, which would force a layout in the middle of that frame.
   await new Promise((resolve) => setTimeout(resolve));
   const framing = framingOf(section.clientWidth);
-  const pools = new Map<string, PictureData[]>(
-    Object.entries(JSON.parse(host.dataset.pictures ?? '{}') as Record<string, PictureData[]>),
-  );
-  const pictures = new Map<string, PictureSource>(
-    [...drawPictures(pools)].map(([frame, picture]) => [frame, { src: picture.src, focus: focusOf(picture.focus) }]),
+  const pools = new Map<string, WallPicture[]>(
+    Object.entries(JSON.parse(host.dataset.pictures ?? '{}') as Record<string, PictureData[]>).map(([frame, pool]) => [
+      frame,
+      pool.map((picture) => ({ src: picture.src, focus: focusOf(picture.focus), cartel: picture.cartel ?? null })),
+    ]),
   );
   const view = createOfficeView(host, scene, {
     moment: options.moment,
     framing,
     still: options.still,
-    screen: host.dataset.screen ?? '',
-    pictures,
+    screen: host.querySelector<HTMLTemplateElement>('template[data-screen-template]'),
+    links: host.closest('section') ?? section,
+    locale: document.documentElement.lang,
+    pools,
     planetName: 'B 612',
   });
   // One draw at rest, out of sight: textures, shadow maps and buffers go to the GPU now, not on the way in.

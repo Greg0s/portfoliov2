@@ -1,8 +1,10 @@
 ---
 /**
  * The email and its two actions (office spec §6): the address opens the mail app (`mailto:`); the round button on its
- * right copies it, its icon turning into a check for 1.8 s, and screen readers hear "Address copied". The button needs
- * JavaScript, so it stays hidden without it.
+ * right copies it, its icon turning into a check for 1.8 s, and screen readers hear "Address copied". On phones, a tap on
+ * the address opens a dark bubble above it instead, as iOS does over selected text: "Copy | Send an email"; after
+ * "Copy" it says "Copied" and closes 0.9 s later, and a tap elsewhere closes it. Both need JavaScript, so they stay
+ * hidden without it, and the address keeps opening the mail app.
  */
 import { config } from '../config';
 import { t, type Locale } from '../i18n';
@@ -15,7 +17,7 @@ const { locale } = Astro.props;
 const label = t(locale);
 ---
 
-<div class="email" data-email={config.email} data-copied-text={label('contact.copied')}>
+<div class="email" data-email={config.email} data-copied-text={label('contact.copied')} data-screen-page="Email">
   <a href={`mailto:${config.email}`}>{config.email}</a>
   <button type="button" class="copy" aria-label={label('contact.copy')} hidden>
     <svg class="icon-copy" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -26,6 +28,19 @@ const label = t(locale);
       <path d="M3.5 9.5L7 13l7.5-8"></path>
     </svg>
   </button>
+  <div class="bubble" data-bubble hidden>
+    <button
+      type="button"
+      data-bubble-copy
+      data-copy-text={label('contact.copyShort')}
+      data-copied-short={label('contact.copiedShort')}
+    >
+      {label('contact.copyShort')}
+    </button>
+    <span class="separator" aria-hidden="true"></span>
+    <a href={`mailto:${config.email}`}>{label('contact.write')}</a>
+    <span class="tip" aria-hidden="true"></span>
+  </div>
   <span class="visually-hidden" role="status"></span>
 </div>
 
@@ -95,8 +110,87 @@ const label = t(locale);
     scale: 1;
   }
 
+  /* The bubble, on phones only. */
+  .bubble {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    z-index: 2;
+    display: flex;
+    align-items: stretch;
+    margin-bottom: 6px;
+    border-radius: 12px;
+    background: #19191b;
+    box-shadow:
+      0 0 0 1px rgb(243 243 241 / 14%),
+      0 10px 30px rgb(0 0 0 / 45%);
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(6px) scale(0.96);
+    transform-origin: 50% 100%;
+    transition:
+      opacity 160ms ease,
+      transform 240ms var(--ease-ui),
+      visibility 240ms;
+  }
+
+  /* Without JavaScript, it is simply not there (rather than present and invisible). */
+  .bubble[hidden] {
+    display: none;
+    visibility: inherit;
+  }
+
+  [data-bubble-open] .bubble {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%);
+  }
+
+  .bubble button,
+  .bubble a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .separator {
+    width: 1px;
+    margin: 10px 0;
+    background: rgb(243 243 241 / 22%);
+  }
+
+  .tip {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 12px;
+    height: 12px;
+    margin: -7px 0 0 -6px;
+    background: #19191b;
+    box-shadow: 1px 1px 0 0 rgb(243 243 241 / 14%);
+    transform: rotate(45deg);
+  }
+
+  @media (width < 768px) {
+    .copy:not([hidden]) {
+      display: none;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    svg {
+    svg,
+    .bubble {
       transition: none;
     }
   }

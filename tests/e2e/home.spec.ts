@@ -28,8 +28,9 @@ for (const { lang, path, dir, projects, first } of homes) {
   });
 }
 
-test('the copy button copies the address and says so', async ({ page, context, browserName }) => {
+test('the copy button copies the address and says so', async ({ page, context, browserName, isMobile }) => {
   test.skip(browserName !== 'chromium', 'the clipboard permission is a Chromium one');
+  test.skip(isMobile, 'on phones, the bubble of the address copies it (office.spec.ts)');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   // The contact ends the journey: the anchor leads there.
   await page.goto('./#contact');
