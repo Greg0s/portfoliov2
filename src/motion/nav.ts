@@ -1,7 +1,9 @@
 /**
- * Header and menu links to an anchor of the current page go through the night (main spec §5.5): the view goes dark,
- * the page jumps to the anchor, the view comes back. Links to another page navigate as usual.
+ * Links marked `data-cut` go through the night (main spec §5.5): the view goes dark, the page jumps to the anchor, the
+ * view comes back. To an anchor of the current page (header, menu), the jump is a scroll; to another page (a case
+ * study's Contact link), the client router loads the page in the dark, the veil persisting across the swap.
  */
+import { navigate } from 'astro:transitions/client';
 import { translateFragment, type Locale } from '../i18n/routes';
 import { blackout } from './blackout';
 import { closeMenu, isMenuOpen } from './menu';
@@ -19,7 +21,12 @@ export function initNav(): void {
       const link = target?.closest<HTMLAnchorElement>('a[data-cut]');
       if (!link || !isPlainClick(event)) return;
       const url = new URL(link.href);
-      if (url.pathname !== location.pathname || !url.hash) return;
+      if (url.origin !== location.origin || !url.hash) return;
+      if (url.pathname !== location.pathname) {
+        event.preventDefault();
+        void blackout(() => navigate(url.href));
+        return;
+      }
       const anchor = document.getElementById(decodeURIComponent(url.hash.slice(1)));
       if (!anchor) return;
       event.preventDefault();
