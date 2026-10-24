@@ -358,9 +358,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         markSlow('planet');
         freePlanet();
         // The light version, for the rest of the visit (main spec §6.3): the list, without 3D. This page turns to it
-        // only while the visitor is still at the opening, so that nothing moves under their eyes.
+        // only while the visitor rests at the opening, so that nothing moves under their eyes.
         markSlow('lite');
-        if (current < (anchors[1] ?? 0) * 0.5) options.onLite?.();
+        if (!glide && current === target && current < (anchors[1] ?? 0) * 0.5) options.onLite?.();
       }
     }
   }
