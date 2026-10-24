@@ -30,7 +30,7 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
   <Cartel id={cartelId} title={text.data.title} tag={projectTag(project)} summary={text.data.summary} />
   <div class="place">
     <div class="float">
-      <a class="card" href={href} aria-describedby={cartelId}>
+      <a class="card" href={href} aria-describedby={cartelId} data-slug={slug}>
         <Image
           src={data.cover}
           alt=""

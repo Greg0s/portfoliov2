@@ -107,6 +107,57 @@ button {
   opacity: 1;
 }
 
+/* The dive into a case study and back (motion/dive.ts): the card's picture over a dark backdrop. */
+.dive {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}
+
+.dive-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+}
+
+.dive-picture {
+  position: absolute;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.dive-picture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* With reduced motion, a 200 ms fade replaces the dive (main spec §5.6): the router's own CSS turns every view
+   transition off then, which would leave a cut. */
+@media (prefers-reduced-motion: reduce) {
+  :root::view-transition-old(*) {
+    animation: view-fade-out 200ms ease both !important;
+  }
+
+  :root::view-transition-new(*) {
+    animation: view-fade-in 200ms ease both !important;
+  }
+}
+
+@keyframes view-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes view-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* The veil of the cut through the night (motion/blackout.ts). */
 .veil {
   position: fixed;
