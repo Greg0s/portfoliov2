@@ -31,6 +31,7 @@ import {
   stepAnchor,
   wheelGestures,
 } from './snap';
+import { ambientClock } from '../../motion/ambient';
 import { discCursor } from '../../motion/cursor';
 import { drift, swing } from '../../motion/float';
 import { isMenuOpen } from '../../motion/menu';
@@ -39,6 +40,10 @@ import { onTick } from '../../motion/ticker';
 import type { Matrix4 } from 'three';
 import type { StarField } from '../stars/stars';
 import type { Renderer } from '../renderer';
+import type { Handoff } from '../planet/handoff';
+import type { LivePlanet } from '../planet/planet';
+import { withBase } from '../../lib/url';
+import { frameSampler, isSlow, markSlow, type FrameSampler } from '../quality';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
 const LIGHT = {
@@ -150,6 +155,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let positions: number[] = [];
   let range = 1;
   let planetRest = { x: 0, y: 0 };
+  let planetSize = 0;
 
   // The camera: where the scroll is (target), where the camera is (current), its speed through the end.
   let target = 0;
@@ -213,6 +219,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       const box = planet.getBoundingClientRect();
       planet.style.transform = saved;
       planetRest = { x: box.left + box.width / 2 - view.vpX, y: box.top + box.height / 2 - view.vpY };
+      planetSize = box.width;
     }
   }
 
@@ -239,6 +246,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         swayMatrixOf = swayMatrix;
         stars.points.matrixAutoUpdate = false;
         html.dataset.stars = 'webgl';
+        redraw = true;
       },
     );
   }
@@ -253,7 +261,101 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       stars = createStars(scene.stars, scene.view, renderer.pixelRatio);
       stars.points.matrixAutoUpdate = false;
       renderer.scene.add(stars.points);
+      redraw = true;
     });
+  }
+
+  // ---------- The live planet ----------
+
+  // It loads once the ambient motions start, while the camera is near the opening, and is let go from the middle of
+  // the journey on, so that its GPU memory is free before the office.
+  const PLANET_KEEP = anchors[3] ?? 0.3;
+  const PLANET_FREE = anchors[4] ?? 0.4;
+  /** The planet's blur, in px, past which it is only a blurred light: the image shows instead. */
+  const PLANET_SHARP = 3;
+  let livePlanet: LivePlanet | null = null;
+  let handoff: Handoff | null = null;
+  let planetLoading = false;
+  let lastPlanetDraw = 0;
+  // Its first seconds on screen are measured: too slow, it gives way to its image for the rest of the visit.
+  let planetSampler: FrameSampler | null = null;
+  // `?planete=live` keeps it whatever the rate, for tests and captures on machines without a GPU.
+  const planetForced = new URLSearchParams(location.search).get('planete') === 'live';
+  let planetSlow = !planetForced && isSlow('planet');
+
+  function loadPlanet(): void {
+    if (planetLoading || !planet) return;
+    const container = planet;
+    planetLoading = true;
+    void Promise.all([import('../planet/planet'), import('../planet/handoff')])
+      .then(async ([{ createPlanet, SlowRenderer }, { planetHandoff }]) => {
+        const created = await createPlanet(container, {
+          modelUrl: withBase('/models/petit-prince.glb'),
+          forced: planetForced,
+          moment: html.dataset.moment === 'aube' ? 'aube' : 'crepuscule',
+          mobile: scene.view.mobile,
+          size: planetSize,
+        }).catch((error: unknown) => {
+          if (error instanceof SlowRenderer) {
+            planetSlow = true;
+            markSlow('planet');
+          }
+          throw error;
+        });
+        if (stopped || !planetLoading) {
+          created.dispose();
+          return;
+        }
+        livePlanet?.dispose();
+        livePlanet = created;
+        handoff = planetHandoff(container, created.canvas);
+        planetSampler = planetForced ? null : frameSampler();
+        redraw = true;
+      })
+      .catch(() => {
+        // Without WebGL or the model, the fallback image stays.
+      });
+  }
+
+  function freePlanet(): void {
+    planetLoading = false;
+    handoff?.reset();
+    livePlanet?.dispose();
+    livePlanet = null;
+    handoff = null;
+    delete html.dataset.planet;
+  }
+
+  /** Draws the live planet when it shows, loads it near the opening and lets it go past the middle. */
+  function drawPlanet(now: number, u: number, blur: number, moment: 'aube' | 'crepuscule'): void {
+    if (!options.webgl || planetSlow) return;
+    if (u > PLANET_FREE) {
+      if (planetLoading) freePlanet();
+      return;
+    }
+    if (!livePlanet || !handoff) {
+      if (ambient.started() && u <= PLANET_KEEP) loadPlanet();
+      return;
+    }
+    const previousDraw = lastPlanetDraw;
+    const delta = ambient.started() && !options.still ? Math.min(100, now - previousDraw) : 0;
+    lastPlanetDraw = now;
+    const draws = handoff.update(blur < PLANET_SHARP, now);
+    html.dataset.planet = handoff.state();
+    if (!draws) return;
+    livePlanet.setMoment(moment);
+    livePlanet.render(delta);
+    if (planetSampler && previousDraw > 0) {
+      // Measured at every frame, not at the resting pace.
+      redraw = true;
+      const verdict = planetSampler.add(now - previousDraw);
+      if (verdict === 'fast') planetSampler = null;
+      else if (verdict === 'slow') {
+        planetSlow = true;
+        markSlow('planet');
+        freePlanet();
+      }
+    }
   }
 
   // ---------- Following the scroll ----------
@@ -515,11 +617,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       const progress = current;
       layout();
       rebuildStars();
+      livePlanet?.resize(planetSize, scene.view.mobile);
       jumpTo(settleAnchor(Math.round(progress * range), positions, 0));
     });
   };
 
   const pointer = followPointer(window);
+  const ambient = ambientClock();
 
   // ---------- Drawing a frame ----------
 
@@ -530,7 +634,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const tEnd = endProgress(u);
     const arrival = Math.max(0, Math.min(1, (tEnd - 0.2) / 0.8));
     const starsK = 1 - smoothstep(0, 0.04, arrival);
-    const time = options.still ? 0 : now;
+    const time = options.still ? 0 : ambient.time(now);
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
     const light = LIGHT[moment];
     const tiltOn = !view.mobile && !options.still;
@@ -606,6 +710,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(glow, 'transform', group);
       set(glow, 'opacity', planetState.glowOpacity.toFixed(3));
     }
+    drawPlanet(now, u, planetState.blur, moment);
+    // The office loads from the first project on.
+    if (u >= (anchors[1] ?? 0) - 0.01) html.dataset.office = 'near';
 
     // The opening's text stays, then fades out rising; the call to action leaves at the first move.
     const fade = introFade(depth);
@@ -692,7 +799,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     pointer.update(delta);
     followCamera(delta);
     const atRest = !glide && current === target && pointer.settled() && !redraw;
-    if (atRest && now - lastDraw < AMBIENT_FRAME) return;
+    // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds.
+    if (atRest && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
     lastDraw = now;
     redraw = false;
     draw(now);
@@ -717,6 +825,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     stopGlideTick();
     endGlide();
     pointer.stop();
+    ambient.stop();
     clearTimeout(settleTimer);
     cancelAnimationFrame(resizeFrame);
     window.removeEventListener('scroll', onScroll);
@@ -733,11 +842,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     setJourney(null);
     stars?.dispose();
     renderer?.dispose();
+    freePlanet();
     markers.forEach((marker) => {
       marker.remove();
     });
     delete html.dataset.stars;
     delete html.dataset.introFaded;
+    delete html.dataset.office;
     styles.reset();
     cards.forEach(({ item }) => {
       item.classList.remove('lit');

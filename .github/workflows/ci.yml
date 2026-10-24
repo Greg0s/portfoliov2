@@ -54,7 +54,7 @@ jobs:
         run: pnpm test:e2e
 
       - name: Lighthouse
-        # Warnings only until step 7 (implementation plan §2.9).
+        # Performance under 90 fails the build from step 7 on (implementation plan §2.9).
         run: pnpm exec lhci autorun
 
       - name: Upload reports

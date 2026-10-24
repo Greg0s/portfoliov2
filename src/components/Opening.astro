@@ -122,6 +122,15 @@ const images = [
     background-image: var(--planet-aube-desktop);
   }
 
+  /* The live planet (step 7) draws over its image, then takes its place (src/scene/planet/handoff.ts). */
+  .planet-image :global(.planet-canvas) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 400ms ease;
+  }
+
   .intro {
     position: absolute;
     left: calc(50% + 76px);

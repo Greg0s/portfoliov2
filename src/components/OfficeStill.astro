@@ -3,7 +3,8 @@
  * The office as a still image (office spec §3, plan step 5): the mockup's layers (sky, town, room, desk, the screen
  * with its wallpaper, the wall pictures) flattened into one picture per moment and framing. It stands behind the
  * contact until the live office arrives (step 7), and stays its version without JavaScript or with "reduce motion".
- * Both moments are in the page; only the visitor's shows, and lazy loading leaves the hidden one unloaded.
+ * Both moments are in the page; only the visitor's shows, and lazy loading leaves the hidden one unloaded. In the
+ * journey, it waits for the camera to reach the first project (`data-office` on the root element).
  */
 import { withBase } from '../lib/url';
 
@@ -37,6 +38,11 @@ const src = (moment: string, framing: string): string => withBase(`/images/offic
 
   img {
     object-fit: cover;
+  }
+
+  /* In the journey, nothing of the office loads before the first project (main spec §9.4). */
+  :global(html[data-journey='on']:not([data-office])) picture {
+    display: none;
   }
 
   /* Dusk unless the visitor's moment is dawn (also without JavaScript, when no moment is set). */

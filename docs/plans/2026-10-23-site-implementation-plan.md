@@ -31,7 +31,7 @@ it.
    (main spec §7.2). The prototypes stay separate npm packages; pnpm, ESLint and Prettier ignore `docs/prototypes/`.
 2. **One canvas, one renderer, one loop.** A single full-screen `WebGLRenderer` behind the HTML draws the stars, the
    planet and the office, each its own scene. One `requestAnimationFrame` loop (`src/motion/ticker.ts`) drives the
-   glides, the journey camera, the CSS transforms and the render (main spec §7.4); no Lenis or GSAP (step 6). The canvas is kept across pages with `transition:persist`.
+   glides, the journey camera, the CSS transforms and the render (main spec §7.4); no Lenis or GSAP (step 6). The canvas is kept across pages with `transition:persist`. One exception (step 7): the live planet draws in its own small canvas inside the opening's planet square, so that the CSS places, floats and blurs it exactly like its fallback image; it lives only near the opening and is released past the middle of the journey.
 3. **One camera for CSS and WebGL.** The journey camera is a pure function of the scroll progress. It produces both
    the CSS `perspective` and transforms of the cards and small worlds, and the matching Three.js `PerspectiveCamera`
    (field of view derived from the CSS perspective), so that the stars, the planet and the cards share one space.
@@ -49,7 +49,8 @@ it.
 8. **One quality module.** `src/scene/quality.ts` samples frame times after the warm-ups and decides the light
    version (journey under 40 fps for 3 s) and the office layers (office under 40 fps in its first seconds). URL
    overrides force each path for tests and captures: `?gl=0`, `?lite=1`, `?office=live|layers`, `?heure=aube|crepuscule`,
-   and `?still=1` (frozen time, for stable screenshots).
+   `?still=1` (frozen time, for stable screenshots) and `?planete=live` (the live planet whatever the rate, for tests
+   on machines without a GPU).
 9. **Budgets are enforced in CI from step 2**, not only at step 11: a script measures the initial JavaScript per page
    (gzip), the model, the fallbacks, the office set, the wall images and the screen captures; Lighthouse CI runs on the
    built site, as a warning until step 7, as an error from step 7 on.

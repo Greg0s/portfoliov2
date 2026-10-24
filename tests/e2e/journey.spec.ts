@@ -41,6 +41,31 @@ test('the journey starts on the opening and logs no error', async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+test('the live planet takes over its image after a gesture, and leaves it to the image as it recedes', async ({
+  page,
+}) => {
+  test.slow();
+  const errors = trackErrors(page);
+  // Forced live: without a GPU, the measured rate would hand the planet back to its image.
+  await openJourney(page, './?planete=live');
+  await expect(page.locator('html')).not.toHaveAttribute('data-planet', /.*/);
+  await page.mouse.move(200, 200);
+  await expect(page.locator('html')).toHaveAttribute('data-planet', 'live', { timeout: 60_000 });
+  await expect(page.locator('.planet-canvas')).toHaveCount(1);
+  await page.keyboard.press('ArrowDown');
+  await expectAnchor(page, 1);
+  await expect(page.locator('html')).toHaveAttribute('data-planet', 'image');
+  expect(errors).toEqual([]);
+});
+
+test('?gl=0 keeps the planet as an image', async ({ page }) => {
+  await openJourney(page, './?gl=0');
+  await page.mouse.move(200, 200);
+  await page.waitForTimeout(1500);
+  await expect(page.locator('.planet-canvas')).toHaveCount(0);
+  await expect(page.locator('.planet-image')).toHaveCSS('background-image', /planet-/);
+});
+
 test('the wheel goes anchor by anchor to the contact, and back', async ({ page, isMobile }) => {
   test.skip(isMobile, 'phones have no wheel');
   test.slow();

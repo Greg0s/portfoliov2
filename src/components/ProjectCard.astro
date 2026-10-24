@@ -36,6 +36,7 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
           alt=""
           widths={[480, 720, 1120].filter((width) => width <= data.cover.width)}
           sizes="(width < 768px) 78vw, 38vw"
+          fetchpriority="low"
           style={data.coverFocus ? `object-position: ${data.coverFocus}` : undefined}
         />
         <span class="visually-hidden">
