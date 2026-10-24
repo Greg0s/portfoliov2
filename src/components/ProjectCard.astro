@@ -1,0 +1,145 @@
+---
+/**
+ * One project of the journey (journey spec §5): its cartel (title, tag, short description) and its card, a 16:9 link to
+ * the case study. Its `id` is the project's slug, the fragment that leads to it in the home. Without the journey's
+ * animation (no JavaScript, "reduce motion", step 5), the projects are a list, alternating sides.
+ */
+import { Image } from 'astro:assets';
+import Cartel from './Cartel.astro';
+import { pathFor, t, type Locale } from '../i18n';
+import { projectTag, type Project } from '../lib/projects';
+import { withBase } from '../lib/url';
+import { slotAt } from '../scene/slots';
+
+interface Props {
+  locale: Locale;
+  project: Project;
+  index: number;
+}
+
+const { locale, project, index } = Astro.props;
+const label = t(locale);
+const { slug, data, text } = project;
+const slot = slotAt(index);
+const cartelId = `cartel-${slug}`;
+const href = withBase(pathFor({ id: 'project', slug }, locale));
+---
+
+<li id={slug} class:list={['project', slot.side]} style={`--card-width: ${String(slot.width)}vw`}>
+  <Cartel id={cartelId} title={text.data.title} tag={projectTag(project)} summary={text.data.summary} />
+  <a class="card" href={href} aria-describedby={cartelId}>
+    <Image
+      src={data.cover}
+      alt=""
+      widths={[480, 720, 1120].filter((width) => width <= data.cover.width)}
+      sizes="(width < 768px) 78vw, 38vw"
+      style={data.coverFocus ? `object-position: ${data.coverFocus}` : undefined}
+    />
+    <span class="visually-hidden">
+      {label('card.see')} : {text.data.title}
+    </span>
+    <span class="pill" aria-hidden="true">
+      <svg width="12" height="12" viewBox="0 0 12 12">
+        <path d="M6 1v10M1 6h10"></path>
+      </svg>
+      {label('card.see')}
+    </span>
+  </a>
+</li>
+
+<style>
+  .project {
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    padding-block: 12vh;
+    scroll-margin-top: 10vh;
+  }
+
+  .project.left {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+  }
+
+  .project.right {
+    justify-content: flex-end;
+  }
+
+  .card {
+    position: relative;
+    display: block;
+    flex: none;
+    width: var(--card-width);
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 55%),
+      0 30px 80px -30px rgb(255 255 255 / 12%);
+    transition: translate 450ms var(--ease-ui);
+  }
+
+  .card:hover {
+    opacity: 1;
+    translate: 0 -4px;
+  }
+
+  .card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pill {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 14px 0 12px;
+    border-radius: 999px;
+    background: rgb(12 12 13 / 72%);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 28%);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .pill svg {
+    flex: none;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+
+  @media (width < 768px) {
+    .project,
+    .project.left,
+    .project.right {
+      flex-direction: column-reverse;
+      align-items: center;
+      gap: 24px;
+      padding-block: 8vh;
+    }
+
+    .card {
+      width: 78vw;
+    }
+
+    .pill {
+      display: inline-flex;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card {
+      transition: none;
+    }
+  }
+</style>
