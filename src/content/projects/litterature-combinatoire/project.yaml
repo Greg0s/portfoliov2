@@ -1,0 +1,8 @@
+order: 3
+year: 2023
+stack: [PHP (Slim), SQL, Node.js, Socket.io, HTML, CSS, Premiere Pro, After Effects]
+links:
+  live: https://combimac.oulico.fr/
+  video: https://youtu.be/k7d7twiG1os
+  code: https://github.com/Greg0s/litteratureCombinatoireFront
+cover: ./cover.jpg
