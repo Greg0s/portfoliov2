@@ -29,17 +29,24 @@ test.describe('desktop header', () => {
     await page.goto('./');
     const header = page.getByRole('banner');
     await header.getByRole('link', { name: 'Contact' }).click();
+    // Each anchor is a section taller than the screen: the cut lands on its top.
+    const atTop = async (id: string): Promise<void> => {
+      await expect
+        .poll(async () => page.locator(id).evaluate((node) => Math.round(node.getBoundingClientRect().top)))
+        .toBeLessThanOrEqual(1);
+    };
+
     await expect(page).toHaveURL(/#contact$/);
-    await expect(page.locator('#contact')).toBeInViewport({ ratio: 0.9 });
+    await atTop('#contact');
     await expect(page.locator('[data-veil]')).toHaveCSS('opacity', '0');
 
     await header.getByRole('link', { name: 'Projets' }).click();
     await expect(page).toHaveURL(/#projets$/);
-    await expect(page.locator('#projets')).toBeInViewport({ ratio: 0.9 });
+    await atTop('#projets');
 
     await header.getByRole('link', { name: 'Grégoire Tinnes' }).click();
     await expect(page).toHaveURL(/#accueil$/);
-    await expect(page.locator('#accueil')).toBeInViewport({ ratio: 0.9 });
+    await atTop('#accueil');
   });
 
   test('hides the menu button', async ({ page }) => {
