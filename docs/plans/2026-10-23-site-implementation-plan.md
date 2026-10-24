@@ -6,7 +6,7 @@
   measurement results (`docs/prototypes/perf/RESULTS.md`). When this plan and a spec disagree, the spec wins and this
   plan is fixed in the same change.
 - **Status**: in progress; step 2 (foundations) is done, step 3 (design system) waits for Grégoire's validation, step 4
-  (content) is built and its drafts wait for Grégoire's review, step 5 (static home) is built. Each step is updated here when it is done.
+  (content) is built and its drafts wait for Grégoire's review, step 5 (static home) is built, step 6 (journey) is built and waits for the runs on real devices. Each step is updated here when it is done.
 
 ## 1. What is already decided
 
@@ -30,8 +30,8 @@ it.
 1. **One repository, the site at the root.** `src/`, `public/`, `scripts/` and `tests/` sit next to `docs/`
    (main spec §7.2). The prototypes stay separate npm packages; pnpm, ESLint and Prettier ignore `docs/prototypes/`.
 2. **One canvas, one renderer, one loop.** A single full-screen `WebGLRenderer` behind the HTML draws the stars, the
-   planet and the office, each its own scene. The GSAP ticker drives Lenis, the journey camera, the CSS transforms and
-   the render (main spec §7.4). The canvas is kept across pages with `transition:persist`.
+   planet and the office, each its own scene. One `requestAnimationFrame` loop (`src/motion/ticker.ts`) drives the
+   glides, the journey camera, the CSS transforms and the render (main spec §7.4); no Lenis or GSAP (step 6). The canvas is kept across pages with `transition:persist`.
 3. **One camera for CSS and WebGL.** The journey camera is a pure function of the scroll progress. It produces both
    the CSS `perspective` and transforms of the cards and small worlds, and the matching Three.js `PerspectiveCamera`
    (field of view derived from the CSS perspective), so that the stars, the planet and the cards share one space.
@@ -274,6 +274,31 @@ and robots.
 **Goal**: the scroll-driven camera move, anchor to anchor, with stars in WebGL, focus, cartels, motion and reduced
 motion.
 
+**Status**: built (`feat/journey`, on top of `feat/static-home`); waits for Grégoire's runs on his laptop and Pixel 9
+(`?mesure=1`). As built:
+
+- **No Lenis, no GSAP.** The scroll stays native, snapped on the anchors by CSS (`scroll-snap-type: y mandatory`,
+  one marker per anchor); `snap.ts` turns a wheel or trackpad gesture (inertia included), a swipe over 40 px or a key
+  into one step, and glides there, starting at the finger's speed. The loop is a plain `requestAnimationFrame`
+  (`ticker.ts`). A safety net settles any scroll left between two anchors 220 ms after it stops.
+- **The camera** eases toward the scroll (130 ms on desktop, 150 ms on mobile); through the end it runs on its own
+  clock, so that the arrival takes the same 3.5 s both ways.
+- **Stars**: 90 far and 56 near on desktop, 50 and 36 on mobile, from the mockup's seeded sequence, rather than the
+  three layers of 60, 40 and 20 planned: the site draws the mockup's sky. Three.js loads after the page
+  (initial JavaScript of the home: 11 kB gzip).
+- **At rest**, only the weightless motions move, a few px per second: the loop draws them 20 times a second; a glide,
+  the mouse or a hover draws at every frame. Drawing a frame never reads the layout back.
+- **Reduced motion, `?lite=1`, no JavaScript or no 3D CSS**: the list of step 5. Only the job title changes, in a
+  500 ms fade (main spec §5.5). `?still=1` freezes time, `?gl=0` turns WebGL off, `?mesure=1` plays the journey by
+  itself and shows the frame rates per phase (opening, projects, rest, end) as JSON to copy into the bench.
+- **E2E**: wheel, swipe (CDP touch events) and keys go through every anchor to the contact; fragments, Tab and Enter,
+  reduced motion, `?lite=1`, the measurement run; a smoke test on WebKit (Desktop Safari) in CI. The long-task check
+  became "no frame of the journey forces a layout": without a GPU, Chromium composites in software and its commits
+  alone exceed 50 ms, whatever the page does.
+- **Lighthouse** (warning until step 7): the home's performance falls from 100 to about 55 in headless Chromium,
+  where the continuous animation is composited in software and every frame counts as blocking time. Step 7 must start
+  the ambient motions and the planet's render once the page has settled, to keep 90.
+
 **Pull request**: `feat/journey`; commits in order: camera, anchors, steps, snapping and keyboard; renderer, star cloud and
 small worlds; floating, cursor, tilt, drift, job title, blackout jump and reduced motion.
 
@@ -281,7 +306,7 @@ small worlds; floating, cursor, tilt, drift, job title, blackout jump and reduce
 
 | File                                                         | Content                                                                                                                                              |
 | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/motion/ticker.ts`                                       | the only loop: GSAP ticker driving Lenis, the camera, the CSS and the render; paused when the tab is hidden                                          |
+| `src/motion/ticker.ts`                                       | the only loop (`requestAnimationFrame`): the glides, the camera, the CSS and the render; paused when the tab is hidden                               |
 | `src/scene/journey/anchors.ts`                               | anchor positions over 12.5 screens (opening 1, each project 1.25, the end 1.5)                                                                       |
 | `src/scene/journey/steps.ts`                                 | `f(s) = s + k · sin(2πs) / 2π`, `k = 0.75`                                                                                                           |
 | `src/scene/journey/camera.ts`                                | progress → camera depth; per object: scale, blur (sharp within ±10 %, up to 12 px), opacity (down to 0.25); CSS and Three.js cameras from one source |

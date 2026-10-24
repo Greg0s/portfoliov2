@@ -52,7 +52,7 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
 ## Working on the site
 
 - Node 24 and pnpm, pinned in `package.json` (`corepack enable`); `.npmrc` sets `engine-strict`. Stack and layout:
-  main spec §7 (static Astro, strict TypeScript, Three.js, GSAP, Lenis).
+  main spec §7 (static Astro, strict TypeScript, Three.js; native scroll, no Lenis or GSAP).
 - Commands: `pnpm dev`, `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm format` / `pnpm format:check`, `pnpm check`,
   `pnpm test`, `pnpm test:e2e`, `pnpm budgets`, `pnpm optimize-media` (wall originals → web versions),
   `pnpm render-planet-fallbacks` (the planet's still images, from `docs/prototypes/petit-prince`);
