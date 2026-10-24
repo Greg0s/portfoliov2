@@ -907,9 +907,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let lastDraw = 0;
   // The glide scrolls first in the frame, before the job title or anything else writes a style.
   const stopGlideTick = onTick(stepGlide, { first: true });
+  // The camera keeps its pace when frames are slow: the ticker caps a frame at 64 ms, which would stretch the 3.5 s
+  // arrival at the office into much more on a device drawing a few frames a second. Up to 250 ms, it moves as far as
+  // the time the frame took.
+  let lastFrame = 0;
   const stopTick = onTick((now, delta) => {
+    const elapsed = delta >= 64 && lastFrame > 0 ? Math.min(250, now - lastFrame) : delta;
+    lastFrame = now;
     pointer.update(delta);
-    followCamera(delta);
+    followCamera(elapsed);
     const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
     // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds.
     if (atRest && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
