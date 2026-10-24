@@ -1,16 +1,11 @@
 ---
+import Home from '../components/Home.astro';
+import { t } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { withBase } from '../lib/url';
+
+const label = t('fr');
 ---
 
-<Base
-  lang="fr"
-  title="Grégoire Tinnes"
-  description="Entre l’image et le code, je conçois des interfaces et des expériences web interactives."
->
-  <h1>Grégoire Tinnes</h1>
-  <p>Le portfolio est en construction.</p>
-  <a href={withBase('/en/')} hreflang="en" lang="en">
-    English
-  </a>
+<Base locale="fr" title={label('site.title')} description={label('site.description')}>
+  <Home locale="fr" />
 </Base>

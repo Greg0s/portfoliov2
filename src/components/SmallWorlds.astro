@@ -1,0 +1,179 @@
+---
+/**
+ * The small worlds along the journey (journey spec §4): glowing discs, ringed planets seen at an angle or edge-on, a
+ * planet and its moon, little five-pointed stars, all white. 21 on desktop, 16 on mobile; each framing has its own
+ * set, and the journey places the visible one in 3D. Decorative: hidden from assistive technologies, and not drawn
+ * outside the journey.
+ */
+import { sceneFor, type World } from '../scene/journey/layout';
+
+const framings = [
+  { name: 'desktop', worlds: sceneFor(1440, 900).worlds },
+  { name: 'mobile', worlds: sceneFor(390, 844).worlds },
+] as const;
+
+/** A five-pointed star in a box of 3 × 3 disc diameters. */
+const starPath = (() => {
+  const points = Array.from({ length: 10 }, (_, i) => {
+    const r = i % 2 ? 0.24 : 0.56;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    return `${(1.5 + r * Math.cos(a)).toFixed(3)} ${(1.5 + r * Math.sin(a)).toFixed(3)}`;
+  });
+  return `M${points.join('L')}Z`;
+})();
+
+const angles = (world: World): string =>
+  `--ring-rotation: ${world.ringRotation.toFixed(1)}deg; --line-rotation: ${world.lineRotation.toFixed(1)}deg`;
+---
+
+<div class="worlds" aria-hidden="true">
+  {framings.map(({ name, worlds }) =>
+    worlds.map((world, index) => (
+      <div class="world" data-framing={name} data-world={index} style={angles(world)}>
+        <div class:list={['body', `is-${world.kind}`]}>
+          {world.kind === 'tilt' && <span class="line" />}
+          {world.kind === 'ring' && <span class="ring back" />}
+          <span class="glow" />
+          {world.kind === 'ring' && <span class="ring front" />}
+          {world.kind === 'moon' && <span class="moon-satellite" />}
+          {world.kind === 'star' && (
+            <svg viewBox="0 0 3 3">
+              <path d={starPath} />
+            </svg>
+          )}
+        </div>
+      </div>
+    )),
+  )}
+</div>
+
+<style>
+  .worlds {
+    display: none;
+  }
+
+  :global(html[data-journey='on']) .worlds {
+    position: absolute;
+    inset: 0;
+    display: block;
+    transform-style: preserve-3d;
+    pointer-events: none;
+  }
+
+  .world {
+    --s: 12px;
+
+    position: absolute;
+    left: var(--vp-x);
+    top: var(--vp-y);
+    width: 0;
+    height: 0;
+    transform-style: preserve-3d;
+  }
+
+  .world[data-framing='mobile'] {
+    display: none;
+  }
+
+  @media (width < 768px) {
+    .world[data-framing='desktop'] {
+      display: none;
+    }
+
+    .world[data-framing='mobile'] {
+      display: block;
+    }
+  }
+
+  /* A box of 3 disc diameters, centred on the world's place. */
+  .body {
+    position: absolute;
+    left: calc(var(--s) * -1.5);
+    top: calc(var(--s) * -1.5);
+    width: calc(var(--s) * 3);
+    height: calc(var(--s) * 3);
+    opacity: 0;
+  }
+
+  .body > * {
+    position: absolute;
+    display: block;
+  }
+
+  .glow {
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle closest-side,
+      rgb(243 243 241 / 95%) 0%,
+      rgb(243 243 241 / 95%) 31%,
+      rgb(243 243 241 / 30%) 36%,
+      rgb(243 243 241 / 9%) 60%,
+      rgb(243 243 241 / 0%) 100%
+    );
+  }
+
+  /* A little star only glows faintly around its shape. */
+  .is-star .glow {
+    background: radial-gradient(
+      circle closest-side,
+      rgb(243 243 241 / 20%) 0%,
+      rgb(243 243 241 / 7%) 45%,
+      rgb(243 243 241 / 0%) 100%
+    );
+  }
+
+  svg {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    fill: rgb(243 243 241 / 92%);
+  }
+
+  /* A ring seen at an angle passes behind the disc at the top and in front at the bottom. */
+  .ring {
+    left: calc(var(--s) * 0.45);
+    top: calc(var(--s) * 1.1);
+    width: calc(var(--s) * 2.1);
+    height: calc(var(--s) * 0.8);
+    border: max(1px, calc(var(--s) * 0.07)) solid rgb(243 243 241 / 75%);
+    border-radius: 50%;
+    rotate: var(--ring-rotation);
+  }
+
+  .ring.front {
+    clip-path: inset(50% 0 0);
+  }
+
+  /* Seen edge-on, the ring is a line. */
+  .line {
+    left: calc(var(--s) * 0.35);
+    top: calc(var(--s) * 1.5 - max(1px, calc(var(--s) * 0.07)) / 2);
+    width: calc(var(--s) * 2.3);
+    height: max(1px, calc(var(--s) * 0.07));
+    background: linear-gradient(
+      90deg,
+      rgb(243 243 241 / 0%),
+      rgb(243 243 241 / 80%) 22%,
+      rgb(243 243 241 / 80%) 78%,
+      rgb(243 243 241 / 0%)
+    );
+    rotate: var(--line-rotation);
+  }
+
+  .moon-satellite {
+    left: calc(var(--s) * 2);
+    top: calc(var(--s) * 0.45);
+    width: calc(var(--s) * 0.9);
+    height: calc(var(--s) * 0.9);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle closest-side,
+      rgb(243 243 241 / 90%) 0%,
+      rgb(243 243 241 / 90%) 34%,
+      rgb(243 243 241 / 16%) 46%,
+      rgb(243 243 241 / 0%) 100%
+    );
+  }
+</style>

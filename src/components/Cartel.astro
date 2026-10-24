@@ -1,0 +1,123 @@
+---
+// A project's cartel (journey spec §5): title, tag, short description, at most 300 px wide, on the centre's side.
+interface Props {
+  id: string;
+  title: string;
+  tag: string;
+  summary: string;
+}
+
+const { id, title, tag, summary } = Astro.props;
+---
+
+<div class="cartel" id={id}>
+  <h3>{title}</h3>
+  <p class="tag">{tag}</p>
+  <p class="summary">{summary}</p>
+</div>
+
+<style>
+  .cartel {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 300px;
+  }
+
+  /* The dark halo that keeps the cartel readable over the stars. */
+  .cartel::before {
+    content: '';
+    position: absolute;
+    inset: -64px -80px;
+    z-index: -1;
+    background: radial-gradient(closest-side, rgb(6 6 7 / 78%), rgb(6 6 7 / 0%));
+  }
+
+  h3 {
+    font-size: var(--size-project);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: var(--tracking-project);
+  }
+
+  .tag {
+    font-family: var(--font-display);
+    font-size: var(--size-tag);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tag);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .summary {
+    margin-top: 4px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--color-muted);
+  }
+
+  @media (width < 768px) {
+    .cartel {
+      align-items: center;
+      text-align: center;
+    }
+
+    h3 {
+      font-size: 24px;
+    }
+  }
+
+  /*
+   * In the journey, the cartel of the sharp card appears in 300 ms and fades out in 200 ms (journey spec §5). The
+   * journey sets its place on screen (`translate`), beside the card or under it on mobile; only the rise is eased.
+   */
+  :global(html[data-journey='on']) .cartel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--cartel-width, 300px);
+    max-width: none;
+    opacity: 0;
+    transform: translate(0, -50%) translateY(8px);
+    transition:
+      opacity 200ms var(--ease-ui),
+      transform 200ms var(--ease-ui);
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on'] .right) .cartel {
+    align-items: flex-end;
+    text-align: right;
+    transform: translate(-100%, -50%) translateY(8px);
+  }
+
+  :global(html[data-journey='on'] .lit) .cartel {
+    opacity: 1;
+    transform: translate(0, -50%);
+    transition-duration: 300ms;
+  }
+
+  :global(html[data-journey='on'] .right.lit) .cartel {
+    transform: translate(-100%, -50%);
+  }
+
+  @media (width < 768px) {
+    :global(html[data-journey='on']) .cartel,
+    :global(html[data-journey='on'] .right) .cartel {
+      align-items: flex-start;
+      text-align: left;
+      transform: translateY(8px);
+    }
+
+    :global(html[data-journey='on'] .lit) .cartel,
+    :global(html[data-journey='on'] .right.lit) .cartel {
+      transform: none;
+    }
+
+    :global(html[data-journey='on']) .summary {
+      font-size: 14px;
+    }
+  }
+</style>

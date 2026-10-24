@@ -1,0 +1,55 @@
+---
+/**
+ * The 8 projects of the journey (journey spec §5), as an ordered list in the order of the journey. Step 5 shows it as
+ * a list, which stays the version without JavaScript and with "reduce motion"; the journey animates this same list,
+ * in 3D, with the small worlds between the projects.
+ */
+import ProjectCard from './ProjectCard.astro';
+import SmallWorlds from './SmallWorlds.astro';
+import { fragments, t, type Locale } from '../i18n';
+import { getProjects } from '../lib/projects';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const label = t(locale);
+const projects = await getProjects(locale);
+---
+
+<section id={fragments.projects[locale]} class="journey" aria-labelledby="journey-title">
+  <h2 id="journey-title" class="visually-hidden">
+    {label('projects.label')}
+  </h2>
+  <SmallWorlds />
+  <ol aria-labelledby="journey-title">
+    {projects.map((project, index) => (
+      <ProjectCard locale={locale} project={project} index={index} />
+    ))}
+  </ol>
+</section>
+
+<style>
+  .journey {
+    padding: 8vh var(--gutter);
+  }
+
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* In the journey, the section is the 3D space: the journey sets its perspective at the vanishing point. */
+  :global(html[data-journey='on']) .journey {
+    padding: 0;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) ol {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+  }
+</style>

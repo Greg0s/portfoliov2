@@ -1,0 +1,357 @@
+---
+/**
+ * A case study (main spec §4, mockup Etude): its own header (back to the projects, number, languages), the opening
+ * media, tag, title and lede, the facts, the body written in Markdown (Context, What I did, Technical challenges), the
+ * next project and a footer whose Contact link leads to the office through the night.
+ */
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import CaseStars from './CaseStars.astro';
+import LanguageSwitch from './LanguageSwitch.astro';
+import NextProject from './NextProject.astro';
+import ProjectFacts from './ProjectFacts.astro';
+import { config } from '../config';
+import { fragments, pathFor, t, type Locale } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { projectNumber, projectTag, type Project } from '../lib/projects';
+import { withBase } from '../lib/url';
+
+interface Props {
+  locale: Locale;
+  project: Project;
+  next: Project;
+  total: number;
+}
+
+const { locale, project, next, total } = Astro.props;
+const label = t(locale);
+const { title, lede, summary, coverAlt } = project.text.data;
+const { cover, coverFocus, order } = project.data;
+const { Content } = await render(project.text);
+
+const path = pathFor({ id: 'project', slug: project.slug }, locale);
+const home = pathFor({ id: 'home' }, locale);
+// Back to the projects lands on this project's card in the journey.
+const back = withBase(`${home}#${project.slug}`);
+const contact = withBase(`${home}#${fragments.contact[locale]}`);
+const numberText = label('case.number').replace('{n}', String(order)).replace('{total}', String(total));
+const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width).concat(cover.width);
+---
+
+<Base locale={locale} title={`${title} · ${config.name}`} description={summary}>
+  <header class="case-header" slot="header">
+    <a class="back" href={back}>
+      <span aria-hidden="true">←</span> {label('case.back')}
+    </a>
+    <div class="aside">
+      <p class="number">
+        <span aria-hidden="true">
+          {projectNumber(order)} / {projectNumber(total)}
+        </span>
+        <span class="visually-hidden">{numberText}</span>
+      </p>
+      <div class="desktop-only">
+        <LanguageSwitch locale={locale} path={path} />
+      </div>
+    </div>
+  </header>
+
+  <div class="case-page">
+    <CaseStars />
+    <article class="case">
+      <figure class="cover">
+        <Image
+          src={cover}
+          alt={coverAlt}
+          widths={coverWidths}
+          sizes="100vw"
+          loading="eager"
+          fetchpriority="high"
+          transition:name={`cover-${project.slug}`}
+          style={coverFocus ? `object-position: ${coverFocus}` : undefined}
+        />
+      </figure>
+
+      <div class="intro">
+        <p class="tag">{projectTag(project)}</p>
+        <h1>{title}</h1>
+        <p class="lede">{lede ?? summary}</p>
+      </div>
+
+      <ProjectFacts locale={locale} project={project} />
+
+      <div class="case-content">
+        <Content />
+      </div>
+    </article>
+
+    <NextProject locale={locale} next={next} />
+  </div>
+
+  <footer class="case-footer" slot="footer">
+    <span>© 2026 {config.name}</span>
+    <div class="mobile-only">
+      <LanguageSwitch locale={locale} path={path} />
+    </div>
+    <a href={contact} data-cut>
+      {label('nav.contact')}
+    </a>
+  </footer>
+</Base>
+
+<style>
+  .case-header {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 32px;
+    min-height: var(--header-height);
+    padding-inline: var(--gutter);
+    font-size: var(--size-nav);
+    font-weight: 500;
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+  }
+
+  .aside {
+    display: flex;
+    align-items: center;
+    gap: 8px 32px;
+  }
+
+  .number {
+    color: rgb(243 243 241 / 75%);
+  }
+
+  /* The stars stay within the page: the last ones would otherwise lengthen a short page. */
+  .case-page {
+    position: relative;
+    overflow: clip;
+  }
+
+  .case {
+    position: relative;
+  }
+
+  .cover {
+    position: relative;
+    margin: 0;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--color-surface);
+  }
+
+  .cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* The header stays readable over any cover. */
+  .cover::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 160px;
+    background: linear-gradient(to bottom, rgb(6 6 7 / 70%), rgb(6 6 7 / 0%));
+  }
+
+  .intro {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 1100px;
+    margin-inline: auto;
+    padding: 72px var(--gutter) 0;
+    box-sizing: content-box;
+  }
+
+  .tag {
+    font-family: var(--font-display);
+    font-size: var(--size-tag);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tag);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  h1 {
+    font-size: 88px;
+    line-height: 0.95;
+  }
+
+  .lede {
+    max-width: 34em;
+    font-size: 21px;
+    line-height: 1.55;
+    color: var(--color-muted);
+  }
+
+  .case-content {
+    position: relative;
+    padding-top: 64px;
+  }
+
+  /* The Markdown body: each `##` is a section (src/lib/markdown/sections.ts), each challenge an article. */
+  .case-content :global(.case-section) {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+    gap: 24px 48px;
+    max-width: 1100px;
+    margin-inline: auto;
+    padding: 64px var(--gutter) 0;
+    box-sizing: content-box;
+  }
+
+  .case-content :global(.case-section:first-child) {
+    padding-top: 64px;
+  }
+
+  .case-content :global(h2) {
+    padding-top: 4px;
+    font-family: var(--font-text);
+    font-size: var(--size-label);
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    line-height: 1.6;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .case-content :global(.case-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .case-content :global(.case-body > p) {
+    max-width: 36em;
+    font-size: 18px;
+    line-height: 1.65;
+  }
+
+  .case-content :global(.case-body > p + .challenge) {
+    margin-top: 24px;
+  }
+
+  .case-content :global(.challenge) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 28px;
+    border-radius: var(--radius-card);
+    background: rgb(22 22 24 / 70%);
+    box-shadow: 0 0 0 1px rgb(243 243 241 / 8%);
+  }
+
+  .case-content :global(.challenge-number) {
+    font-size: var(--size-label);
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-muted);
+  }
+
+  .case-content :global(.challenge h3) {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: var(--tracking-project);
+  }
+
+  .case-content :global(.challenge dl) {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 12px 24px;
+    margin: 0;
+  }
+
+  .case-content :global(.challenge dt) {
+    padding-top: 4px;
+    font-size: var(--size-label);
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    font-style: normal;
+  }
+
+  .case-content :global(.challenge dd) {
+    margin: 0;
+    max-width: 36em;
+    font-size: 17px;
+    line-height: 1.6;
+    font-style: normal;
+  }
+
+  .case-footer {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 28px var(--gutter);
+    border-top: 1px solid rgb(243 243 241 / 10%);
+    font-size: 13px;
+    color: var(--color-muted);
+  }
+
+  .mobile-only {
+    display: none;
+  }
+
+  @media (width < 768px) {
+    .desktop-only {
+      display: none;
+    }
+
+    .mobile-only {
+      display: block;
+    }
+
+    .intro {
+      gap: 16px;
+      padding-top: 32px;
+    }
+
+    h1 {
+      font-size: 44px;
+    }
+
+    .lede {
+      font-size: 18px;
+    }
+
+    .case-content {
+      padding-top: 32px;
+    }
+
+    .case-content :global(.case-section) {
+      grid-template-columns: minmax(0, 1fr);
+      padding-top: 48px;
+    }
+
+    .case-content :global(.challenge) {
+      padding: 24px;
+    }
+
+    .case-content :global(.challenge dl) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 4px;
+    }
+
+    .case-content :global(.challenge dd + dt) {
+      margin-top: 12px;
+    }
+  }
+</style>

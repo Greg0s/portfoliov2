@@ -1,6 +1,6 @@
 # Où en est le projet
 
-- **Mis à jour** : 23 octobre 2026 (fondations du site, étape 2)
+- **Mis à jour** : 24 octobre 2026 (parcours, étape 6)
 - **À lire en premier** dans une nouvelle conversation, juste après `CLAUDE.md`.
 
 ## La maquette v3 est terminée
@@ -24,7 +24,7 @@ Grégoire l'a validée le 23 octobre 2026 : c'est la fin de l'étape 0 de la spe
 
    Le résultat fixe l'architecture du bureau (temps réel partout, couches pré-rendues comme dans la maquette, ou un mélange) et celle des cartes (CSS ou WebGL).
 
-4. **Construire le site** étape par étape (spec principale, section 11), à partir de l'étape 2 : les fondations (Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement) sont en place (branche `feat/foundations`) ; vient ensuite l'étape 3, le design system. Le plan détaillé, avec les fichiers, les tâches et les tests de chaque étape, est dans `docs/plans/2026-10-23-site-implementation-plan.md`.
+4. **Construire le site** étape par étape (spec principale, section 11), à partir de l'étape 2 : les fondations (Astro, TypeScript strict, ESLint, Prettier, Vitest, Playwright, CI, déploiement) sont en place (branche `feat/foundations`) ; le design system (étape 3, `feat/design-system`) attend la validation de Grégoire ; le contenu (étape 4, `feat/content`) est construit : les 8 études de cas en français et en anglais, rédigées en brouillon à partir de l'ancien site et des repos, attendent sa relecture ; l'accueil statique (étape 5, `feat/static-home`) est construit : l'ouverture, les 8 projets en liste et le contact dans le bureau, lisibles sans JavaScript, avec les anciennes URL redirigées ; le parcours (étape 6, `feat/journey`) est construit : le recul de la caméra d'ancre en ancre à la molette, au doigt et au clavier, les étoiles en WebGL, les petits mondes, les cartels et les flottements ; il attend les mesures de Grégoire sur son ordinateur et son Pixel 9 (`?mesure=1`). Le plan détaillé, avec les fichiers, les tâches et les tests de chaque étape, est dans `docs/plans/2026-10-23-site-implementation-plan.md`.
 
 ## Performance et qualité du code
 
@@ -37,6 +37,7 @@ Grégoire l'a validée le 23 octobre 2026 : c'est la fin de l'étape 0 de la spe
 - Les vidéos en boucle des 8 projets, les années et rôles à confirmer (Le Petit Prince, Obaine) et l'adresse en ligne de Lyrix (spec principale, section 8.2).
 - Des images pour chaque cadre du mur : au moins 600 px de côté, d'un format proche de celui du cadre, avec le titre, l'auteur et l'année quand il les connaît. Pour l'instant, chaque cadre n'a qu'une image, donc la Corbeille relance un tirage qui ne change rien.
 - Les photos et visuels en haute définition des études de cas.
+- La relecture des 8 études de cas (`src/content/projects/<slug>/fr.md` et `en.md`), en particulier les rôles et la part de chacun dans les projets d'équipe.
 
 ## Les outils
 

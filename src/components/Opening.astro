@@ -1,0 +1,339 @@
+---
+/**
+ * The opening (main spec §4, journey spec §6): the planet on the left (above the text on mobile), the name, the job
+ * title, the tagline and the one call, "See the projects". Until the 3D planet arrives (step 6), and without WebGL,
+ * the planet is its fallback render for the visitor's moment: a CSS background, so that only the moment's image loads.
+ * In the journey, the planet recedes to a point of light (`.planet-glow`) and the text fades out.
+ */
+import { config } from '../config';
+import { preloadPlanet } from '../scene/preload';
+import { fragments, t, type Locale } from '../i18n';
+import { withBase } from '../lib/url';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const label = t(locale);
+const jobs = label('opening.jobs').split('|');
+const image = (name: string): string => `url('${withBase(`/images/planet/${name}.webp`)}')`;
+// The planet is the opening's largest paint: the right image is preloaded before the first paint, since its moment
+// and the screen's width are only known in the browser (the others are never requested).
+const preload = `(${preloadPlanet.toString()})(${JSON.stringify(withBase('/images/planet/'))});`;
+const images = [
+  `--planet-aube-desktop: ${image('planet-aube-desktop')}`,
+  `--planet-aube-mobile: ${image('planet-aube-mobile')}`,
+  `--planet-crepuscule-desktop: ${image('planet-crepuscule-desktop')}`,
+  `--planet-crepuscule-mobile: ${image('planet-crepuscule-mobile')}`,
+].join('; ');
+---
+
+<script is:inline set:html={preload} />
+<section id={fragments.opening[locale]} class="opening" aria-labelledby="opening-name" style={images}>
+  <div class="planet" aria-hidden="true">
+    <img
+      class="decor"
+      src={withBase('/images/planet/decor.webp')}
+      alt=""
+      width="1600"
+      height="1000"
+      fetchpriority="high"
+    />
+    <div class="halo"></div>
+  </div>
+  <div class="planet-frame">
+    <div class="planet-image" role="img" aria-label={label('opening.planet')}></div>
+  </div>
+  <div class="planet-glow" aria-hidden="true"></div>
+
+  <div class="intro">
+    <div class="titles">
+      <h1 id="opening-name">{config.name}</h1>
+      <p class="job">
+        <span class="visually-hidden">{jobs.join(', ')}</span>
+        <span class="job-visual" aria-hidden="true" data-jobs={jobs.join('|')}>
+          {jobs[0]}
+        </span>
+      </p>
+    </div>
+    <p class="tagline">{label('opening.tagline')}</p>
+    <p class="lede">{label('site.description')}</p>
+  </div>
+
+  <a class="cta" href={`#${fragments.projects[locale]}`}>
+    <span class="cta-text">{label('opening.cta')}</span>
+    <span class="cta-line" aria-hidden="true">
+      <span></span>
+    </span>
+  </a>
+</section>
+
+<style>
+  .opening {
+    --planet-size: 600px;
+    --planet-x: calc(50% - 314px);
+    --planet-y: 50%;
+
+    position: relative;
+    min-height: max(100svh, 640px);
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 50%, #0f0f11 0%, rgb(10 10 11 / 0%) 70%);
+  }
+
+  .planet,
+  .planet-image {
+    position: absolute;
+    left: var(--planet-x);
+    top: var(--planet-y);
+    width: var(--planet-size);
+    height: var(--planet-size);
+    translate: -50% -50%;
+    pointer-events: none;
+  }
+
+  .decor {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(var(--planet-size) * 4);
+    height: calc(var(--planet-size) * 2.5);
+    translate: -50% -50%;
+    object-fit: contain;
+    opacity: 0.42;
+  }
+
+  :global(html[data-moment='aube']) .decor {
+    opacity: 0.33;
+  }
+
+  .halo {
+    position: absolute;
+    inset: -40px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(255 255 255 / 6%) 0%, rgb(255 255 255 / 2%) 38%, rgb(0 0 0 / 0%) 68%);
+  }
+
+  .planet-image {
+    background: var(--planet-crepuscule-desktop) center / contain no-repeat;
+  }
+
+  :global(html[data-moment='aube']) .planet-image {
+    background-image: var(--planet-aube-desktop);
+  }
+
+  .intro {
+    position: absolute;
+    left: calc(50% + 76px);
+    top: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 28px;
+    width: min(580px, 50% - 76px - var(--gutter));
+    translate: 0 -50%;
+  }
+
+  .titles {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  h1 {
+    font-size: var(--size-name);
+    line-height: 0.95;
+  }
+
+  .job {
+    font-family: var(--font-display);
+    font-size: var(--size-job);
+    font-style: italic;
+    font-weight: 300;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--color-muted);
+  }
+
+  .job-visual {
+    display: inline-grid;
+    vertical-align: top;
+  }
+
+  .job-visual :global(.job-layer) {
+    grid-area: 1 / 1;
+    white-space: pre;
+  }
+
+  .job-visual :global(.job-layer span) {
+    display: inline-block;
+    white-space: pre;
+  }
+
+  .planet-glow {
+    display: none;
+  }
+
+  .planet-frame {
+    display: contents;
+  }
+
+  .tagline {
+    font-size: var(--size-tagline);
+    line-height: 1.25;
+    letter-spacing: var(--tracking-subtitle);
+  }
+
+  .lede {
+    max-width: 30em;
+    margin-top: -12px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--color-muted);
+  }
+
+  .cta {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 44px;
+    translate: -50% 0;
+    white-space: nowrap;
+  }
+
+  .cta-text {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .cta-line {
+    position: relative;
+    display: block;
+    width: 1px;
+    height: 44px;
+    overflow: hidden;
+    background: rgb(243 243 241 / 14%);
+  }
+
+  .cta-line span {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 16px;
+    background: var(--color-text);
+    animation: descend 2.4s var(--ease-float) infinite;
+  }
+
+  @keyframes descend {
+    from {
+      translate: 0 -16px;
+    }
+
+    to {
+      translate: 0 44px;
+    }
+  }
+
+  @media (width < 768px) {
+    .opening {
+      --planet-size: 360px;
+      --planet-x: 50%;
+      --planet-y: 248px;
+
+      min-height: max(100svh, 760px);
+      background: radial-gradient(ellipse at 50% 29%, #0f0f11 0%, rgb(10 10 11 / 0%) 70%);
+    }
+
+    .planet-image {
+      background-image: var(--planet-crepuscule-mobile);
+    }
+
+    :global(html[data-moment='aube']) .planet-image {
+      background-image: var(--planet-aube-mobile);
+    }
+
+    .intro {
+      left: var(--gutter);
+      right: var(--gutter);
+      top: 436px;
+      gap: 14px;
+      width: auto;
+      translate: none;
+    }
+
+    .titles {
+      gap: 8px;
+    }
+
+    h1 {
+      font-size: 48px;
+    }
+
+    .tagline {
+      margin-top: 2px;
+      font-size: 22px;
+      line-height: 1.3;
+    }
+
+    .lede {
+      margin-top: 0;
+      font-size: 16px;
+    }
+
+    .cta {
+      bottom: 22px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cta-line span {
+      animation: none;
+    }
+  }
+
+  /* In the journey, the opening is the scene's back: the planet and its decor, the text, the call to action. */
+  :global(html[data-journey='on']) .opening {
+    min-height: 0;
+    overflow: visible;
+    background: none;
+  }
+
+  /* The planet's blur applies on screen, after its scale, like the cards' depth of field. */
+  :global(html[data-journey='on']) .planet-frame {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .planet-glow {
+    position: absolute;
+    left: var(--planet-x);
+    top: var(--planet-y);
+    display: block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgb(255 255 255 / 55%) 0%,
+      rgb(255 255 255 / 34%) 30%,
+      rgb(255 255 255 / 12%) 56%,
+      rgb(255 255 255 / 0%) 72%
+    );
+    opacity: 0;
+    translate: -50% -50%;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .cta {
+    transition:
+      opacity 400ms ease,
+      visibility 400ms;
+  }
+</style>

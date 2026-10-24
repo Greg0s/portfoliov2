@@ -54,7 +54,7 @@ On repart d'un repo vide : `Greg0s/portfoliov2`.
 - **Étude de cas** : lien « Retour aux projets », numéro (01 / 08), média d'ouverture (la carte dans laquelle on a plongé), tag (année et type), titre, chapeau, fiche (année, rôle, stack, liens), puis _Contexte_, _Ce que j'ai fait_, _Défis techniques_ (chaque défi en trois temps : problème, solution, résultat), images et vidéos, le projet suivant (le dernier renvoie au premier) et, en bas, un lien « Contact » qui mène au bureau par le noir.
 - **404** : message en français et en anglais, avec des liens vers les deux accueils.
 - **Langues** : français à la racine, anglais sous `/en/` ; le sélecteur mène à la page équivalente ; aucune redirection automatique ; chaque page déclare `<html lang>` et ses alternatives `hreflang` (`x-default` vers le français).
-- **Adresses dans l'accueil** : chaque ancre a un fragment (`#projets`, `#<slug>`, `#contact` ; en anglais `#projects`, `#<slug>`, `#contact`), pour pouvoir partager un endroit du parcours et y arriver directement.
+- **Adresses dans l'accueil** : chaque ancre a un fragment (`#accueil`, `#projets`, `#<slug>`, `#contact` ; en anglais `#home`, `#projects`, `#<slug>`, `#contact` ; le sélecteur de langue traduit le fragment), pour pouvoir partager un endroit du parcours et y arriver directement.
 - **Anciennes URL** : des pages de redirection statiques renvoient les pages des projets retenus vers leur étude de cas, `about.html` vers l'accueil et `contact.html` vers `/#contact`. Les autres aboutissent à la 404.
 
 ## 5. Direction artistique : « Musée de nuit »
@@ -191,7 +191,7 @@ Le relief de la planète et les cheveux du prince viennent du matériau dans Ble
 
 ### 7.1 Stack
 
-Astro (sortie statique), TypeScript strict, Three.js, GSAP, Lenis, polices via Fontsource, pnpm, Node 24 (LTS).
+Astro (sortie statique), TypeScript strict, Three.js, polices via Fontsource, pnpm, Node 24 (LTS). Ni Lenis ni GSAP : le défilement reste natif et une seule boucle `requestAnimationFrame` anime tout (section 7.4, décidé à l'étape 6, le 24 octobre 2026).
 
 ### 7.2 Arborescence
 
@@ -232,7 +232,7 @@ docs/
 
 **Un dossier par projet** (`src/content/projects/<slug>/`) :
 
-- `project.yaml`, les données qui ne se traduisent pas : `order`, `year`, `stack`, `links` (`live`, `code`, `video`, facultatifs), `cover`, `coverFocus` (facultatif), `loop` (vidéo de la carte, facultative) ;
+- `project.yaml`, les données qui ne se traduisent pas : `order`, `year`, `stack`, `links` (`live`, `code`, `video`, `gallery` pour une galerie comme Behance, facultatifs), `cover`, `coverFocus` (facultatif), `loop` (vidéo de la carte, facultative) ;
 - `fr.md` et `en.md` : en en-tête `title`, `kind`, `role`, `summary` (la description courte du cartel, reprise pour le SEO) et `coverAlt` ; dans le corps, l'étude de cas en Markdown.
 
 La position, la largeur nette et la rotation des 8 cartes dans le parcours sont définies dans le code, par emplacement, dans l'ordre des projets (spec du parcours, section 5), comme les petits mondes.
@@ -253,13 +253,13 @@ La position, la largeur nette et la rotation des 8 cartes dans le parcours sont 
 
 ### 7.4 Navigation et scène
 
-- **Le parcours** : Lenis lisse le défilement natif, que la caméra suit ; un module d'ancres amène toujours le défilement sur l'ancre suivante ou précédente après un geste, en suivant la courbe des paliers. Le défilement reste natif (barre de défilement, clavier, lecteurs d'écran) : il n'est jamais bloqué, et la hauteur de la page reprend les douze écrans et demi de la maquette.
+- **Le parcours** : le défilement natif, aimanté sur les ancres par le CSS (`scroll-snap`), que la caméra suit avec une légère inertie ; un module d'ancres amène toujours le défilement sur l'ancre suivante ou précédente après un geste (un cran ou un geste de pavé tactile, inertie comprise, un glissement du doigt de plus de 40 px, une touche), en suivant la courbe des paliers ; le glissement part à la vitesse du doigt. Lenis n'apporte rien ici : l'aimantation et les glissements d'ancre en ancre remplacent son lissage, sans dépendance. Le défilement reste natif (barre de défilement, clavier, lecteurs d'écran) : il n'est jamais bloqué, et la hauteur de la page reprend les douze écrans et demi de la maquette.
 - **Le clavier** : Tab passe d'un projet à l'autre dans l'ordre, la caméra glisse jusqu'à l'ancre du projet qui reçoit le focus, Entrée l'ouvre.
 - **Le routeur client d'Astro** conserve les scènes d'une page à l'autre (`transition:persist`). La plongée remplace la planète qui s'éloigne de la v2 : la carte cliquée grandit jusqu'à couvrir l'écran, puis le routeur affiche l'étude de cas, dont le média d'ouverture prend la place de la carte (une transition de vue nommée relie les deux). La progression du parcours est gardée dans l'historique (`history.state`) pour que « Retour aux projets » et le bouton Retour du navigateur la retrouvent. Si cet enchaînement pose problème, repli sur un fondu.
 - **Le passage par le noir** sert aux liens de l'en-tête, au menu mobile, au lien « Contact » des études de cas et à la Corbeille : un voile couvre la page, la caméra saute, le voile se lève.
 - **Les cartes** sont en HTML, en 3D CSS par-dessus la scène Three.js, comme dans la maquette : accessibles et cliquables sans couche invisible. La mesure (étape 1) l'a confirmé : des plans WebGL floutés dans le rendu ne sont pas plus fluides, ni sur ordinateur ni sur téléphone.
 - **Les étoiles** (les trois couches et leur scintillement) sont dessinées en WebGL, en un seul nuage de points dont le scintillement est calculé dans le shader, jamais en éléments HTML animés : à la mesure, les 120 étoiles en HTML faisaient tomber le parcours de 60 à 45 images par seconde sur le Pixel 9, et rien d'autre ne le ralentissait (ni les cartes floutées, ni les petits mondes, ni la vidéo).
-- Une seule boucle d'animation (le ticker de GSAP) pilote Lenis, la caméra du parcours, les animations et le rendu 3D.
+- Une seule boucle d'animation (`src/motion/ticker.ts`, un `requestAnimationFrame` arrêté quand l'onglet est caché) pilote les glissements, la caméra du parcours, les animations et le rendu 3D. Au repos, seuls les flottements bougent, de quelques pixels par seconde : la boucle les dessine alors 20 fois par seconde, ce qui ne se voit pas et libère le processeur ; un glissement, la souris ou un survol redessinent à chaque image. Le dessin d'une image ne relit jamais la mise en page (testé de bout en bout).
 
 ### 7.5 Amélioration progressive
 

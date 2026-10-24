@@ -1,0 +1,7 @@
+order: 4
+year: 2026
+stack: [React, TypeScript, Vite, PapaParse, Vitest]
+links:
+  live: https://greg0s.github.io/sncf-wrapped/
+  code: https://github.com/Greg0s/sncf-wrapped
+cover: ./cover.jpg

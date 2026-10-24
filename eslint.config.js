@@ -30,6 +30,10 @@ export default defineConfig(
       // astro-eslint-parser has no project service; it reads the tsconfig instead.
       parserOptions: { parser: tseslint.parser, projectService: false, project: true },
     },
+    rules: {
+      // The parser types JSX in template expressions as an error type: mapping a list to elements would always fail.
+      '@typescript-eslint/no-unsafe-return': 'off',
+    },
   },
   {
     files: ['**/*.js'],

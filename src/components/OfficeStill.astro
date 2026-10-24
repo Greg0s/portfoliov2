@@ -1,0 +1,51 @@
+---
+/**
+ * The office as a still image (office spec §3, plan step 5): the mockup's layers (sky, town, room, desk, the screen
+ * with its wallpaper, the wall pictures) flattened into one picture per moment and framing. It stands behind the
+ * contact until the live office arrives (step 7), and stays its version without JavaScript or with "reduce motion".
+ * Both moments are in the page; only the visitor's shows, and lazy loading leaves the hidden one unloaded.
+ */
+import { withBase } from '../lib/url';
+
+const moments = ['aube', 'crepuscule'] as const;
+const src = (moment: string, framing: string): string => withBase(`/images/office/office-${moment}-${framing}.webp`);
+---
+
+<div class="office" aria-hidden="true">
+  {moments.map((moment) => (
+    <picture class={moment}>
+      <source media="(width < 768px)" srcset={src(moment, 'mobile')} width="780" height="1688" />
+      <img src={src(moment, 'desktop')} alt="" width="2160" height="1350" loading="lazy" decoding="async" />
+    </picture>
+  ))}
+</div>
+
+<style>
+  .office {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #121538;
+  }
+
+  picture,
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  img {
+    object-fit: cover;
+  }
+
+  /* Dusk unless the visitor's moment is dawn (also without JavaScript, when no moment is set). */
+  .aube,
+  :global(html[data-moment='aube']) .crepuscule {
+    display: none;
+  }
+
+  :global(html[data-moment='aube']) .aube {
+    display: block;
+  }
+</style>

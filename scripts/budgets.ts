@@ -106,6 +106,8 @@ const perFile: { dir: string; pattern: RegExp; limit: number; label: string }[] 
   { dir: 'models', pattern: /\.glb$/, limit: 600 * KB, label: 'model' },
   { dir: 'images/planet', pattern: /\.(?:avif|webp|jpe?g|png)$/, limit: 50 * KB, label: 'planet fallback' },
   { dir: 'images/wall', pattern: /\.(?:avif|webp|jpe?g|png)$/, limit: 40 * KB, label: 'wall image' },
+  // The office still, one picture per moment and framing, until the live office (step 7).
+  { dir: 'images/office', pattern: /\.(?:avif|webp)$/, limit: 200 * KB, label: 'office still' },
 ];
 for (const { dir, pattern, limit, label } of perFile) {
   for (const file of listFiles(join(dist, dir)).filter((path) => pattern.test(path))) {
