@@ -243,7 +243,7 @@ export function startMeasure(root: HTMLElement): () => void {
       refreshHz: refresh,
       gpu: gpu(),
       phases: Object.fromEntries([...phases].map(([name, times]) => [name, summarize(times)])),
-      office: document.documentElement.dataset.office ?? '',
+      office: document.documentElement.dataset.officeScene ?? '',
       slow: slowScenes(),
       // The worst ones, in the order they came.
       hitches: [...hitches]

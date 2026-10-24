@@ -70,21 +70,37 @@ function fader() {
   scene.add(quad);
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const size = new Vector2();
+  const targetFor = (renderer: WebGLRenderer): WebGLRenderTarget => {
+    renderer.getDrawingBufferSize(size);
+    if (target?.width !== size.x || target.height !== size.y) {
+      target?.dispose();
+      // Linear and before tone mapping: the canvas's tone mapping applies when the pass is laid over it.
+      target = new WebGLRenderTarget(size.x, size.y, { samples: 4, type: HalfFloatType });
+    }
+    return target;
+  };
   return {
-    draw(renderer: WebGLRenderer, opacity: number, pass: () => void): void {
-      renderer.getDrawingBufferSize(size);
-      if (target?.width !== size.x || target.height !== size.y) {
-        target?.dispose();
-        // Linear and before tone mapping: the canvas's tone mapping applies when the pass is laid over it.
-        target = new WebGLRenderTarget(size.x, size.y, { samples: 4, type: HalfFloatType });
-      }
+    /**
+     * Compiles, without holding the page, what the passes drawn off screen need: drawn into the target, every
+     * material takes other shaders (no tone mapping, a linear output), which would otherwise compile in the middle
+     * of the arrival, at the first frame where the room fades in.
+     */
+    async compile(renderer: WebGLRenderer, compilePass: () => Promise<void>): Promise<void> {
       const previous = renderer.getRenderTarget();
-      renderer.setRenderTarget(target);
+      renderer.setRenderTarget(targetFor(renderer));
+      const passes = compilePass();
+      renderer.setRenderTarget(previous);
+      material.map = targetFor(renderer).texture;
+      await Promise.all([passes, renderer.compileAsync(scene, camera)]);
+    },
+    draw(renderer: WebGLRenderer, opacity: number, pass: () => void): void {
+      const previous = renderer.getRenderTarget();
+      renderer.setRenderTarget(targetFor(renderer));
       renderer.setClearColor(0x000000, 0);
       renderer.clear();
       pass();
       renderer.setRenderTarget(previous);
-      material.map = target.texture;
+      material.map = targetFor(renderer).texture;
       material.opacity = opacity;
       renderer.render(scene, camera);
     },
@@ -187,6 +203,16 @@ export async function createOffice(
         prepare(camera, layer);
         await target.compileAsync(scene, camera);
       }
+      // The room and the desk again, for the off-screen passes that fade them in. Each compile starts at once, with
+      // its layer's lights, then the next.
+      await fade.compile(target, async () => {
+        const started: Promise<unknown>[] = [];
+        for (const layer of ['room', 'desk'] as const) {
+          prepare(camera, layer);
+          started.push(target.compileAsync(scene, camera));
+        }
+        await Promise.all(started);
+      });
     },
     renderLayer(target, camera, layer) {
       target.toneMappingExposure = moment.room.exposure;
