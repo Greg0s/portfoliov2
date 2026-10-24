@@ -55,3 +55,12 @@ export function markSlow(scene: string): void {
     // Without storage, the decision holds until the page is left.
   }
 }
+
+/** Whether this device draws WebGL 2 in software, or not at all: a live scene would hold the page. */
+export function drawsInSoftware(): boolean {
+  const probe = document.createElement('canvas').getContext('webgl2');
+  if (!probe) return true;
+  const software = isSoftwareRenderer(probe);
+  probe.getExtension('WEBGL_lose_context')?.loseContext();
+  return software;
+}

@@ -42,6 +42,7 @@ import type { StarField } from '../stars/stars';
 import type { Renderer } from '../renderer';
 import type { Handoff } from '../planet/handoff';
 import type { LivePlanet } from '../planet/planet';
+import type { OfficeView } from '../office/view';
 import { withBase } from '../../lib/url';
 import { frameSampler, isSlow, markSlow, type FrameSampler } from '../quality';
 
@@ -618,6 +619,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       layout();
       rebuildStars();
       livePlanet?.resize(planetSize, scene.view.mobile);
+      // The office's framing follows the width: across the phone's limit, it is prepared again.
+      if (officeLoading && officeFraming !== (scene.view.mobile ? 'mobile' : 'desktop')) freeOffice();
+      else officeView?.resize();
       jumpTo(settleAnchor(Math.round(progress * range), positions, 0));
     });
   };
@@ -712,7 +716,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     }
     drawPlanet(now, u, planetState.blur, moment);
     // The office loads from the first project on.
-    if (u >= (anchors[1] ?? 0) - 0.01) html.dataset.office = 'near';
+    if (u >= (anchors[1] ?? 0) - 0.01 && html.dataset.office !== 'live') html.dataset.office = 'near';
 
     // The opening's text stays, then fades out rising; the call to action leaves at the first move.
     const fade = introFade(depth);
@@ -728,14 +732,26 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(cta, 'visibility', atOpening ? 'visible' : 'hidden');
     }
 
-    // The end: the office arrives, then the contact (the live arrival comes with the 3D office, step 7).
+    // The end: the office arrives, then the contact. The live office plays its own arrival; its image fades in.
+    drawOffice(now, u, arrival);
     if (contact) {
-      set(contact, 'opacity', smoothstep(0, 0.5, arrival).toFixed(3));
       set(contact, 'pointer-events', arrival > 0.95 ? 'auto' : 'none');
-      if (office) set(office, 'transform', `scale(${(1.08 - 0.08 * easeInOutCubic(arrival)).toFixed(4)})`);
-      contactText.forEach((element) => {
-        set(element, 'opacity', smoothstep(0.55, 1, arrival).toFixed(3));
-      });
+      if (officeView) {
+        const textK = officeView.state.textK;
+        set(contact, 'opacity', arrival > 0 ? '1' : '0');
+        if (office) set(office, 'transform', 'none');
+        contactText.forEach((element) => {
+          set(element, 'opacity', textK.toFixed(3));
+          set(element, 'transform', `translateY(${(12 * (1 - textK)).toFixed(1)}px)`);
+        });
+      } else {
+        set(contact, 'opacity', smoothstep(0, 0.5, arrival).toFixed(3));
+        if (office) set(office, 'transform', `scale(${(1.08 - 0.08 * easeInOutCubic(arrival)).toFixed(4)})`);
+        contactText.forEach((element) => {
+          set(element, 'opacity', smoothstep(0.55, 1, arrival).toFixed(3));
+          set(element, 'transform', 'none');
+        });
+      }
     }
 
     // The click hint over the sharp card.
@@ -777,6 +793,85 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   window.addEventListener('touchstart', onTouchStart, { passive: true });
   window.addEventListener('touchmove', onTouchMove, { passive: true });
   window.addEventListener('touchend', onTouchEnd, { passive: true });
+  // ---------- The live office ----------
+
+  // It is prepared from the middle of the journey on (at once on `#contact`), once the planet is let go, and drawn
+  // while the contact shows. Its first seconds on screen are measured: too slow, it gives way to its image.
+  const OFFICE_WARM = anchors[5] ?? 0.5;
+  // `?office=live` keeps it whatever the rate; `?office=layers` keeps it out (its fallback shows).
+  const officeMode = new URLSearchParams(location.search).get('office');
+  let officeView: OfficeView | null = null;
+  let officeLoading = false;
+  let officeSampler: FrameSampler | null = null;
+  let officeSlow = officeMode === 'layers' || (officeMode !== 'live' && isSlow('office'));
+  let lastOfficeDraw = 0;
+  let officeFraming = '';
+
+  function loadOffice(): void {
+    if (officeLoading || !office) return;
+    const host = office;
+    officeLoading = true;
+    officeFraming = scene.view.mobile ? 'mobile' : 'desktop';
+    void import('../office/warmup')
+      .then(async ({ prepareOffice, SlowOffice }) => {
+        const created = await prepareOffice(host, host, {
+          modelUrl: withBase('/models/petit-prince.glb'),
+          moment: html.dataset.moment === 'aube' ? 'aube' : 'crepuscule',
+          still: options.still,
+          forced: officeMode === 'live',
+        }).catch((error: unknown) => {
+          if (error instanceof SlowOffice) {
+            officeSlow = true;
+            markSlow('office');
+          }
+          throw error;
+        });
+        if (stopped || !officeLoading) {
+          created.dispose();
+          return;
+        }
+        officeView = created;
+        officeSampler = officeMode === 'live' ? null : frameSampler();
+        html.dataset.office = 'live';
+        redraw = true;
+      })
+      .catch(() => {
+        officeLoading = false;
+        // Without WebGL, the model or the worker, the still image stays.
+      });
+  }
+
+  function freeOffice(): void {
+    officeLoading = false;
+    officeView?.dispose();
+    officeView = null;
+    officeSampler = null;
+    if (html.dataset.office === 'live') html.dataset.office = 'near';
+  }
+
+  /** Prepares the office past the middle of the journey and draws it while the contact shows. */
+  function drawOffice(now: number, u: number, arrival: number): void {
+    if (!options.webgl || officeSlow) return;
+    if (!officeView) {
+      if (u >= OFFICE_WARM - 0.01) loadOffice();
+      return;
+    }
+    const previousDraw = lastOfficeDraw;
+    lastOfficeDraw = now;
+    if (arrival <= 0) return;
+    officeView.update(arrival, now, previousDraw ? now - previousDraw : 16);
+    if (officeSampler && previousDraw > 0) {
+      redraw = true;
+      const verdict = officeSampler.add(now - previousDraw);
+      if (verdict === 'fast') officeSampler = null;
+      else if (verdict === 'slow') {
+        officeSlow = true;
+        markSlow('office');
+        freeOffice();
+      }
+    }
+  }
+
   window.addEventListener('keydown', onKey);
   window.addEventListener('resize', onResize);
   window.addEventListener('hashchange', onHash);
@@ -798,7 +893,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const stopTick = onTick((now, delta) => {
     pointer.update(delta);
     followCamera(delta);
-    const atRest = !glide && current === target && pointer.settled() && !redraw;
+    const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
     // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds.
     if (atRest && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
     lastDraw = now;
@@ -843,6 +938,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     stars?.dispose();
     renderer?.dispose();
     freePlanet();
+    freeOffice();
     markers.forEach((marker) => {
       marker.remove();
     });

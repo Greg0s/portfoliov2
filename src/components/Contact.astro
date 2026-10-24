@@ -6,7 +6,7 @@
  */
 import { existsSync } from 'node:fs';
 import EmailActions from './EmailActions.astro';
-import OfficeStill from './OfficeStill.astro';
+import Office from './Office.astro';
 import { config } from '../config';
 import { fragments, t, type Locale } from '../i18n';
 import { withBase } from '../lib/url';
@@ -28,7 +28,7 @@ const links = [
 ---
 
 <section id={fragments.contact[locale]} class="contact" aria-labelledby="contact-label">
-  <OfficeStill />
+  <Office />
   <div class="text">
     <h2 id="contact-label" class="label">
       {label('contact.label')}

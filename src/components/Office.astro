@@ -1,0 +1,93 @@
+---
+/**
+ * The office behind the contact (office spec §3 to §6). Without JavaScript, with "reduce motion" and until the live
+ * office is ready, it is a still image: the mockup's layers (sky, town, room, desk, the screen with its wallpaper,
+ * the wall pictures) flattened into one picture per moment and framing. Both moments are in the page; only the
+ * visitor's shows, and lazy loading leaves the hidden one unloaded. In the journey, it waits for the camera to reach
+ * the first project (`data-office` on the root element), and the live office (step 7) lays itself over it: the sky in
+ * HTML, the scene in its canvas, the screen. Its data attributes carry what the live office shows: the screen and
+ * the pictures each frame draws from.
+ */
+import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
+import { withBase } from '../lib/url';
+import '../styles/office.css';
+
+const moments = ['aube', 'crepuscule'] as const;
+const src = (moment: string, framing: string): string => withBase(`/images/office/office-${moment}-${framing}.webp`);
+
+/** Each frame's pictures, at about twice their largest size on screen. */
+const WIDTHS: Record<string, number> = {
+  film: 480,
+  painting: 400,
+  poster: 540,
+  'photo-portrait': 280,
+  'photo-landscape': 280,
+  album: 300,
+  desk: 280,
+};
+const pictures: Record<string, { src: string; focus?: string }[]> = {};
+for (const entry of await getCollection('wall')) {
+  const frame = entry.id.split('/')[0] ?? '';
+  const image = await getImage({ src: entry.data.image, width: WIDTHS[frame] ?? 400, format: 'webp', quality: 80 });
+  (pictures[frame] ??= []).push({ src: image.src, ...(entry.data.focus ? { focus: entry.data.focus } : {}) });
+}
+---
+
+<div
+  class="office"
+  aria-hidden="true"
+  data-screen={withBase('/images/office/screen.webp')}
+  data-pictures={JSON.stringify(pictures)}
+>
+  {moments.map((moment) => (
+    <picture class={moment}>
+      <source media="(width < 768px)" srcset={src(moment, 'mobile')} width="780" height="1688" />
+      <img src={src(moment, 'desktop')} alt="" width="2160" height="1350" loading="lazy" decoding="async" />
+    </picture>
+  ))}
+</div>
+
+<style>
+  .office {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #121538;
+  }
+
+  picture,
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  img {
+    object-fit: cover;
+  }
+
+  /* In the journey, nothing of the office loads before the first project (main spec §9.4). */
+  :global(html[data-journey='on']:not([data-office])) picture {
+    display: none;
+  }
+
+  /* Dusk unless the visitor's moment is dawn (also without JavaScript, when no moment is set). */
+  .aube,
+  :global(html[data-moment='aube']) .crepuscule {
+    display: none;
+  }
+
+  :global(html[data-moment='aube']) .aube {
+    display: block;
+  }
+
+  /* The live office: the still image gives way, and the stars of the journey show until the sky rises. */
+  :global(html[data-office='live']) .office {
+    background: transparent;
+  }
+
+  :global(html[data-office='live']) .office picture {
+    display: none;
+  }
+</style>

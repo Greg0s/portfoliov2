@@ -25,10 +25,11 @@ import { addLights, CENTER, mixMoments } from './lights';
 import { isMesh, loadPlanetModel, meshIn, type PlanetModel } from './load';
 import { createWind, type WindState } from './wind';
 import { cappedPixelRatio } from '../renderer';
-import { isSoftwareRenderer } from '../quality';
+import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
 import type { Arrays } from '../workers/relief';
-import type { GeometryReply, GeometryRequest } from '../workers/geometry.worker';
+import type { GeometryRequest } from '../workers/geometry.worker';
+import { runGeometry, type ReplyTo } from '../workers/client';
 
 export interface PlanetOptions {
   modelUrl: string;
@@ -56,24 +57,13 @@ export class SlowRenderer extends Error {}
 const WIND_RISE = 1500;
 
 /** The relief, built once per visit and kept for a planet built again after the office. */
-const reliefs = new Map<string, Promise<GeometryReply>>();
+const reliefs = new Map<string, Promise<ReplyTo<'planet'>>>();
 
-function buildRelief(request: GeometryRequest): Promise<GeometryReply> {
+function buildRelief(request: Extract<GeometryRequest, { kind: 'planet' }>): Promise<ReplyTo<'planet'>> {
   const key = `${String(request.detail)}/${String(request.hairDetail)}`;
   let relief = reliefs.get(key);
   if (!relief) {
-    relief = new Promise<GeometryReply>((resolve, reject) => {
-      const worker = new Worker(new URL('../workers/geometry.worker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (event: MessageEvent<GeometryReply>) => {
-        resolve(event.data);
-        worker.terminate();
-      };
-      worker.onerror = (event) => {
-        reject(new Error(event.message));
-        worker.terminate();
-      };
-      worker.postMessage(request);
-    });
+    relief = runGeometry(request);
     reliefs.set(key, relief);
     relief.catch(() => reliefs.delete(key));
   }
@@ -235,11 +225,7 @@ function roseSway(model: PlanetModel): (degrees: number) => void {
 export async function createPlanet(container: HTMLElement, options: PlanetOptions): Promise<LivePlanet> {
   const mobile = options.mobile;
   // Without a GPU, the live planet would hold the page: the image stays, before anything is downloaded.
-  if (!options.forced) {
-    const probe = document.createElement('canvas').getContext('webgl2');
-    if (!probe || isSoftwareRenderer(probe)) throw new SlowRenderer();
-    probe.getExtension('WEBGL_lose_context')?.loseContext();
-  }
+  if (!options.forced && drawsInSoftware()) throw new SlowRenderer();
   const model = await loadPlanetModel(options.modelUrl);
   const geometry = await buildRelief({
     kind: 'planet',
@@ -254,7 +240,7 @@ async function assemble(
   container: HTMLElement,
   options: PlanetOptions,
   model: PlanetModel,
-  relief: GeometryReply,
+  relief: ReplyTo<'planet'>,
 ): Promise<LivePlanet> {
   model.planet.geometry.dispose();
   model.planet.geometry = geometryOf(relief.planet);
