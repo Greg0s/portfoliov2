@@ -106,8 +106,8 @@ const perFile: { dir: string; pattern: RegExp; limit: number; label: string }[] 
   { dir: 'models', pattern: /\.glb$/, limit: 600 * KB, label: 'model' },
   { dir: 'images/planet', pattern: /\.(?:avif|webp|jpe?g|png)$/, limit: 50 * KB, label: 'planet fallback' },
   { dir: 'images/wall', pattern: /\.(?:avif|webp|jpe?g|png)$/, limit: 40 * KB, label: 'wall image' },
-  // The office still, one picture per moment and framing, until the live office (step 7).
-  { dir: 'images/office', pattern: /\.(?:avif|webp)$/, limit: 200 * KB, label: 'office still' },
+  // The office still, one picture per moment and framing, until the live office or its layers take over.
+  { dir: 'images/office', pattern: /office-[^/]+\.(?:avif|webp)$/, limit: 200 * KB, label: 'office still' },
 ];
 for (const { dir, pattern, limit, label } of perFile) {
   for (const file of listFiles(join(dist, dir)).filter((path) => pattern.test(path))) {
@@ -126,6 +126,20 @@ for (const { dir, pattern, limit, label } of sets) {
     const bytes = files.reduce((sum, file) => sum + statSync(file).size, 0);
     measures.push({ name: `${label} (${String(files.length)} files)`, bytes, limit });
   }
+}
+
+// The office's layers: what one visitor loads (one moment, one framing), with the screen's picture (main spec §9.4).
+const layers = join(dist, 'images/office/layers');
+const screen = join(dist, 'images/office/screen.webp');
+const layerSets = new Map<string, string[]>();
+for (const file of listFiles(layers)) {
+  const match = /([a-z]+-(?:desktop|mobile))-[a-z]+\.webp$/.exec(file);
+  if (match?.[1]) layerSets.set(match[1], [...(layerSets.get(match[1]) ?? []), file]);
+}
+for (const [name, files] of layerSets) {
+  const all = existsSync(screen) ? [...files, screen] : files;
+  const bytes = all.reduce((sum, file) => sum + statSync(file).size, 0);
+  measures.push({ name: `office layers, ${name} (${String(all.length)} files)`, bytes, limit: 500 * KB });
 }
 
 if (measures.length === 0) {

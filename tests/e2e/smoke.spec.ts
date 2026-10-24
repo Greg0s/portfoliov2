@@ -6,6 +6,12 @@ test('the journey plays and moves', async ({ page }) => {
   test.slow();
   const errors = trackErrors(page);
   const root = page.locator('[data-journey-root]');
+  // CI's WebKit draws WebGL in software without saying so: its live planet would be found too slow and turn the visit
+  // into the light version, and its live office would crawl until found too slow, as they should on such a device.
+  // This pass is about the journey: both scenes are known slow, so the planet stays an image and the office its layers.
+  await page.addInitScript(() => {
+    sessionStorage.setItem('portfolio:slow', 'planet,office');
+  });
   await page.goto('./');
   await expect(page.locator('html')).toHaveAttribute('data-journey', 'on');
   await expect(root).toHaveAttribute('data-anchor', '0');

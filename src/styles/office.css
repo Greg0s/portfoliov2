@@ -1,0 +1,206 @@
+/*
+ * The live office's HTML (office spec §3 to §5), built by `src/scene/office/view.ts`: the sky behind the canvas, the
+ * canvas, the screen and the planet B 612 in front, placed in the frame's pixels.
+ */
+
+.office-live {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.office-frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.office-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.office-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.office-jump,
+.office-sky,
+.office-round,
+.office-shoot,
+.office-welcome,
+.office-screen,
+.office-planet {
+  position: absolute;
+  display: block;
+}
+
+.office-sky {
+  left: -80px;
+  right: -80px;
+}
+
+.office-round {
+  border-radius: 50%;
+}
+
+.office-star {
+  background: #fff;
+}
+
+.office-moon {
+  overflow: hidden;
+  background: radial-gradient(circle at 42% 38%, #fbfcff 0%, #eef1f7 50%, #d3d9e6 100%);
+  box-shadow: 0 0 6px rgb(226 232 255 / 45%);
+}
+
+/* The layers (the live office's fallback): pictures in the frame's pixels. */
+.office-layer-image,
+.office-layer-picture {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.office-layer-picture {
+  left: 0;
+  top: 0;
+  object-fit: cover;
+  transform-origin: 0 0;
+  mix-blend-mode: multiply;
+}
+
+.office-lamp-halo {
+  background: radial-gradient(
+    circle,
+    rgb(255 214 150 / 55%) 0%,
+    rgb(255 184 110 / 22%) 22%,
+    rgb(255 170 90 / 7%) 48%,
+    rgb(255 170 90 / 0%) 70%
+  );
+  mix-blend-mode: screen;
+}
+
+/* The setting sun's halo, as the mockup's (placed and sized each frame). */
+.office-sun-halo {
+  top: 0;
+  left: 0;
+  background: radial-gradient(
+    circle,
+    rgb(255 236 190 / 90%) 0%,
+    rgb(255 206 140 / 45%) 14%,
+    rgb(255 170 100 / 14%) 38%,
+    rgb(255 150 90 / 0%) 70%
+  );
+  mix-blend-mode: screen;
+}
+
+.office-moon-halo {
+  background: radial-gradient(circle, rgb(228 234 255 / 24%) 0%, rgb(228 234 255 / 7%) 38%, rgb(228 234 255 / 0%) 70%);
+}
+
+.office-shoot,
+.office-welcome {
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgb(255 250 235 / 95%), rgb(255 255 255 / 0%));
+  transform-origin: 0 50%;
+  opacity: 0;
+}
+
+.office-welcome {
+  height: 2.5px;
+  background: linear-gradient(90deg, rgb(255 253 244 / 100%), rgb(255 240 214 / 50%) 30%, rgb(255 255 255 / 0%));
+  box-shadow: 0 0 6px rgb(255 246 225 / 45%);
+}
+
+.office-breath {
+  width: 32px;
+  height: 32px;
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / 62%) 0%,
+    rgb(255 255 255 / 36%) 28%,
+    rgb(255 255 255 / 12%) 54%,
+    rgb(255 255 255 / 0%) 72%
+  );
+}
+
+.office-screen {
+  left: 0;
+  top: 0;
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  background: #050507;
+  transform-origin: 0 0;
+}
+
+.office-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.office-glare {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(118deg, rgb(255 255 255 / 7%) 0%, rgb(255 255 255 / 0%) 38%);
+}
+
+.office-planet {
+  width: 0;
+  height: 0;
+}
+
+.office-planet-button {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
+}
+
+.office-planet-label {
+  position: absolute;
+  left: 22px;
+  top: -8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(243 243 241 / 75%);
+}
+
+.office-planet-label.on {
+  opacity: 1;
+}
+
+.office-planet-line {
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: rgb(243 243 241 / 45%);
+}

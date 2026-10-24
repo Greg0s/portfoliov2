@@ -7,6 +7,8 @@
 export type Tick = (time: number, delta: number) => void;
 
 const subscribers = new Set<Tick>();
+/** Run before the others: what scrolls the page, so that no style written earlier in the frame forces a layout. */
+const firsts = new Set<Tick>();
 let frame = 0;
 let last = 0;
 
@@ -14,12 +16,12 @@ function loop(now: number): void {
   // A long pause (a hidden tab, a stalled frame) does not make anything jump.
   const delta = last ? Math.min(64, now - last) : 16.7;
   last = now;
-  for (const tick of [...subscribers]) tick(now, delta);
-  frame = subscribers.size > 0 && !document.hidden ? requestAnimationFrame(loop) : 0;
+  for (const tick of [...firsts, ...subscribers]) tick(now, delta);
+  frame = firsts.size + subscribers.size > 0 && !document.hidden ? requestAnimationFrame(loop) : 0;
 }
 
 function start(): void {
-  if (frame || document.hidden || subscribers.size === 0) return;
+  if (frame || document.hidden || firsts.size + subscribers.size === 0) return;
   last = 0;
   frame = requestAnimationFrame(loop);
 }
@@ -33,13 +35,17 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-/** Runs `tick` at every frame until the returned function is called. */
-export function onTick(tick: Tick): () => void {
-  subscribers.add(tick);
+/**
+ * Runs `tick` at every frame until the returned function is called. With `first`, it runs before every other tick
+ * of the frame: for what scrolls the page, which needs a clean layout.
+ */
+export function onTick(tick: Tick, { first = false } = {}): () => void {
+  const set = first ? firsts : subscribers;
+  set.add(tick);
   start();
   return () => {
-    subscribers.delete(tick);
-    if (subscribers.size === 0) {
+    set.delete(tick);
+    if (firsts.size + subscribers.size === 0) {
       cancelAnimationFrame(frame);
       frame = 0;
     }
