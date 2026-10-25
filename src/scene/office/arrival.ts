@@ -83,6 +83,9 @@ export function arrivalState(
   };
 }
 
+/** The planes of the room's wall and of the desk, in metres in front of the seat. */
+export const FADE_PLANES = { room: -1.2, desk: -0.85 } as const;
+
 /**
  * How visible a plane `z` metres in front of the seat is while the camera is at `camZ`: as in the mockup, the room
  * and the desk fade in once the camera has backed far enough from their planes that they no longer fill the view.

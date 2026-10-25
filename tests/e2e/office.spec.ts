@@ -57,24 +57,37 @@ test.describe('on desktop', () => {
 
   test('emptying the Recycle Bin goes dark, draws again, then owns up that nothing happened', async ({ page }) => {
     await openOffice(page);
+    // Clicks dispatched rather than made with the mouse: the head follows the mouse and drifts toward each click by a
+    // fraction of a pixel per frame, which Playwright's wait for a still target takes for motion.
     const desktop = page.locator('.office-screen .desktop');
     await expect(desktop).toHaveAttribute('data-bin-live', '');
-    await desktop.locator('[data-bin]').click();
+    await desktop.locator('[data-bin]').dispatchEvent('click');
     await expect(desktop).toHaveAttribute('data-dialog-open', 'ask');
 
     // "Non" closes it.
-    await desktop.locator('[data-dialog="ask"] .button[data-answer="no"]').click();
+    await desktop.locator('[data-dialog="ask"] .button[data-answer="no"]').dispatchEvent('click');
     await expect(desktop).toHaveAttribute('data-dialog-open', '');
 
-    await desktop.locator('[data-bin]').click();
-    await desktop.locator('[data-dialog="ask"] [data-answer="yes"]').click();
+    await desktop.locator('[data-bin]').dispatchEvent('click');
+    // The darkest the veil gets, sampled at every frame: with the pictures in the cache, the dark lasts a frame or two.
+    await page.evaluate(() => {
+      const record = window as unknown as { darkest: number };
+      record.darkest = 0;
+      const veilNode = document.querySelector('[data-veil]');
+      const sample = (): void => {
+        if (veilNode) record.darkest = Math.max(record.darkest, Number(getComputedStyle(veilNode).opacity));
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await desktop.locator('[data-dialog="ask"] [data-answer="yes"]').dispatchEvent('click');
     const veil = page.locator('[data-veil]');
-    await expect.poll(() => veil.evaluate((node) => Number(getComputedStyle(node).opacity))).toBeGreaterThan(0.5);
-    await expect(desktop).toHaveAttribute('data-dialog-open', 'done', { timeout: 5000 });
+    await expect(desktop).toHaveAttribute('data-dialog-open', 'done', { timeout: 10_000 });
+    expect(await page.evaluate(() => (window as unknown as { darkest: number }).darkest)).toBeGreaterThan(0.5);
     await expect.poll(() => veil.evaluate((node) => Number(getComputedStyle(node).opacity))).toBe(0);
     // While the message is open, the Recycle Bin waits.
     await expect(desktop).not.toHaveAttribute('data-bin-live');
-    await desktop.locator('[data-dialog="done"] .button[data-answer="ok"]').click();
+    await desktop.locator('[data-dialog="done"] .button[data-answer="ok"]').dispatchEvent('click');
     await expect(desktop).toHaveAttribute('data-bin-live', '');
   });
 

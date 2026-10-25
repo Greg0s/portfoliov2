@@ -848,6 +848,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         officeView = created;
         officeSampler = officeSlow || officeMode === 'live' ? null : frameSampler();
         html.dataset.office = 'live';
+        // Which one draws it, for the measurement run: the live scene or its layers.
+        html.dataset.officeScene = officeSlow ? 'layers' : 'live';
         redraw = true;
       })
       .catch(() => {
@@ -968,6 +970,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     delete html.dataset.stars;
     delete html.dataset.introFaded;
     delete html.dataset.office;
+    delete html.dataset.officeScene;
     styles.reset();
     cards.forEach(({ item }) => {
       item.classList.remove('lit');
