@@ -12,6 +12,13 @@ export interface JourneyHandle {
   jumpTo(id: string): void;
   /** Glides to the anchor at `index` (0 is the opening, the last one the contact), as a key press would. */
   glideTo(index: number): void;
+  /**
+   * The dive (journey spec §6): the card of project `id` flies onto the case study's opening media, full width and
+   * flush with the top, while the rest fades out. Resolves once it is there, where it stays; null if `id` is no project.
+   */
+  dive(id: string): Promise<void> | null;
+  /** The way back: drawn at once on the opening media, the card flies back to its place while the rest fades in. */
+  undive(id: string): Promise<void> | null;
 }
 
 let active: JourneyHandle | null = null;

@@ -10,6 +10,7 @@ import {
   cardLook,
   cartelPlace,
   cssTransform,
+  diveLook,
   farStarsScale,
   focusedCard,
   introFade,
@@ -85,6 +86,12 @@ function styler(): {
 
 /** At rest, the time between two frames, in ms. */
 const AMBIENT_FRAME = 50;
+
+/** The dive (journey spec §6): the card's flight, the rest fading out over its first third. */
+const DIVE_MS = 900;
+/** Before the dive, the camera's sway comes to rest; it comes back as long after the way back. */
+const SWAY_REST_MS = 600;
+const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
 
 interface CardParts {
   item: HTMLElement;
@@ -166,6 +173,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let endSpeed = 0;
   let focus = -1;
   let hovered = -1;
+  /**
+   * The dive into a case study, or back from it: the card at `index` between its place (0) and the opening media
+   * (1). Forward, it stays on the opening media until the page leaves.
+   */
+  let dive: { index: number; forward: boolean; start: number; radius: number; done: () => void } | null = null;
+  /** The sway and the cards' float coming to rest for the dive (`forward`), or back once it is over. */
+  let rest: { forward: boolean; start: number } | null = null;
   /** Whether the next frame must be drawn, even at rest. */
   let redraw = false;
   let direction = 0;
@@ -648,29 +662,93 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
     const light = LIGHT[moment];
     const tiltOn = !view.mobile && !options.still;
-    const sway: Sway = options.still
+    // The dive: how far the card has flown (0 to 1, eased), how much the rest still shows, how much has come to rest.
+    let diveT = 0;
+    let flying = false;
+    if (dive) {
+      if (dive.start < 0) dive.start = now;
+      const e = Math.min(1, (now - dive.start) / DIVE_MS);
+      diveT = dive.forward ? e : 1 - e;
+      flying = e < 1;
+      if (!flying) {
+        const ended = dive;
+        if (ended.forward) dive = { ...ended, done: () => undefined };
+        else {
+          dive = null;
+          rest = { forward: false, start: now };
+        }
+        ended.done();
+      }
+    }
+    const diving = dive?.index ?? -1;
+    const k = easeInOutCubic(diveT);
+    const others = diving >= 0 ? 1 - smoothstep(0, 0.33, diveT) : 1;
+    let swayRest = 0;
+    let floatRest = 0;
+    if (rest) {
+      if (rest.start < 0) rest.start = now;
+      const elapsed = now - rest.start;
+      const s = easeOut(Math.min(1, elapsed / SWAY_REST_MS));
+      const f = easeInOutCubic(Math.min(1, elapsed / DIVE_MS));
+      swayRest = rest.forward ? s : 1 - s;
+      floatRest = rest.forward ? f : 1 - f;
+      if (elapsed < DIVE_MS) flying = true;
+      else if (!rest.forward) rest = null;
+    }
+    if (flying) redraw = true;
+    const swing0 = 1 - swayRest;
+    const moving: Sway = options.still
       ? noSway
       : { ...drift(time), ...(tiltOn ? tiltToward(pointer.pointer) : { tiltX: 0, tiltY: 0 }) };
+    const sway: Sway = {
+      dx: moving.dx * swing0,
+      dy: moving.dy * swing0,
+      roll: moving.roll * swing0,
+      tiltX: moving.tiltX * swing0,
+      tiltY: moving.tiltY * swing0,
+    };
 
     // The cards and their cartels.
-    focus = focusedCard(scene.cards, depth, focus);
+    focus = diving >= 0 ? diving : focusedCard(scene.cards, depth, focus);
     scene.cards.forEach((place, i) => {
       const parts = cards[i];
       if (!parts) return;
       const look = cardLook(place, depth);
-      const shown = look.opacity > 0.004;
-      const lit = focus === i;
-      set(parts.place, 'transform', cssTransform(place.x, place.y, look.depth, view, sway));
-      const lift = options.still ? 0 : 12 * swing(time, place.floatDuration, place.floatDelay);
+      // During the dive, no card is lit: the cartel and the ring leave, as the rest fades out.
+      const lit = focus === i && diving < 0;
+      const lift = options.still ? 0 : 12 * swing(time, place.floatDuration, place.floatDelay) * (1 - floatRest);
       set(parts.float, 'transform', `translateY(${lift.toFixed(2)}px)`);
-      set(parts.link, 'opacity', look.opacity.toFixed(3));
-      set(parts.link, 'filter', shown && look.blur > 0.05 ? `blur(${look.blur.toFixed(2)}px)` : 'none');
-      set(parts.link, 'pointer-events', look.opacity > 0.3 ? 'auto' : 'none');
-      set(
-        parts.link,
-        'transform',
-        `rotateY(${place.rotateY.toFixed(2)}deg) rotateZ(${place.rotateZ.toFixed(2)}deg) translateZ(${lit && hovered === i ? '24' : '0'}px)`,
-      );
+      if (i === diving && dive) {
+        const flight = diveLook(place, look, view, k);
+        set(parts.place, 'transform', cssTransform(flight.x, flight.y, flight.depth, view, sway));
+        set(parts.link, 'opacity', '1');
+        set(parts.link, 'filter', 'none');
+        set(parts.link, 'pointer-events', 'none');
+        set(
+          parts.link,
+          'transform',
+          `rotateY(${(place.rotateY * (1 - k)).toFixed(2)}deg) rotateZ(${(place.rotateZ * (1 - k)).toFixed(2)}deg) translateZ(0px)`,
+        );
+        // The card follows the flight frame by frame, its shadow fading out.
+        set(parts.link, 'transition', 'box-shadow 450ms ease');
+        set(parts.link, 'box-shadow', '0 0 0 0 rgb(255 255 255 / 0%), 0 40px 80px -24px rgb(0 0 0 / 0%)');
+        set(parts.link, 'border-radius', `${(dive.radius * (1 - k)).toFixed(2)}px`);
+      } else {
+        const opacity = look.opacity * others;
+        const shown = opacity > 0.004;
+        set(parts.place, 'transform', cssTransform(place.x, place.y, look.depth, view, sway));
+        set(parts.link, 'opacity', opacity.toFixed(3));
+        set(parts.link, 'filter', shown && look.blur > 0.05 ? `blur(${look.blur.toFixed(2)}px)` : 'none');
+        set(parts.link, 'pointer-events', opacity > 0.3 && diving < 0 ? 'auto' : 'none');
+        set(
+          parts.link,
+          'transform',
+          `rotateY(${place.rotateY.toFixed(2)}deg) rotateZ(${place.rotateZ.toFixed(2)}deg) translateZ(${lit && hovered === i ? '24' : '0'}px)`,
+        );
+        set(parts.link, 'transition', '');
+        set(parts.link, 'box-shadow', '');
+        set(parts.link, 'border-radius', '');
+      }
       parts.item.classList.toggle('lit', lit);
       if (parts.cartel) {
         const cartel = cartelPlace(place, look, view);
@@ -688,7 +766,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(parts.body, 'visibility', shown ? 'visible' : 'hidden');
       if (!shown) return;
       set(parts.place, 'transform', cssTransform(world.x, world.y, look.depth, view, sway));
-      set(parts.body, 'opacity', (look.opacity * (0.55 + 0.45 * light.stars) * starsK).toFixed(3));
+      set(parts.body, 'opacity', (look.opacity * (0.55 + 0.45 * light.stars) * starsK * others).toFixed(3));
       set(parts.body, 'filter', look.blur > 0.05 ? `blur(${look.blur.toFixed(2)}px)` : 'none');
       const s = options.still ? 0 : swing(time, world.floatDuration, world.floatDelay);
       set(parts.body, 'translate', `${(4 * s).toFixed(2)}px ${(-3 * s).toFixed(2)}px`);
@@ -697,13 +775,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     // The planet recedes to a point of light, drifting toward the vanishing point.
     const planetState = planetLook(depth, light.sky, arrival);
     const sP = planetState.scale;
-    const mid = tiltOn ? { x: pointer.pointer.x * 14 * (1 - sP), y: pointer.pointer.y * 8 * (1 - sP) } : { x: 0, y: 0 };
+    const mid = tiltOn
+      ? { x: pointer.pointer.x * 14 * (1 - sP) * swing0, y: pointer.pointer.y * 8 * (1 - sP) * swing0 }
+      : { x: 0, y: 0 };
     const dx = planetRest.x * (sP - 1) + mid.x + sway.dx;
     const dy = planetRest.y * (sP - 1) + mid.y + sway.dy;
     const group = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) rotate(${sway.roll.toFixed(3)}deg)`;
     if (decorGroup) set(decorGroup, 'transform', `${group} scale(${sP.toFixed(4)})`);
-    if (decor) set(decor, 'opacity', planetState.decorOpacity.toFixed(3));
-    if (halo) set(halo, 'opacity', planetState.haloOpacity.toFixed(3));
+    if (decor) set(decor, 'opacity', (planetState.decorOpacity * others).toFixed(3));
+    if (halo) set(halo, 'opacity', (planetState.haloOpacity * others).toFixed(3));
     if (planet) {
       const bob = options.still ? 0 : swing(time, 7000);
       set(
@@ -711,14 +791,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         'transform',
         `${group} scale(${sP.toFixed(4)}) translateY(${(10 * bob).toFixed(2)}px) rotate(${bob.toFixed(3)}deg)`,
       );
-      set(planet, 'opacity', planetState.opacity.toFixed(3));
+      set(planet, 'opacity', (planetState.opacity * others).toFixed(3));
       if (planetFrame) {
         set(planetFrame, 'filter', planetState.blur > 0.05 ? `blur(${planetState.blur.toFixed(2)}px)` : 'none');
       }
     }
     if (glow) {
       set(glow, 'transform', group);
-      set(glow, 'opacity', planetState.glowOpacity.toFixed(3));
+      set(glow, 'opacity', (planetState.glowOpacity * others).toFixed(3));
     }
     drawPlanet(now, u, planetState.blur, moment);
     // The office loads from the first project on.
@@ -727,7 +807,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     // The opening's text stays, then fades out rising; the call to action leaves at the first move.
     const fade = introFade(depth);
     if (intro) {
-      set(intro, 'opacity', (1 - fade).toFixed(3));
+      set(intro, 'opacity', ((1 - fade) * others).toFixed(3));
       set(intro, 'transform', `translateY(${(-16 * fade).toFixed(1)}px)`);
       set(intro, 'pointer-events', fade < 0.5 ? 'auto' : 'none');
     }
@@ -766,7 +846,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       cursor.update(
         pointer.pointer.clientX,
         pointer.pointer.clientY,
-        !view.mobile && lit !== undefined && hovered === focus,
+        !view.mobile && lit !== undefined && hovered === focus && diving < 0,
       );
     }
 
@@ -776,11 +856,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         time,
         depth,
         farScale: farStarsScale(depth),
-        farShiftX: (tiltOn ? pointer.pointer.x * 18 : 0) + sway.dx,
-        farShiftY: (tiltOn ? pointer.pointer.y * 11 : 0) + sway.dy,
-        farOpacity: light.stars * starsK,
+        farShiftX: (tiltOn ? pointer.pointer.x * 18 * swing0 : 0) + sway.dx,
+        farShiftY: (tiltOn ? pointer.pointer.y * 11 * swing0 : 0) + sway.dy,
+        farOpacity: light.stars * starsK * others,
         farFade: 1 - smoothstep(0.15, 0.75, tEnd),
-        nearOpacity: (0.55 + 0.45 * light.stars) * starsK,
+        nearOpacity: (0.55 + 0.45 * light.stars) * starsK * others,
       });
       stars.points.matrix.copy(swayMatrixOf(sway));
       stars.points.matrixWorldNeedsUpdate = true;
@@ -937,6 +1017,32 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       if (index !== undefined) jumpTo(index);
     },
     glideTo,
+    dive: (id) => {
+      const index = fragmentAnchor.get(id);
+      const parts = index === undefined ? undefined : cards[index - 1];
+      if (index === undefined || !parts || dive) return null;
+      const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
+      endGlide();
+      return new Promise<void>((resolve) => {
+        dive = { index: index - 1, forward: true, start: -1, radius, done: resolve };
+        rest = { forward: true, start: -1 };
+        redraw = true;
+      });
+    },
+    undive: (id) => {
+      const index = fragmentAnchor.get(id);
+      const parts = index === undefined ? undefined : cards[index - 1];
+      if (index === undefined || !parts) return null;
+      const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
+      const back = new Promise<void>((resolve) => {
+        dive = { index: index - 1, forward: false, start: -1, radius, done: resolve };
+        // Everything is already at rest: the sway and the float come back once the card is home.
+        rest = { forward: true, start: performance.now() - DIVE_MS };
+      });
+      // Drawn now, the card on the opening media, so that it takes over from the picture in the same frame.
+      draw(performance.now());
+      return back;
+    },
   });
 
   return () => {

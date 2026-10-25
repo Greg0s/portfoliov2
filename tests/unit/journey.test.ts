@@ -11,7 +11,7 @@ import {
   projectAnchor,
   SCREENS,
 } from '../../src/scene/journey/anchors';
-import { cardLook, focusedCard, planetLook, projectCss, type Sway } from '../../src/scene/journey/camera';
+import { cardLook, diveLook, focusedCard, planetLook, projectCss, type Sway } from '../../src/scene/journey/camera';
 import { projectThree } from '../../src/scene/journey/camera3d';
 import { sceneFor, seeded, worldCount } from '../../src/scene/journey/layout';
 import {
@@ -103,6 +103,36 @@ describe('the focus', () => {
     expect(planetLook(0, 0.7, 0).blur).toBe(0);
     expect(planetLook(0, 0.7, 0).decorOpacity).toBeCloseTo(0.42, 10);
     expect(planetLook(29, 0.7, 0).glowOpacity).toBeGreaterThan(0.9);
+  });
+});
+
+describe('the dive', () => {
+  it('starts on the card and lands on the opening media, full width and flush with the top', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 320, max: 2560 }),
+        fc.integer({ min: 480, max: 1600 }),
+        fc.integer({ min: 0, max: PROJECTS - 1 }),
+        (width, height, index) => {
+          const { cards, view } = sceneFor(width, height);
+          const card = cards[index];
+          if (!card) return;
+          const look = cardLook(card, card.z);
+          const start = diveLook(card, look, view, 0);
+          const from = projectCss(start.x, start.y, start.depth, view);
+          const sharp = projectCss(card.x, card.y, look.depth, view);
+          expect(from.x).toBeCloseTo(sharp.x, 6);
+          expect(from.y).toBeCloseTo(sharp.y, 6);
+          expect(from.scale).toBeCloseTo(sharp.scale, 6);
+          const end = diveLook(card, look, view, 1);
+          const to = projectCss(end.x, end.y, end.depth, view);
+          // The card keeps its format: its width becomes the screen's, its height follows.
+          expect(card.width * to.scale).toBeCloseTo(width, 6);
+          expect(to.x).toBeCloseTo(width / 2, 6);
+          expect(to.y - (card.height * to.scale) / 2).toBeCloseTo(0, 6);
+        },
+      ),
+    );
   });
 });
 
