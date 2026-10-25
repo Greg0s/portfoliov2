@@ -43,7 +43,7 @@ import {
   type Material,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { box, canvasTexture, DEG, isMesh, LAYERS, onLayer, rng, ROOM, SCREEN, std } from './common';
+import { box, canvasTexture, DEG, isMesh, LAYERS, onLayer, rng, ROOM, SCREEN, std, type Pause } from './common';
 import type { PictureData } from './room';
 
 /**
@@ -908,7 +908,7 @@ export interface Desk {
 }
 
 /** The desk and its objects; `pause` lets a frame through between the objects. */
-export async function buildDesk(roseModel: Object3D | null, pause: () => Promise<void>): Promise<Desk> {
+export async function buildDesk(roseModel: Object3D | null, pause: Pause): Promise<Desk> {
   const g = new Group();
   const { deskY, deskFront, wallZ } = ROOM;
   const wood = woodTexture();
@@ -939,10 +939,13 @@ export async function buildDesk(roseModel: Object3D | null, pause: () => Promise
     succulent: buildSucculent,
   };
   const objects = {} as Record<keyof typeof PLACES, Object3D>;
+  let done = 'desk top';
   for (const [name, build] of Object.entries(builders) as [keyof typeof PLACES, () => Object3D][]) {
-    await pause();
+    await pause(done);
     objects[name] = build();
+    done = name;
   }
+  await pause(done);
   for (const [name, object] of Object.entries(objects) as [keyof typeof PLACES, Object3D][]) {
     const place: readonly number[] = PLACES[name];
     const [x = 0, z = 0, turn = 0, lift = 0] = place;

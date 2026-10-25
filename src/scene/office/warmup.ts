@@ -10,7 +10,7 @@ import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
 import { runGeometry } from '../workers/client';
 import { arrivalState, FADE_PLANES, layerFade } from './arrival';
-import { breathe } from './common';
+import { breathe, endStep, startStep } from './common';
 import { FRAMES, framingOf } from './frame';
 import { createLayersOffice } from './layers';
 import { createLiveOffice, type OfficeScene } from './live';
@@ -47,12 +47,14 @@ export async function prepareOffice(
   if (!options.forced && drawsInSoftware()) throw new SlowOffice();
   const framing = framingOf(section.clientWidth);
   const [reply, model] = await Promise.all([runGeometry({ kind: 'town' }), loadPlanetModel(options.modelUrl)]);
+  startStep();
   const live = await createLiveOffice({
     moment: options.moment,
     framing,
     frame: FRAMES[framing],
     town: reply.town,
     rose: model.rose,
+    size: { width: section.clientWidth, height: section.clientHeight },
   });
   return viewOf(section, host, live, options);
 }
@@ -97,6 +99,7 @@ async function viewOf(
   // In a task of its own: a promise (a picture's decoding, a shader's compiling) can settle during a frame, and laying
   // the view in the page reads its size, which would force a layout in the middle of that frame.
   await new Promise((resolve) => setTimeout(resolve));
+  startStep();
   const framing = framingOf(section.clientWidth);
   const pools = new Map<string, WallPicture[]>(
     Object.entries(JSON.parse(host.dataset.pictures ?? '{}') as Record<string, PictureData[]>).map(([frame, pool]) => [
@@ -119,10 +122,13 @@ async function viewOf(
   // the room, and the desk, fade in through their off-screen pass, whose target is made at its size. Each draw in a
   // task of its own, between two frames, and the page's style and layout settled in that task: left for the next
   // frame, the journey's first read there (the glide's scroll) would have to do it in the middle of that frame.
+  let done = 'view';
   for (const arrival of [1, ...fadingArrivals(framing), 0]) {
-    await breathe();
+    await breathe(done);
     view.update(arrival, performance.now(), 16);
     section.getBoundingClientRect();
+    done = `draw at ${arrival.toFixed(2)}`;
   }
+  endStep(done);
   return view;
 }
