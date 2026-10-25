@@ -296,7 +296,7 @@ Claude rédige une première version des études de cas en français et en angla
 - les photos et visuels en haute définition des études de cas ;
 - de nouvelles captures de LinkedIn, GitHub et Instagram si ces pages changent avant la mise en service (méthode : spec du bureau, section 6).
 
-Déjà fournis, gardés dans les fichiers du canevas : le CV (en anglais seulement et sans numéro de téléphone), les captures des pages, le fond d'écran, les icônes de la barre des tâches et de la Corbeille ; l'adresse email à afficher est contact@gregoiretinn.es.
+Déjà fournis, gardés dans les fichiers du canevas : le CV (en anglais seulement et sans numéro de téléphone ; publié tel quel avec son adresse, décision de Grégoire du 24 octobre 2026, dans `public/cv/`), les captures des pages, le fond d'écran, les icônes de la barre des tâches et de la Corbeille ; l'adresse email à afficher est contact@gregoiretinn.es.
 
 ## 9. Qualité
 

@@ -6,7 +6,7 @@
  * - `wallpaper.jpg`: Grégoire's photo, cropped to the 16:10 screen, 1280 × 800.
  * - `linkedin`, `github`, `instagram`: full-page captures, brought to the 1280 px Firefox shows them at; LinkedIn's long
  *   page is cut into slices no taller than 4096 px, which every GPU takes as one texture.
- * - `cv.png`: the CV's page brought to its 794 × 1123 px in Firefox (with contact@gregoiretinn.es as its only address).
+ * - `cv.png`: the CV's page (rendered from `public/cv/`'s PDF), brought to its 794 × 1123 px in Firefox.
  * - `logos.png`: one strip of 16 square icons (the taskbar's twelve apps, then the favicons of LinkedIn, GitHub, the
  *   PDF viewer and Instagram), brought to 52 px each: twice their 26 px on the screen.
  * - `recycle-bin.webp`: the Recycle Bin of Windows, 96 px (twice its 48 px).
