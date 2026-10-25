@@ -52,6 +52,30 @@ export function cardLook(card: CardPlace, cameraDepth: number): CardLook {
   return { depth, scale, opacity, blur };
 }
 
+/**
+ * The dive (journey spec §6): at `k` from 0 to 1, the card flies from where it is at depth `look.depth` onto the case
+ * study's opening media, full width and flush with the top of the screen. It keeps its format all the way: only its
+ * scale and its place change, its turn and roll unwinding meanwhile. Its scale grows geometrically, as a camera moving
+ * forward at a steady pace would see it.
+ */
+export function diveLook(
+  card: CardPlace,
+  look: CardLook,
+  view: View,
+  k: number,
+): { x: number; y: number; depth: number } {
+  const scale0 = look.scale;
+  const scaleT = view.width / card.width;
+  const x0 = card.x * scale0;
+  const y0 = card.y * scale0;
+  const xT = view.width / 2 - view.vpX;
+  const yT = (card.height * scaleT) / 2 - view.vpY;
+  const scale = scale0 * Math.pow(scaleT / scale0, k);
+  const x = x0 + (xT - x0) * k;
+  const y = y0 + (yT - y0) * k;
+  return { x: x / scale, y: y / scale, depth: 1 - 1 / scale };
+}
+
 export interface CartelPlace {
   /** Anchor point of the cartel, in px from the top left of the screen. */
   x: number;

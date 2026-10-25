@@ -2,19 +2,32 @@ import { expect, test, type Page } from '@playwright/test';
 import { trackErrors } from './helpers';
 
 // The dive into a case study and back (src/motion/dive.ts): the overlay lives for about a second, so the page counts
-// each one it sees.
+// each one it sees, and checks that it hands over on the opening media's place, which keeps the cards' format.
 async function countDives(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    const record = window as unknown as { dives: number };
+    const record = window as unknown as { dives: number; offMedia: string[] };
     record.dives = 0;
+    record.offMedia = [];
+    // Each picture is checked once its view transition's name is set, when it hands over to the router.
+    const checked = new WeakSet<HTMLElement>();
     new MutationObserver((records) => {
       for (const { addedNodes } of records)
         for (const node of addedNodes)
           if (node instanceof HTMLElement && node.classList.contains('dive')) record.dives += 1;
-    }).observe(document, { childList: true, subtree: true });
+      for (const picture of document.querySelectorAll<HTMLElement>('.dive-picture')) {
+        if (checked.has(picture) || !picture.style.viewTransitionName) continue;
+        checked.add(picture);
+        const box = picture.getBoundingClientRect();
+        const width = document.documentElement.clientWidth;
+        if (Math.abs(box.top) > 1 || Math.abs(box.width - width) > 1 || Math.abs(box.height - (width * 9) / 16) > 1)
+          record.offMedia.push(`${String(box.top)} ${String(box.width)}×${String(box.height)}`);
+      }
+    }).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
   });
 }
 const dives = (page: Page): Promise<number> => page.evaluate(() => (window as unknown as { dives: number }).dives);
+const offMedia = (page: Page): Promise<string[]> =>
+  page.evaluate(() => (window as unknown as { offMedia: string[] }).offMedia);
 
 test('the sharp card dives into its case study, and the way back lands on it', async ({ page }) => {
   const errors = trackErrors(page);
@@ -46,6 +59,7 @@ test('the sharp card dives into its case study, and the way back lands on it', a
   await expect(root).toHaveAttribute('data-anchor', '2', { timeout: 20_000 });
   expect(await dives(page)).toBe(3);
   await expect(page.locator('.dive')).toHaveCount(0, { timeout: 6000 });
+  expect(await offMedia(page)).toEqual([]);
   expect(errors).toEqual([]);
 });
 
@@ -58,6 +72,7 @@ test('the next project dives from one case study into the next', async ({ page }
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   expect(await dives(page)).toBe(1);
   await expect(page.locator('.dive')).toHaveCount(0);
+  expect(await offMedia(page)).toEqual([]);
   expect(errors).toEqual([]);
 });
 

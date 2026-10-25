@@ -420,12 +420,12 @@ wall (pictures, cartels, mobile small frame); the email actions (copy button sta
 
 **Files**
 
-| File                           | Content                                                                                                                  |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `src/scene/journey/videos.ts`  | only the sharp card and its two neighbours load; only the sharp one plays; poster with reduced motion                    |
-| `src/motion/dive.ts`           | card grows over 0.9 s, named view transition to the case study's opening media, project fragment kept, reverse on return |
-| `src/components/YouTube.astro` | `youtube-nocookie.com` loaded on click                                                                                   |
-| `src/layouts/Base.astro`       | `transition:persist` on the canvas and the journey; scenes paused on case studies                                        |
+| File                           | Content                                                                                                                           |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `src/scene/journey/videos.ts`  | only the sharp card and its two neighbours load; only the sharp one plays; poster with reduced motion                             |
+| `src/motion/dive.ts`           | card flies over 0.9 s onto the opening media's place, keeping its format; named view transition, fragment kept, reverse on return |
+| `src/components/YouTube.astro` | `youtube-nocookie.com` loaded on click                                                                                            |
+| `src/layouts/Base.astro`       | `transition:persist` on the canvas and the journey; scenes paused on case studies                                                 |
 
 **Tests**
 
