@@ -127,6 +127,14 @@ button {
   background: var(--color-surface);
 }
 
+/* Coming back from a case study, the home takes the journey's look at once, under the picture: no cartel, button or
+   card fading from the list's look while the picture hands over to its card. */
+html[data-dive='back'] [data-journey-root] *,
+html[data-dive='back'] [data-journey-root] *::before,
+html[data-dive='back'] [data-journey-root] *::after {
+  transition: none !important;
+}
+
 .dive-picture img {
   display: block;
   width: 100%;

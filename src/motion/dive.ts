@@ -140,6 +140,8 @@ async function shrink(slug: string): Promise<void> {
   picture.style.viewTransitionName = `cover-${slug}`;
   const header = siteHeader();
   header?.style.setProperty('opacity', '0');
+  const html = document.documentElement;
+  html.dataset.dive = 'back';
   const fadeHeaderIn = (): void => {
     header?.style.removeProperty('opacity');
     header?.animate([{ opacity: 0 }, { opacity: 1 }], {
@@ -153,7 +155,10 @@ async function shrink(slug: string): Promise<void> {
   // The journey starts once the home has loaded, then lands on the project's fragment; the list only needs a frame.
   for (;;) {
     await frame();
-    if (!root.isConnected) return;
+    if (!root.isConnected) {
+      delete html.dataset.dive;
+      return;
+    }
     const journey = currentJourney();
     if (journey?.isAt(slug)) {
       await frame();
@@ -161,6 +166,13 @@ async function shrink(slug: string): Promise<void> {
       const back = journey.undive(slug);
       if (back) {
         root.remove();
+        // The card's cartel and pill, lit while the journey waited under the picture, go at once: transitions come
+        // back once a frame has been drawn without them.
+        void frame()
+          .then(frame)
+          .then(() => {
+            delete html.dataset.dive;
+          });
         fadeHeaderIn();
         await back;
         return;
@@ -171,6 +183,7 @@ async function shrink(slug: string): Promise<void> {
   }
   await frame();
   picture.style.viewTransitionName = '';
+  delete html.dataset.dive;
   fadeHeaderIn();
   backdrop.animate([{ opacity: 1 }, { opacity: 0 }], {
     duration: FADE_MS,
