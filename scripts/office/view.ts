@@ -36,6 +36,7 @@ async function main(): Promise<void> {
           frame: FRAMES[framing],
           town: buildTownGeometry(),
           rose: (await loadPlanetModel('/models/petit-prince.glb')).rose,
+          size: { width: host.clientWidth, height: host.clientHeight },
         });
   const view = createOfficeView(host, live, {
     moment,

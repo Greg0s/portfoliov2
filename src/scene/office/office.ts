@@ -25,7 +25,7 @@ import {
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { buildCity, type City } from './city';
-import { isMesh, LAYERS, noPause } from './common';
+import { isMesh, LAYERS, noPause, type Pause } from './common';
 import { buildLights, type OfficeLights } from './lighting';
 import { MOMENTS, type OfficeMoment } from './moments';
 import { buildDesk, type Desk } from './objects';
@@ -55,6 +55,11 @@ export interface Office {
   compile(renderer: WebGLRenderer, camera: Camera): Promise<void>;
   /** Draws one layer alone, on a cleared canvas, as the fallback layers are. */
   renderLayer(renderer: WebGLRenderer, camera: Camera, layer: Layer): void;
+  /**
+   * Draws one layer out of sight, as `render` would: its buffers, textures and shadow maps go to the GPU, and its
+   * programs are put to use, so that the first draw on screen has nothing left to do.
+   */
+  warm(renderer: WebGLRenderer, camera: Camera, layer: Layer): void;
   dispose(): void;
 }
 
@@ -118,7 +123,7 @@ export async function createOffice(
   momentName: Moment,
   town: TownGeometry,
   rose: Object3D | null,
-  pause: () => Promise<void> = noPause,
+  pause: Pause = noPause,
 ): Promise<Office> {
   if (!rectAreaReady) {
     RectAreaLightUniformsLib.init();
@@ -126,12 +131,12 @@ export async function createOffice(
   }
   const moment = MOMENTS[momentName];
   const scene = new Scene();
-  await pause();
+  await pause('scene');
   const room = buildRoom();
+  await pause('room');
   const desk = await buildDesk(rose, pause);
-  await pause();
   const city = buildCity(town, moment);
-  await pause();
+  await pause('city');
   scene.add(room, desk.group, city.group);
   const roomLights = buildLights(moment, desk);
   const deskLights = buildLights(moment, desk);
@@ -141,12 +146,12 @@ export async function createOffice(
   const pmrem = new PMREMGenerator(renderer);
   const sky = skyTexture(moment);
   const skyEnv = pmrem.fromEquirectangular(sky).texture;
-  await pause();
+  await pause('sky environment');
   const roomScene = roomEnvironmentScene(moment);
   const roomEnv: Texture = pmrem.fromScene(roomScene, 0.04, 0.05, 20, { position: new Vector3(0, 1.2, -0.4) }).texture;
   pmrem.dispose();
   sky.dispose();
-  await pause();
+  await pause('room environment');
   roomScene.traverse((node) => {
     if (isMesh(node)) node.geometry.dispose();
   });
@@ -217,6 +222,11 @@ export async function createOffice(
     renderLayer(target, camera, layer) {
       target.toneMappingExposure = moment.room.exposure;
       target.shadowMap.autoUpdate = true;
+      pass(target, camera, layer);
+    },
+    warm(target, camera, layer) {
+      target.toneMappingExposure = moment.room.exposure;
+      target.shadowMap.autoUpdate = false;
       pass(target, camera, layer);
     },
     dispose() {

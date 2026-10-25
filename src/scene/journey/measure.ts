@@ -62,6 +62,14 @@ function slowScenes(): string {
 
 const round = (x: number, digits = 0): number => Math.round(x * 10 ** digits) / 10 ** digits;
 
+/** The steps of the office's preparation that held the main thread at least 8 ms, in order. */
+function officeSteps(from: number): { step: string; atMs: number; ms: number }[] {
+  return performance
+    .getEntriesByType('measure')
+    .filter((entry) => entry.name.startsWith('office:') && entry.duration >= 8)
+    .map((entry) => ({ step: entry.name.slice(7), atMs: round(entry.startTime - from), ms: round(entry.duration) }));
+}
+
 /** The summary of a phase's frame times, as the bench writes it. */
 export function summarize(times: readonly number[]): Summary {
   const sorted = [...times].sort((a, b) => a - b);
@@ -254,6 +262,9 @@ export function startMeasure(root: HTMLElement): () => void {
           const begun = phaseStarts.get(name) ?? start;
           return { phase: name, atMs: round(start - begun), ms: round(ms), why: explain(start, ms) };
         }),
+      // The office's preparation, step by step (see `breathe` in office/common.ts): the time each one held the main
+      // thread, from the start of the projects, as the hitches.
+      officeSteps: officeSteps(phaseStarts.get('projets') ?? 0),
     };
     const text = JSON.stringify(result, null, 2);
     console.info('mesure', result);

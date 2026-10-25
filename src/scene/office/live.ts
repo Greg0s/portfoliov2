@@ -24,6 +24,7 @@ import {
   MeshBasicMaterial,
   SRGBColorSpace,
   TextureLoader,
+  Vector2,
   Vector3,
   WebGLRenderer,
   ZeroFactor,
@@ -31,7 +32,7 @@ import {
   type Texture,
 } from 'three';
 import { FADE_PLANES, layerFade, type ArrivalState } from './arrival';
-import { breathe, DEG, isMesh, LAYERS } from './common';
+import { breathe, DEG, endStep, isMesh, LAYERS, startStep } from './common';
 import { anchorsOf, placement, type Anchors, type Placement } from './corners';
 import type { Fit, FrameSpec } from './frame';
 import { FRAMINGS, makeCamera, type Framing } from './framings';
@@ -143,12 +144,14 @@ export interface LiveOptions {
   frame: FrameSpec;
   town: TownGeometry;
   rose: Object3D | null;
+  /** The section's size, in CSS px: the canvas is made at it from the start. */
+  size: { width: number; height: number };
 }
 
 export async function createLiveOffice(options: LiveOptions): Promise<OfficeScene> {
   const { framing, frame } = options;
   // Each part in a task of its own, between two frames: the context, then the scene (createOffice pauses too).
-  await breathe();
+  await breathe('town and model');
   const canvas = document.createElement('canvas');
   canvas.className = 'office-canvas';
   canvas.setAttribute('aria-hidden', 'true');
@@ -158,6 +161,14 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
+  // Reading back each program's log once it is linked makes the driver wait for it: only while developing.
+  renderer.debug.checkShaderErrors = import.meta.env.DEV;
+  // The drawing buffer, made at its size in a step of its own: resizing it later, with the view, held the page
+  // (a quarter of a second on a laptop, without a graphics card).
+  const pixelRatio = (): number => cappedPixelRatio(window.devicePixelRatio || 1, framing === 'mobile');
+  renderer.setPixelRatio(pixelRatio());
+  renderer.setSize(options.size.width, options.size.height, false);
+  await breathe('canvas');
 
   const office: Office = await createOffice(renderer, options.moment, options.town, options.rose, breathe);
   const spec = FRAMINGS[framing];
@@ -223,7 +234,22 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   const loader = new TextureLoader();
   const textures: Texture[] = [];
 
-  await office.compile(renderer, rest);
+  endStep('halos and pictures');
+  // Compiling starts in this task; the drivers that can link in parallel finish it later, out of the page's way.
+  startStep();
+  const compiled = office.compile(renderer, rest);
+  endStep('shaders (start)');
+  await compiled;
+  startStep();
+  // Then each layer drawn once, out of sight, in a step of its own: together, in the first draw, they held the page.
+  const warmCamera = rest.clone();
+  let warmed = 'shaders (end)';
+  for (const layer of ['city', 'room', 'desk'] as const) {
+    await breathe(warmed);
+    office.warm(renderer, warmCamera, layer);
+    warmed = `first ${layer} draw`;
+  }
+  endStep(warmed);
 
   let fit: Fit = { k: 1, x: 0, y: 0 };
   let width = frame.w;
@@ -290,8 +316,11 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
       width = nextWidth;
       height = nextHeight;
       fit = nextFit;
-      renderer.setPixelRatio(cappedPixelRatio(window.devicePixelRatio || 1, framing === 'mobile'));
-      renderer.setSize(width, height, false);
+      // Setting the canvas's size, even to the same one, makes its drawing buffer again: only when it changes.
+      const ratio = pixelRatio();
+      if (ratio !== renderer.getPixelRatio()) renderer.setPixelRatio(ratio);
+      const size = renderer.getSize(new Vector2());
+      if (size.x !== width || size.y !== height) renderer.setSize(width, height, false);
     },
     setPictures(pictures, loaded) {
       for (const [id, picture] of pictures) {
