@@ -9,6 +9,7 @@ import { loadPlanetModel } from '../planet/load';
 import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
 import { runGeometry } from '../workers/client';
+import { arrivalState, FADE_PLANES, layerFade } from './arrival';
 import { breathe } from './common';
 import { FRAMES, framingOf } from './frame';
 import { createLayersOffice } from './layers';
@@ -72,6 +73,21 @@ export async function prepareLayers(
   return viewOf(section, host, layers, options);
 }
 
+/** Points of the arrival where the room, then the desk, are half faded in. */
+function fadingArrivals(framing: ReturnType<typeof framingOf>): number[] {
+  const found: number[] = [];
+  for (const z of [FADE_PLANES.room, FADE_PLANES.desk]) {
+    for (let k = 0; k <= 200; k += 1) {
+      const fade = layerFade(arrivalState(k / 200, FRAMES[framing], false, framing === 'mobile').camZ, z);
+      if (fade > 0.2 && fade < 0.8) {
+        found.push(k / 200);
+        break;
+      }
+    }
+  }
+  return found;
+}
+
 async function viewOf(
   section: HTMLElement,
   host: HTMLElement,
@@ -98,15 +114,15 @@ async function viewOf(
     pools,
     planetName: 'B 612',
   });
-  // One draw at rest, out of sight: textures, shadow maps and buffers go to the GPU now, not on the way in; each draw
-  // in a task of its own, between two frames.
-  await breathe();
-  view.update(1, performance.now(), 16);
-  await breathe();
-  view.update(0, performance.now(), 16);
-  await breathe();
-  // The page's style and layout settled now, in this task: left for the next frame, the journey's first read there
-  // (the glide's scroll) would have to do it in the middle of that frame.
   section.getBoundingClientRect();
+  // One draw at rest, out of sight: textures, shadow maps and buffers go to the GPU now, not on the way in. Then where
+  // the room, and the desk, fade in through their off-screen pass, whose target is made at its size. Each draw in a
+  // task of its own, between two frames, and the page's style and layout settled in that task: left for the next
+  // frame, the journey's first read there (the glide's scroll) would have to do it in the middle of that frame.
+  for (const arrival of [1, ...fadingArrivals(framing), 0]) {
+    await breathe();
+    view.update(arrival, performance.now(), 16);
+    section.getBoundingClientRect();
+  }
   return view;
 }

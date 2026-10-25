@@ -5,7 +5,7 @@
  * the camera backs to the seat, and every layer slides with the head by its depth. It needs no WebGL: it takes over
  * when the live office is too slow, or when WebGL is missing. It is placed in the frame's pixels, as the sky is.
  */
-import { layerFade, type ArrivalState } from './arrival';
+import { FADE_PLANES, layerFade, type ArrivalState } from './arrival';
 import type { Placement, Point, Quad } from './corners';
 import type { Fit, FrameSpec } from './frame';
 import type { Framing } from './framings';
@@ -149,7 +149,7 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
       const s = 4.67 / (state.camZ + 4.67);
       const par = frame.par;
       city.style.transform = `translate(${px(-head.x * par.city[0])}, ${px(state.tiltY - head.y * par.city[1])}) scale(${s.toFixed(5)})`;
-      const opacity = { room: layerFade(state.camZ, -1.2), desk: layerFade(state.camZ, -0.85) };
+      const opacity = { room: layerFade(state.camZ, FADE_PLANES.room), desk: layerFade(state.camZ, FADE_PLANES.desk) };
       const sRoom = layerScale(state.camZ, -1.2);
       const sDesk = layerScale(state.camZ, -0.85);
       room.style.transform = `translate(${px(-head.x * par.room[0])}, ${px(-head.y * par.room[1])}) scale(${sRoom.toFixed(5)})`;

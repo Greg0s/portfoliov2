@@ -30,7 +30,7 @@ import {
   type Object3D,
   type Texture,
 } from 'three';
-import { layerFade, type ArrivalState } from './arrival';
+import { FADE_PLANES, layerFade, type ArrivalState } from './arrival';
 import { breathe, DEG, isMesh, LAYERS } from './common';
 import { anchorsOf, placement, type Anchors, type Placement } from './corners';
 import type { Fit, FrameSpec } from './frame';
@@ -272,7 +272,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
       roomCamera.quaternion.copy(roomFull.quaternion);
       roomCamera.updateMatrixWorld();
       view(roomCamera, 1, 0, 0);
-      const opacity = { room: layerFade(state.camZ, -1.2), desk: layerFade(state.camZ, -0.85) };
+      const opacity = { room: layerFade(state.camZ, FADE_PLANES.room), desk: layerFade(state.camZ, FADE_PLANES.desk) };
       office.render(renderer, { city: cityCamera, room: roomCamera }, opacity);
       // The screen is laid over the scene only when it is wholly in front of the camera.
       const screenShown = anchors.screen.every(
