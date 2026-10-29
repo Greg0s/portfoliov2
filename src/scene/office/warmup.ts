@@ -13,12 +13,12 @@ import { arrivalState, FADE_PLANES, layerFade } from './arrival';
 import { breathe, endStep, startStep } from './common';
 import { FRAMES, framingOf } from './frame';
 import { createLayersOffice } from './layers';
-import { createLiveOffice, type OfficeScene } from './live';
+import { createLiveOffice, SlowOffice, type OfficeScene } from './live';
 import { createOfficeView, type OfficeView } from './view';
 import type { Cartel, WallPicture } from './wall';
 
-/** Thrown when the device draws WebGL in software: the office stays an image. */
-export class SlowOffice extends Error {}
+// Thrown when the device draws WebGL in software, or links its programs too slowly: the layers stand in.
+export { SlowOffice };
 
 export interface OfficeOptions {
   modelUrl: string;
@@ -55,6 +55,7 @@ export async function prepareOffice(
     town: reply.town,
     rose: model.rose,
     size: { width: section.clientWidth, height: section.clientHeight },
+    forced: options.forced,
   });
   return viewOf(section, host, live, options);
 }
@@ -63,7 +64,10 @@ export async function prepareOffice(
 export async function prepareLayers(
   section: HTMLElement,
   host: HTMLElement,
-  options: Pick<OfficeOptions, 'moment' | 'still'>,
+  options: Pick<OfficeOptions, 'moment' | 'still'> & {
+    /** Taking over from the live scene in the middle of the arrival: drawn at that point only, as it shows. */
+    at?: number;
+  },
 ): Promise<OfficeView> {
   const framing = framingOf(section.clientWidth);
   const layers = await createLayersOffice({
@@ -94,7 +98,7 @@ async function viewOf(
   section: HTMLElement,
   host: HTMLElement,
   scene: OfficeScene,
-  options: Pick<OfficeOptions, 'moment' | 'still'>,
+  options: Pick<OfficeOptions, 'moment' | 'still'> & { at?: number },
 ): Promise<OfficeView> {
   // In a task of its own: a promise (a picture's decoding, a shader's compiling) can settle during a frame, and laying
   // the view in the page reads its size, which would force a layout in the middle of that frame.
@@ -122,8 +126,9 @@ async function viewOf(
   // the room, and the desk, fade in through their off-screen pass, whose target is made at its size. Each draw in a
   // task of its own, between two frames, and the page's style and layout settled in that task: left for the next
   // frame, the journey's first read there (the glide's scroll) would have to do it in the middle of that frame.
+  // Taking over on screen, it is drawn where the arrival is, and nowhere else: the other points would show.
   let done = 'view';
-  for (const arrival of [1, ...fadingArrivals(framing), 0]) {
+  for (const arrival of options.at === undefined ? [1, ...fadingArrivals(framing), 0] : [options.at]) {
     await breathe(done);
     view.update(arrival, performance.now(), 16);
     section.getBoundingClientRect();

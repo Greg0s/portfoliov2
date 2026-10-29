@@ -989,7 +989,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     }
     const previousDraw = lastOfficeDraw;
     lastOfficeDraw = now;
-    if (arrival <= 0) return;
+    // While the layers get ready to take over, the live office stays as it is.
+    if (arrival <= 0 || officeReplacing) return;
     officeView.update(arrival, now, previousDraw ? now - previousDraw : 16);
     if (officeSampler && previousDraw > 0) {
       redraw = true;
@@ -999,10 +1000,39 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         // Too slow: the layers take over, from the same point of the arrival.
         officeSlow = true;
         markSlow('office');
-        freeOffice();
-        loadOffice();
+        officeSampler = null;
+        replaceOffice(arrival);
       }
     }
+  }
+
+  /**
+   * Puts the layers in place of the live office, on screen: the live office stays, still, until the layers are drawn
+   * where the arrival is, then goes. Freed first, the office would vanish and come back, and the layers' warming draws
+   * (the arrival's start, its fades and its end) would blink on screen.
+   */
+  let officeReplacing = false;
+  function replaceOffice(arrival: number): void {
+    if (!office || officeReplacing) return;
+    const host = office;
+    officeReplacing = true;
+    const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
+    void import('../office/warmup')
+      .then(({ prepareLayers }) => prepareLayers(host, host, { moment, still: options.still, at: arrival }))
+      .then((created) => {
+        officeReplacing = false;
+        if (stopped || !officeLoading) {
+          created.dispose();
+          return;
+        }
+        officeView?.dispose();
+        officeView = created;
+        html.dataset.officeScene = 'layers';
+        redraw = true;
+      })
+      .catch(() => {
+        officeReplacing = false;
+      });
   }
 
   window.addEventListener('keydown', onKey);
