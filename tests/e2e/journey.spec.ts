@@ -41,6 +41,15 @@ test('the journey starts on the opening and logs no error', async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+test('before its scripts run, the home shows the opening alone', async ({ page }) => {
+  await page.route(/\/_astro\/.*\.js$/, (route) => route.abort());
+  await page.goto('./');
+  await expect(page.locator('html')).toHaveAttribute('data-journey', 'on');
+  await expect(page.locator('.opening h1')).toBeVisible();
+  await expect(page.locator('.contact')).toBeHidden();
+  await expect(page.locator('.journey')).toBeHidden();
+});
+
 test('the live planet takes over its image after a gesture, and leaves it to the image as it recedes', async ({
   page,
 }) => {
