@@ -250,7 +250,8 @@ const images = [
 
   @media (width < 768px) {
     .opening {
-      --planet-size: 360px;
+      /* Smaller on short screens (a browser's bars shown), so that the text and the call fit under it. */
+      --planet-size: clamp(220px, 2 * (100svh - 580px), 360px);
       --planet-x: 50%;
       --planet-y: 248px;
 
@@ -269,7 +270,7 @@ const images = [
     .intro {
       left: var(--gutter);
       right: var(--gutter);
-      top: 436px;
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 8px);
       gap: 14px;
       width: auto;
       translate: none;
@@ -296,6 +297,30 @@ const images = [
 
     .cta {
       bottom: 22px;
+    }
+  }
+
+  /* A short phone screen: a shorter call, closer to the edge. */
+  @media (width < 768px) and (height < 780px) {
+    .cta {
+      bottom: 14px;
+      gap: 10px;
+    }
+
+    .cta-line {
+      height: 32px;
+    }
+  }
+
+  /* Shorter still: the line alone, the words for screen readers. */
+  @media (width < 768px) and (height < 680px) {
+    .cta-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
   }
 
