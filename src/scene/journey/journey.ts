@@ -20,7 +20,7 @@ import {
   worldLook,
   type Sway,
 } from './camera';
-import { sceneFor, type Scene } from './layout';
+import { sceneFor, type Scene, type View } from './layout';
 import { setJourney } from './registry';
 import {
   anchorAt,
@@ -130,6 +130,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const html = document.documentElement;
   const styles = styler();
   const set = styles.set;
+  // Firefox sorts everything in one 3D scene plane by plane: a card's dark shadow, in the card's own plane, would
+  // now and then be drawn over the card. There each card is flattened into its own picture, the perspective of its
+  // turn given by its own frame, seen from the vanishing point at the card's distance: the same drawing, in one plane.
+  const flatCards = CSS.supports('-moz-appearance', 'none');
+  const cardPerspective = (parts: CardParts, x: number, y: number, depth: number, lift: number, view: View): void => {
+    if (!flatCards) return;
+    set(parts.float, 'perspective', `${Math.max(1, view.perspective * (1 - depth)).toFixed(1)}px`);
+    set(parts.float, 'perspective-origin', `${(-x).toFixed(1)}px ${(-y - lift).toFixed(1)}px`);
+  };
 
   const opening = root.querySelector<HTMLElement>('.opening');
   const decorGroup = root.querySelector<HTMLElement>('.planet');
@@ -748,6 +757,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       if (i === diving && dive) {
         const flight = diveLook(place, look, view, k);
         set(parts.place, 'transform', cssTransform(flight.x, flight.y, flight.depth, view, sway));
+        cardPerspective(parts, flight.x, flight.y, flight.depth, lift, view);
         set(parts.link, 'opacity', '1');
         set(parts.link, 'filter', 'none');
         set(parts.link, 'pointer-events', 'none');
@@ -764,6 +774,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         const opacity = look.opacity * others;
         const shown = opacity > 0.004;
         set(parts.place, 'transform', cssTransform(place.x, place.y, look.depth, view, sway));
+        cardPerspective(parts, place.x, place.y, look.depth, lift, view);
         set(parts.link, 'opacity', opacity.toFixed(3));
         set(parts.link, 'filter', shown && look.blur > 0.05 ? `blur(${look.blur.toFixed(2)}px)` : 'none');
         set(parts.link, 'pointer-events', opacity > 0.3 && diving < 0 ? 'auto' : 'none');
