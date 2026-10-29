@@ -131,7 +131,9 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
     // Laid out at twice its height on the wall, then squeezed onto it: the browser draws a picture in a 3D transform
     // at its laid out size, so one laid out smaller than shown, as the tall poster was at 200 px, shows its pixels.
     const [tl, tr, br, bl] = face.corners;
-    const h = Math.round(2 * Math.max(Math.hypot(bl[0] - tl[0], bl[1] - tl[1]), Math.hypot(br[0] - tr[0], br[1] - tr[1])));
+    const h = Math.round(
+      2 * Math.max(Math.hypot(bl[0] - tl[0], bl[1] - tl[1]), Math.hypot(br[0] - tr[0], br[1] - tr[1])),
+    );
     const w = Math.round(h * face.ratio);
     Object.assign(image.style, { width: px(w), height: px(h), transform: quadMatrix(w, h, face.corners) });
     image.hidden = true;
