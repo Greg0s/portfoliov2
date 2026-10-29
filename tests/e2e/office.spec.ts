@@ -107,8 +107,9 @@ test.describe('on desktop', () => {
     if (!box) throw new Error('no hit area for the poster');
     await page.mouse.move(box.x + 20, box.y + box.height - 20);
     await expect(poster).toHaveAttribute('data-open', '');
-    await expect(poster).toContainText('Affiche de film');
-    await expect(poster).toContainText('Titre original : Project Hail Mary');
+    // Neither the frame's type nor, on the French site, the original title.
+    await expect(poster).not.toContainText('Affiche de film');
+    await expect(poster).not.toContainText('Project Hail Mary');
     await page.mouse.move(700, 860);
     await expect(poster).not.toHaveAttribute('data-open');
   });

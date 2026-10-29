@@ -42,7 +42,6 @@ export const fr = {
   'screen.subject': 'Objet',
   'screen.addSubject': 'Ajouter un objet',
   'screen.pages': 'sur 1',
-  'wall.original': 'Titre original : ',
   'case.back': 'Retour aux projets',
   'case.year': 'Année',
   'case.role': 'Rôle',

@@ -12,14 +12,12 @@ import type { Head } from './live';
 
 /** What a cartel says, as the contact section gives it (`src/lib/wall.ts` decides what is known). */
 export interface Cartel {
-  kind: string;
   main: string;
   /** A title of a work, in the light italic of titles; a name alone stays upright. */
   isTitle: boolean;
   sub?: string;
-  /** A last line: a credit, or after its lead (« Titre original : »), a film's original title kept on one line. */
+  /** A last line: a credit the picture requires. */
   note?: string;
-  noteLead?: string;
 }
 
 /** A picture as drawn for a frame: its file, its focus, and its cartel if anything is known. */
@@ -127,20 +125,11 @@ export function createCartels(
         item.known = cartel !== null;
         item.card.replaceChildren();
         if (!cartel) continue;
-        el('span', 'office-cartel-kind', item.card).textContent = cartel.kind;
         const main = el('span', 'office-cartel-main', item.card);
         main.textContent = cartel.main;
         main.classList.toggle('title', cartel.isTitle);
         if (cartel.sub) el('span', 'office-cartel-sub', item.card).textContent = cartel.sub;
-        if (cartel.note) {
-          const note = el('span', 'office-cartel-note', item.card);
-          if (cartel.noteLead) {
-            note.append(cartel.noteLead);
-            el('span', 'office-cartel-keep', note).textContent = cartel.note;
-          } else {
-            note.textContent = cartel.note;
-          }
-        }
+        if (cartel.note) el('span', 'office-cartel-note', item.card).textContent = cartel.note;
       }
       setOpen('');
       refresh();
