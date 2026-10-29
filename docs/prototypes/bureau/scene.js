@@ -178,7 +178,7 @@ function buildRoom() {
   const frames = [
     { id: 'film', type: 'film', kind: 'print', at: [-0.0347, 0.0178], w: 0.36, ratio: 16 / 9 },
     { id: 'peinture', type: 'peinture', kind: 'art', at: [0.1424, 0.0178], w: 0.29, ratio: 3 / 2 },
-    { id: 'affiche', type: 'affiche', kind: 'poster', at: [-0.0208, 0.1889], w: 0.417, ratio: 2 / 3 },
+    { id: 'affiche', type: 'affiche', kind: 'poster', at: [-0.0208, 0.2039], w: 0.417, ratio: 2 / 3 },
     { id: 'photo', type: 'photo', kind: 'print', at: [0.1819, 0.1911], w: 0.195, ratio: 4 / 5 },
     { id: 'photo-paysage', type: 'photo', kind: 'print', at: [0.1819, 0.3911], w: 0.21, ratio: 4 / 3 },
     { id: 'pochette', type: 'pochette', kind: 'poster', at: [0.1819, 0.5322], w: 0.224, ratio: 1 },

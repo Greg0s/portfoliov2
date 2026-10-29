@@ -40,7 +40,7 @@ export interface PictureData {
 const FRAMES = [
   { id: 'film', type: 'film', kind: 'print', at: [-0.0347, 0.0178], w: 0.36, ratio: 16 / 9 },
   { id: 'painting', type: 'painting', kind: 'art', at: [0.1424, 0.0178], w: 0.29, ratio: 3 / 2 },
-  { id: 'poster', type: 'poster', kind: 'poster', at: [-0.0208, 0.1889], w: 0.417, ratio: 2 / 3 },
+  { id: 'poster', type: 'poster', kind: 'poster', at: [-0.0208, 0.2039], w: 0.417, ratio: 2 / 3 },
   { id: 'photo-portrait', type: 'photo', kind: 'print', at: [0.1819, 0.1911], w: 0.195, ratio: 4 / 5 },
   { id: 'photo-landscape', type: 'photo', kind: 'print', at: [0.1819, 0.3911], w: 0.21, ratio: 4 / 3 },
   { id: 'album', type: 'album', kind: 'poster', at: [0.1819, 0.5322], w: 0.224, ratio: 1 },
