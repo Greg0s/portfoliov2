@@ -4,7 +4,7 @@
  * glowing planets, rings) stays the opening's image, with its bloom: the live planet draws the planet, the
  * characters and the rose. The office (step 7) takes its rose from the same file.
  */
-import { Mesh, PropertyBinding, Vector3, type Object3D } from 'three';
+import { LoaderUtils, Mesh, PropertyBinding, Vector3, type Object3D } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Calm } from '../workers/relief';
@@ -75,8 +75,22 @@ export function meshIn(node: Object3D | undefined): Mesh | null {
   return found[0] ?? null;
 }
 
-export async function loadPlanetModel(url: string): Promise<PlanetModel> {
-  const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
+/**
+ * Loads the model at `url`. `beforeParse`, when given, runs between the download and the parsing, which holds the main
+ * thread a while: the live planet waits there for the page at rest.
+ */
+export async function loadPlanetModel(url: string, beforeParse?: () => Promise<void>): Promise<PlanetModel> {
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  let gltf;
+  if (beforeParse) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`The planet model answered ${String(response.status)}.`);
+    const data = await response.arrayBuffer();
+    await beforeParse();
+    gltf = await loader.parseAsync(data, LoaderUtils.extractUrlBase(url));
+  } else {
+    gltf = await loader.loadAsync(url);
+  }
   const root = gltf.scene;
   root.updateMatrixWorld(true);
   const byName = (name: string): Object3D | undefined => root.getObjectByName(PropertyBinding.sanitizeNodeName(name));

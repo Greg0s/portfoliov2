@@ -62,12 +62,20 @@ function slowScenes(): string {
 
 const round = (x: number, digits = 0): number => Math.round(x * 10 ** digits) / 10 ** digits;
 
-/** The steps of the office's preparation that held the main thread at least 8 ms, in order. */
+/**
+ * The steps of the office's preparation, and of the planet's (named `planet:<step>`), that held the main thread at
+ * least 8 ms, in order.
+ */
 function officeSteps(from: number): { step: string; atMs: number; ms: number }[] {
   return performance
     .getEntriesByType('measure')
-    .filter((entry) => entry.name.startsWith('office:') && entry.duration >= 8)
-    .map((entry) => ({ step: entry.name.slice(7), atMs: round(entry.startTime - from), ms: round(entry.duration) }));
+    .filter((entry) => /^(office|planet):/.test(entry.name) && entry.duration >= 8)
+    .sort((a, b) => a.startTime - b.startTime)
+    .map((entry) => ({
+      step: entry.name.startsWith('office:') ? entry.name.slice(7) : entry.name,
+      atMs: round(entry.startTime - from),
+      ms: round(entry.duration),
+    }));
 }
 
 /** The summary of a phase's frame times, as the bench writes it. */
