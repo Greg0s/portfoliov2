@@ -35,7 +35,6 @@ describe('cartelFields', () => {
       main: 'La Nuit étoilée',
       isTitle: true,
       sub: 'Vincent van Gogh, 1889',
-      original: undefined,
       credit: undefined,
     });
   });
@@ -45,7 +44,6 @@ describe('cartelFields', () => {
       main: 'Bill Anders',
       isTitle: false,
       sub: '1968',
-      original: undefined,
       credit: 'NASA, Apollo 8',
     });
   });
@@ -55,16 +53,18 @@ describe('cartelFields', () => {
     expect(cartelFields({ credit: 'Unsplash' }, 'fr')).toBeUndefined();
   });
 
-  it('gives French films their French title with the original below, English ones the original only', () => {
+  it('gives films their French title on the French site and their original title on the English one', () => {
     const film = {
       title: { fr: 'Le Voyage de Chihiro', en: 'Spirited Away' },
       originalTitle: 'Sen to Chihiro no Kamikakushi',
       year: 2001,
     };
-    expect(cartelFields(film, 'fr')).toMatchObject({
+    expect(cartelFields(film, 'fr')).toEqual({
       main: 'Le Voyage de Chihiro',
-      original: 'Sen to Chihiro no Kamikakushi',
+      isTitle: true,
+      sub: '2001',
+      credit: undefined,
     });
-    expect(cartelFields(film, 'en')).toMatchObject({ main: 'Sen to Chihiro no Kamikakushi', original: undefined });
+    expect(cartelFields(film, 'en')).toMatchObject({ main: 'Sen to Chihiro no Kamikakushi' });
   });
 });

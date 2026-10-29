@@ -44,7 +44,6 @@ export const en: Record<Key, string> = {
   'screen.subject': 'Subject',
   'screen.addSubject': 'Add a subject',
   'screen.pages': 'of 1',
-  'wall.original': 'Original title: ',
   'case.back': 'Back to projects',
   'case.year': 'Year',
   'case.role': 'Role',

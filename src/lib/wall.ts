@@ -30,22 +30,11 @@ export const frames = [
 
 export type FrameId = (typeof frames)[number]['id'];
 
-export const frameTypeLabels: Record<Locale, Record<FrameType, string>> = {
-  fr: {
-    poster: 'Affiche de film',
-    film: 'Image de film',
-    painting: 'Peinture',
-    photo: 'Photographie',
-    album: 'Pochette d’album',
-  },
-  en: { poster: 'Film poster', film: 'Film still', painting: 'Painting', photo: 'Photograph', album: 'Album cover' },
-};
-
 /** What the site knows of a picture; everything is optional. */
 export interface PictureInfo {
   /** A plain title, or a film's French and English titles. */
   title?: string | { fr: string; en: string } | undefined;
-  /** A film's original title, shown under the French title on the French site. */
+  /** A film's original title, its title on the English site. */
   originalTitle?: string | undefined;
   author?: string | undefined;
   year?: number | string | undefined;
@@ -60,8 +49,6 @@ export interface CartelFields {
   isTitle: boolean;
   /** Author and year under a title; the year under an author alone. */
   sub: string | undefined;
-  /** The original title of a film, on the French site only. */
-  original: string | undefined;
   credit: string | undefined;
 }
 
@@ -73,8 +60,8 @@ function titleIn(info: PictureInfo, locale: Locale): string | undefined {
 
 /**
  * What a picture's label says: only what is known, adapted to it (office spec §3). Without a title the author leads;
- * with nothing known there is no label (`undefined`). French films carry their French title with the original below;
- * the English site gives the original title only.
+ * with nothing known there is no label (`undefined`). French films carry their French title, English ones their
+ * original title.
  */
 export function cartelFields(info: PictureInfo, locale: Locale): CartelFields | undefined {
   const title = titleIn(info, locale);
@@ -86,11 +73,7 @@ export function cartelFields(info: PictureInfo, locale: Locale): CartelFields | 
     : info.author !== undefined
       ? year
       : undefined;
-  const original =
-    locale === 'fr' && typeof info.title === 'object' && info.originalTitle && info.originalTitle !== title
-      ? info.originalTitle
-      : undefined;
-  return { main, isTitle: title !== undefined, sub, original, credit: info.credit };
+  return { main, isTitle: title !== undefined, sub, credit: info.credit };
 }
 
 /**

@@ -11,9 +11,9 @@
 import { getCollection } from 'astro:content';
 import { getImage } from 'astro:assets';
 import Screen from './office/Screen.astro';
-import { t, type Locale } from '../i18n';
+import type { Locale } from '../i18n';
 import { withBase } from '../lib/url';
-import { cartelFields, frames, frameTypeLabels } from '../lib/wall';
+import { cartelFields } from '../lib/wall';
 import '../styles/office.css';
 
 interface Props {
@@ -21,7 +21,6 @@ interface Props {
 }
 
 const { locale } = Astro.props;
-const label = t(locale);
 
 const moments = ['aube', 'crepuscule'] as const;
 const src = (moment: string, framing: string): string => withBase(`/images/office/office-${moment}-${framing}.webp`);
@@ -37,25 +36,21 @@ const WIDTHS: Record<string, number> = {
   desk: 280,
 };
 /** What a picture's cartel says, in the page's language (office spec §3); nothing known, no cartel. */
-const cartelOf = (frame: string, info: Parameters<typeof cartelFields>[0]) => {
-  const type = frames.find((f) => f.id === frame)?.type;
+const cartelOf = (info: Parameters<typeof cartelFields>[0]) => {
   const fields = cartelFields(info, locale);
-  if (!type || !fields) return undefined;
-  const note = fields.original ?? fields.credit;
+  if (!fields) return undefined;
   return {
-    kind: frameTypeLabels[locale][type],
     main: fields.main,
     isTitle: fields.isTitle,
     ...(fields.sub ? { sub: fields.sub } : {}),
-    ...(note ? { note } : {}),
-    ...(fields.original ? { noteLead: label('wall.original') } : {}),
+    ...(fields.credit ? { note: fields.credit } : {}),
   };
 };
 const pictures: Record<string, { src: string; focus?: string; cartel?: ReturnType<typeof cartelOf> }[]> = {};
 for (const entry of await getCollection('wall')) {
   const frame = entry.id.split('/')[0] ?? '';
   const image = await getImage({ src: entry.data.image, width: WIDTHS[frame] ?? 400, format: 'webp', quality: 80 });
-  const cartel = cartelOf(frame, entry.data);
+  const cartel = cartelOf(entry.data);
   (pictures[frame] ??= []).push({
     src: image.src,
     ...(entry.data.focus ? { focus: entry.data.focus } : {}),
