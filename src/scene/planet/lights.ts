@@ -3,16 +3,8 @@
  * the fox from the top left, a near-null ambient light, a light cold back light, a very faint environment. The
  * visitor's moment changes the spot's and the sky's colours; at noon they cross-fade.
  */
-import {
-  Color,
-  DirectionalLight,
-  HemisphereLight,
-  PMREMGenerator,
-  SpotLight,
-  Vector3,
-  type Scene,
-  type WebGLRenderer,
-} from 'three';
+import { Color, DirectionalLight, HemisphereLight, SpotLight, Vector3, type Scene, type WebGLRenderer } from 'three';
+import { LightPMREMGenerator } from '../pmrem';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Moment } from '../time';
 
@@ -46,9 +38,10 @@ export interface PlanetLights {
 }
 
 export function addLights(scene: Scene, renderer: WebGLRenderer, moment: Moment, shadowSize: number): PlanetLights {
-  const pmrem = new PMREMGenerator(renderer);
+  const pmrem = new LightPMREMGenerator(renderer);
   const room = new RoomEnvironment();
-  const environment = pmrem.fromScene(room, 0.04).texture;
+  // Small: the environment is a faint glow (0.035), and its prefiltering's work on the GPU grows with its size.
+  const environment = pmrem.fromScene(room, 0.04, 0.1, 100, { size: 64 }).texture;
   room.dispose();
   pmrem.dispose();
   scene.environment = environment;

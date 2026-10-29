@@ -20,8 +20,8 @@ import type { OfficeMoment } from './moments';
 /** The sky as an equirectangular picture, for the reflections in the river. */
 export function skyTexture(M: OfficeMoment): CanvasTexture {
   const t = canvasTexture(
-    1024,
     512,
+    256,
     (ctx, w, h) => {
       const grad = ctx.createLinearGradient(0, 0, 0, h / 2);
       M.sky.forEach((c, i) => {

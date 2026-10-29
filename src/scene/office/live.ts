@@ -139,6 +139,16 @@ function halo(texture: Texture, layer: number): Group {
   return group;
 }
 
+/** Thrown when the device cannot draw the live office smoothly: its layers stand in. */
+export class SlowOffice extends Error {}
+
+/**
+ * A program whose link holds the page this long, in ms, twice, says a modest GPU without parallel compiling (an
+ * integrated chip with Firefox, 300 ms and more each): the thirty others would hold the projects for seconds, and the
+ * live office would then be too slow anyway. A phone takes under 100 ms.
+ */
+const SLOW_LINK = 200;
+
 /** What three's programs answer and its types leave out. */
 interface Program {
   program: globalThis.WebGLProgram;
@@ -151,7 +161,12 @@ interface Program {
  * among them), the first draw would wait for every link at once, seconds long: each program is linked in a task of
  * its own instead, while the page is at rest.
  */
-async function compileOffice(renderer: WebGLRenderer, office: Office, camera: PerspectiveCamera): Promise<void> {
+async function compileOffice(
+  renderer: WebGLRenderer,
+  office: Office,
+  camera: PerspectiveCamera,
+  forced: boolean,
+): Promise<void> {
   const programs = (): Program[] => (renderer.info.programs ?? []) as unknown as Program[];
   if (renderer.extensions.has('KHR_parallel_shader_compile')) {
     await office.compile(renderer, camera, () => Promise.resolve());
@@ -164,11 +179,13 @@ async function compileOffice(renderer: WebGLRenderer, office: Office, camera: Pe
   }
   const gl = renderer.getContext();
   let linked = 0;
+  let slowLinks = 0;
   // Waiting for rest, two seconds in all at most: the office has to be ready before the journey reaches it.
   let patience = 2000;
   const moves = watchMoves();
   try {
     await office.compile(renderer, camera, async () => {
+      const start = performance.now();
       // Asking whether it is linked makes this task wait for it, and for it alone.
       const all = programs();
       for (; linked < all.length; linked += 1) {
@@ -176,6 +193,8 @@ async function compileOffice(renderer: WebGLRenderer, office: Office, camera: Pe
         if (program) gl.getProgramParameter(program.program, gl.LINK_STATUS);
       }
       endStep(`shader ${String(linked)}`);
+      if (performance.now() - start > SLOW_LINK) slowLinks += 1;
+      if (slowLinks >= 2 && !forced) throw new SlowOffice();
       await breathe();
       if (patience > 0) {
         const waited = performance.now();
@@ -197,6 +216,8 @@ export interface LiveOptions {
   rose: Object3D | null;
   /** The section's size, in CSS px: the canvas is made at it from the start. */
   size: { width: number; height: number };
+  /** Kept live whatever the device (`?office=live`). */
+  forced?: boolean;
 }
 
 export async function createLiveOffice(options: LiveOptions): Promise<OfficeScene> {
@@ -287,7 +308,14 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
 
   endStep('halos and pictures');
   startStep();
-  await compileOffice(renderer, office, rest);
+  try {
+    await compileOffice(renderer, office, rest, options.forced ?? false);
+  } catch (error) {
+    office.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
+    throw error;
+  }
   // Then each layer drawn once, out of sight, in a step of its own: together, in the first draw, they held the page.
   const warmCamera = rest.clone();
   let warmed = 'shaders (end)';

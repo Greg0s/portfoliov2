@@ -13,7 +13,6 @@ import {
   MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
-  PMREMGenerator,
   Scene,
   Vector2,
   Vector3,
@@ -23,6 +22,7 @@ import {
   type Texture,
   type WebGLRenderer,
 } from 'three';
+import { LightPMREMGenerator } from '../pmrem';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { buildCity, type City } from './city';
 import { isMesh, LAYERS, noPause, type Pause } from './common';
@@ -148,12 +148,15 @@ export async function createOffice(
   scene.add(roomLights.exterior, roomLights.interior, deskLights.interior);
   scene.fog = new Fog(moment.city.fog, 150, 2700);
 
-  const pmrem = new PMREMGenerator(renderer);
+  const pmrem = new LightPMREMGenerator(renderer);
   const sky = skyTexture(moment);
   const skyEnv = pmrem.fromEquirectangular(sky).texture;
   await pause('sky environment');
   const roomScene = roomEnvironmentScene(moment);
-  const roomEnv: Texture = pmrem.fromScene(roomScene, 0.04, 0.05, 20, { position: new Vector3(0, 1.2, -0.4) }).texture;
+  const roomEnv: Texture = pmrem.fromScene(roomScene, 0.04, 0.05, 20, {
+    position: new Vector3(0, 1.2, -0.4),
+    size: 128,
+  }).texture;
   pmrem.dispose();
   sky.dispose();
   await pause('room environment');
