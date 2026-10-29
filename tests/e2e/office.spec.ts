@@ -92,6 +92,10 @@ test.describe('on desktop', () => {
   });
 
   test('hovering a picture shows its cartel, and the landscape photo behind the text has none', async ({ page }) => {
+    // Each frame draws one of its pictures at random: the middle one of each pool, Project Hail Mary for the poster.
+    await page.addInitScript(() => {
+      Math.random = () => 0.5;
+    });
     await openOffice(page);
     const cartels = page.locator('.office-cartel');
     // The six frames of the wall but the landscape photo, and the small frame of the desk.
