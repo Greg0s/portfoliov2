@@ -144,9 +144,12 @@ interface Program {
   isReady(): boolean;
 }
 
-/** Resolves once no scrolling, wheel, touch or key came for a quarter of a second, or `patience` ms gone by. */
-function atRest(patience: number): Promise<void> {
-  let last = performance.now();
+/**
+ * When the page was last moved (scrolling, wheel, touch or key), kept from `watchMoves()` until the returned stop is
+ * called: a page already quiet lets the next step through at once.
+ */
+function watchMoves(): { quietFor(): number; stop(): void } {
+  let last = -Infinity;
   const moved = (): void => {
     last = performance.now();
   };
@@ -154,18 +157,25 @@ function atRest(patience: number): Promise<void> {
   events.forEach((name) => {
     window.addEventListener(name, moved, { capture: true, passive: true });
   });
+  return {
+    quietFor: () => performance.now() - last,
+    stop: () => {
+      events.forEach((name) => {
+        window.removeEventListener(name, moved, { capture: true });
+      });
+    },
+  };
+}
+
+/** Resolves once the page has been quiet for a quarter of a second, or `patience` ms gone by. */
+function atRest(moves: ReturnType<typeof watchMoves>, patience: number): Promise<void> {
   const start = performance.now();
   return new Promise<void>((resolve) => {
     const check = (): void => {
-      const now = performance.now();
-      if (now - last >= 250 || now - start >= patience) {
-        events.forEach((name) => {
-          window.removeEventListener(name, moved, { capture: true });
-        });
-        resolve();
-      } else setTimeout(check, 50);
+      if (moves.quietFor() >= 250 || performance.now() - start >= patience) resolve();
+      else setTimeout(check, 50);
     };
-    setTimeout(check, 50);
+    check();
   });
 }
 
@@ -188,24 +198,29 @@ async function compileOffice(renderer: WebGLRenderer, office: Office, camera: Pe
   }
   const gl = renderer.getContext();
   let linked = 0;
-  // Waiting for rest, five seconds in all at most: the office has to be ready before the journey reaches it.
-  let patience = 5000;
-  await office.compile(renderer, camera, async () => {
-    // Asking whether it is linked makes this task wait for it, and for it alone.
-    const all = programs();
-    for (; linked < all.length; linked += 1) {
-      const program = all[linked];
-      if (program) gl.getProgramParameter(program.program, gl.LINK_STATUS);
-    }
-    endStep(`shader ${String(linked)}`);
-    await breathe();
-    if (patience > 0) {
-      const waited = performance.now();
-      await atRest(patience);
-      patience -= performance.now() - waited;
-    }
-    startStep();
-  });
+  // Waiting for rest, two seconds in all at most: the office has to be ready before the journey reaches it.
+  let patience = 2000;
+  const moves = watchMoves();
+  try {
+    await office.compile(renderer, camera, async () => {
+      // Asking whether it is linked makes this task wait for it, and for it alone.
+      const all = programs();
+      for (; linked < all.length; linked += 1) {
+        const program = all[linked];
+        if (program) gl.getProgramParameter(program.program, gl.LINK_STATUS);
+      }
+      endStep(`shader ${String(linked)}`);
+      await breathe();
+      if (patience > 0) {
+        const waited = performance.now();
+        await atRest(moves, patience);
+        patience -= performance.now() - waited;
+      }
+      startStep();
+    });
+  } finally {
+    moves.stop();
+  }
 }
 
 export interface LiveOptions {
