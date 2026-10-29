@@ -30,6 +30,7 @@ import type { Moment } from '../time';
 import type { Arrays } from '../workers/relief';
 import type { GeometryRequest } from '../workers/geometry.worker';
 import { runGeometry, type ReplyTo } from '../workers/client';
+import { atRest, watchMoves } from '../rest';
 
 export interface PlanetOptions {
   modelUrl: string;
@@ -226,14 +227,52 @@ export async function createPlanet(container: HTMLElement, options: PlanetOption
   const mobile = options.mobile;
   // Without a GPU, the live planet would hold the page: the image stays, before anything is downloaded.
   if (!options.forced && drawsInSoftware()) throw new SlowRenderer();
-  const model = await loadPlanetModel(options.modelUrl);
-  const geometry = await buildRelief({
-    kind: 'planet',
-    detail: mobile ? 72 : 110,
-    hairDetail: 64,
-    calm: model.calm,
-  });
-  return assemble(container, options, model, geometry);
+  const steps = pauses(1500);
+  try {
+    const model = await loadPlanetModel(options.modelUrl, () => steps.pause(null));
+    await steps.pause('model');
+    const geometry = await buildRelief({
+      kind: 'planet',
+      detail: mobile ? 72 : 110,
+      hairDetail: 64,
+      calm: model.calm,
+    });
+    return await assemble(container, options, model, geometry, steps.pause);
+  } finally {
+    steps.stop();
+  }
+}
+
+/** What three's programs answer and its types leave out. */
+interface Program {
+  program: globalThis.WebGLProgram;
+}
+
+/**
+ * Lets the frames through between the steps of the planet's assembly, and waits for the page at rest, `patience` ms
+ * in all at most: the planet is put together during the first gesture, which its steps (the environment above all)
+ * would otherwise hold. `step` names the work done since the last pause, kept as a measure (`planet:<step>`) for
+ * `?mesure=1`; none after a wait for the network or the worker.
+ */
+function pauses(patience: number): { pause: (step: string | null) => Promise<void>; stop: () => void } {
+  const moves = watchMoves();
+  let left = patience;
+  let start = performance.now();
+  return {
+    pause: async (step) => {
+      if (step) performance.measure(`planet:${step}`, { start, end: performance.now() });
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
+      if (left > 0) {
+        const waited = performance.now();
+        await atRest(moves, left);
+        left -= performance.now() - waited;
+      }
+      start = performance.now();
+    },
+    stop: () => {
+      moves.stop();
+    },
+  };
 }
 
 async function assemble(
@@ -241,7 +280,9 @@ async function assemble(
   options: PlanetOptions,
   model: PlanetModel,
   relief: ReplyTo<'planet'>,
+  pause: (step: string | null) => Promise<void>,
 ): Promise<LivePlanet> {
+  await pause(null);
   model.planet.geometry.dispose();
   model.planet.geometry = geometryOf(relief.planet);
   const planetMaterial = model.planet.material as MeshStandardMaterial;
@@ -254,6 +295,7 @@ async function assemble(
   hairMaterial.roughness = 0.4;
   hairMaterial.color.set(0xf5cb3a);
 
+  await pause('geometry');
   const canvas = document.createElement('canvas');
   canvas.className = 'planet-canvas';
   canvas.setAttribute('aria-hidden', 'true');
@@ -265,10 +307,12 @@ async function assemble(
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
 
+  await pause('canvas');
   const scene = new Scene();
   scene.add(model.root);
   let moment = options.moment;
   const lights = addLights(scene, renderer, moment, 2048);
+  await pause('environment');
   const blow = scarfWind(model);
   const sway = roseSway(model);
   blow(0, 0);
@@ -288,8 +332,26 @@ async function assemble(
     renderer.setSize(size, size, false);
   };
   resize(options.size, options.mobile);
-  // Shaders compile in parallel where the browser can, so the first frame does not hold the page.
-  await renderer.compileAsync(scene, camera);
+  // Shaders compile in parallel where the browser can, so the first frame does not hold the page. Elsewhere (phones,
+  // among them), the first frame would wait for every link at once: each program is linked in a task of its own.
+  if (renderer.extensions.has('KHR_parallel_shader_compile')) {
+    await renderer.compileAsync(scene, camera);
+    await pause(null);
+  } else {
+    renderer.compile(scene, camera);
+    const gl = renderer.getContext();
+    let done = 'compile';
+    for (const program of (renderer.info.programs ?? []) as unknown as Program[]) {
+      await pause(done);
+      // Asking whether it is linked makes this task wait for it, and for it alone.
+      gl.getProgramParameter(program.program, gl.LINK_STATUS);
+      done = 'link';
+    }
+    await pause(done);
+  }
+  // The first frame puts the buffers, the textures and the shadow's program on the GPU: drawn here, at rest too.
+  renderer.render(scene, camera);
+  await pause('first frame');
 
   return {
     canvas,

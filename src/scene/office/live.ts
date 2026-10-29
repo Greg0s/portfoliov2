@@ -40,6 +40,7 @@ import { createOffice, type Office } from './office';
 import type { TownGeometry } from './town';
 import type { Moment } from '../time';
 import { cappedPixelRatio } from '../renderer';
+import { atRest, watchMoves } from '../rest';
 
 export interface PictureSource {
   src: string;
@@ -142,41 +143,6 @@ function halo(texture: Texture, layer: number): Group {
 interface Program {
   program: globalThis.WebGLProgram;
   isReady(): boolean;
-}
-
-/**
- * When the page was last moved (scrolling, wheel, touch or key), kept from `watchMoves()` until the returned stop is
- * called: a page already quiet lets the next step through at once.
- */
-function watchMoves(): { quietFor(): number; stop(): void } {
-  let last = -Infinity;
-  const moved = (): void => {
-    last = performance.now();
-  };
-  const events = ['scroll', 'wheel', 'touchmove', 'keydown'] as const;
-  events.forEach((name) => {
-    window.addEventListener(name, moved, { capture: true, passive: true });
-  });
-  return {
-    quietFor: () => performance.now() - last,
-    stop: () => {
-      events.forEach((name) => {
-        window.removeEventListener(name, moved, { capture: true });
-      });
-    },
-  };
-}
-
-/** Resolves once the page has been quiet for a quarter of a second, or `patience` ms gone by. */
-function atRest(moves: ReturnType<typeof watchMoves>, patience: number): Promise<void> {
-  const start = performance.now();
-  return new Promise<void>((resolve) => {
-    const check = (): void => {
-      if (moves.quietFor() >= 250 || performance.now() - start >= patience) resolve();
-      else setTimeout(check, 50);
-    };
-    check();
-  });
 }
 
 /**

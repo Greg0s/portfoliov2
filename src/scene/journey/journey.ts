@@ -426,9 +426,21 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     html.style.scrollSnapType = on ? '' : 'none';
   }
 
+  /**
+   * A finger's fling goes on long after it lifts, under the glide, which it cannot stop: once the glide is over, what
+   * is left of it would carry the page on to the next anchor. While a glide started by a finger runs, the page stops
+   * scrolling natively, which ends the fling; the glide still scrolls it from script.
+   */
+  const coarse = matchMedia('(pointer: coarse)');
+  function holdFling(on: boolean): void {
+    if (on && coarse.matches) html.style.overflow = 'hidden';
+    else html.style.removeProperty('overflow');
+  }
+
   function endGlide(): void {
     glide = null;
     setSnap(true);
+    holdFling(false);
   }
 
   /**
@@ -555,6 +567,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     } else {
       glideTo(settleAnchor(touchFrom, positions, 0));
     }
+    holdFling(glide !== null);
   };
 
   // The keys go anchor by anchor, whatever the browser's snapping does with them.

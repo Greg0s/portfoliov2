@@ -95,6 +95,19 @@ test('a swipe goes anchor by anchor to the contact, and a short touch stays', as
   await expectAnchor(page, 8);
 });
 
+test('a flick lands one anchor further, its fling held while the page glides there', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the swipe is a phone gesture');
+  await openJourney(page, './#recoding');
+  await expectAnchor(page, 5);
+  await swipe(page, 400);
+  // What is left of the finger's fling would carry the page past the next anchor once the glide is over.
+  await expect(page.locator('html')).toHaveCSS('overflow-y', 'hidden');
+  await expectAnchor(page, 6);
+  await expect(page.locator('html')).not.toHaveCSS('overflow-y', 'hidden');
+  await page.waitForTimeout(1500);
+  await expectAnchor(page, 6);
+});
+
 test('the keys go anchor by anchor to the contact, and to either end', async ({ page }) => {
   test.slow();
   await openJourney(page);
