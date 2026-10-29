@@ -181,3 +181,12 @@ html[data-dive='back'] [data-journey-root] *::after {
     transition: none;
   }
 }
+
+/* Measurement switches (see `applyJourneyMode`): without the CSS blurs, without the blend modes. */
+html[data-flou='0'] * {
+  filter: none !important;
+}
+
+html[data-fusion='0'] * {
+  mix-blend-mode: normal !important;
+}

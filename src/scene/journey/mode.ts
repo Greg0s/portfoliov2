@@ -19,6 +19,12 @@ export function applyJourneyMode(): void {
   const has3d = typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d');
   if (!lite && !reduce && has3d) root.dataset.journey = 'on';
   else delete root.dataset.journey;
+  // Measurement switches, to weigh on a device what the CSS blurs (`?flou=0`) and blend modes (`?fusion=0`) cost.
+  const params = new URLSearchParams(location.search);
+  for (const name of ['flou', 'fusion']) {
+    if (params.get(name) === '0') root.setAttribute(`data-${name}`, '0');
+    else root.removeAttribute(`data-${name}`);
+  }
 }
 
 /** Whether the journey plays on this page. */
