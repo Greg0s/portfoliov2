@@ -207,6 +207,7 @@ async function shrink(slug: string): Promise<void> {
   };
   const start = performance.now();
   // The journey starts once the home has loaded, then lands on the project's fragment; the list only needs a frame.
+  let landed = false;
   for (;;) {
     await frame();
     if (!root.isConnected) {
@@ -214,6 +215,11 @@ async function shrink(slug: string): Promise<void> {
       return;
     }
     const journey = currentJourney();
+    // Anything that moved the page meanwhile, the journey goes back to the project, once.
+    if (journey && !landed) {
+      landed = true;
+      if (!journey.isAt(slug)) journey.jumpTo(slug);
+    }
     if (journey?.isAt(slug)) {
       await frame();
       picture.style.viewTransitionName = '';
@@ -251,6 +257,23 @@ async function shrink(slug: string): Promise<void> {
     fill: 'forwards',
   }).finished;
   root.remove();
+}
+
+/**
+ * Stops the page's momentum. The router keeps the document, and its scroller with it: a finger's fling still running
+ * as the visitor leaves a page goes on scrolling the next one (the home's journey, which it then carries away from
+ * the project). On touch screens, the root stops scrolling for two frames; the router swapping the root's
+ * attributes, it is done again after the swap.
+ */
+function stopFling(): void {
+  if (!matchMedia('(pointer: coarse)').matches) return;
+  const html = document.documentElement;
+  html.style.overflow = 'hidden';
+  void frame()
+    .then(frame)
+    .then(() => {
+      html.style.removeProperty('overflow');
+    });
 }
 
 export function initDive(): void {
@@ -291,8 +314,10 @@ export function initDive(): void {
   // Leaving a case study for the home: the picture comes back over it.
   document.addEventListener('astro:before-preparation', () => {
     returning = document.querySelector<HTMLElement>('[data-case-slug]')?.dataset.caseSlug ?? null;
+    stopFling();
   });
   document.addEventListener('astro:after-swap', () => {
+    stopFling();
     const slug = returning;
     returning = null;
     if (!slug || prefersReducedMotion() || !document.getElementById(slug)?.matches('[data-project]')) return;

@@ -114,3 +114,39 @@ test('a slow case study keeps the home still under the picture, then opens', asy
   await expect(page.locator('.dive')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('a fling still running in the case study does not carry the home away on the way back', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'a finger flings the page on phones');
+  await page.goto('./#obaine');
+  const root = page.locator('[data-journey-root]');
+  await expect(root).not.toHaveAttribute('data-anchor', '', { timeout: 20_000 });
+  const anchor = await root.getAttribute('data-anchor');
+  await page.locator('#obaine a.card').tap();
+  await expect(page.locator('[data-case-slug]')).toBeVisible();
+  await page.waitForTimeout(1000);
+  // Down, then a quick swipe up, whose fling is still running when Back is pressed.
+  const cdp = await page.context().newCDPSession(page);
+  for (const [from, to] of [
+    [700, 0],
+    [700, 0],
+    [100, 700],
+  ] as const) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 200, y: from }] });
+    for (let i = 1; i <= 12; i += 1) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: 200, y: from + ((to - from) * i) / 12 }],
+      });
+      await page.waitForTimeout(16);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  }
+  await page.goBack();
+  await expect(page).toHaveURL(/#obaine$/);
+  // On the same project, and soon: the picture does not wait for a journey carried elsewhere.
+  await expect(root).toHaveAttribute('data-anchor', anchor ?? '', { timeout: 2000 });
+  await expect(page.locator('.dive')).toHaveCount(0, { timeout: 2500 });
+});
