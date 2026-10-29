@@ -15,23 +15,23 @@ Ce même recul finit dans un bureau : la caméra repasse par la fenêtre et s'ar
 
 ## 2. Décisions
 
-| #   | Sujet                    | Choix                                                                                                |
-| --- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| 1   | Mouvement de caméra      | un seul travelling arrière                                                                           |
-| 2   | Présentation d'un projet | mise au point automatique (profondeur de champ), cartel affiché tant que la carte est nette          |
-| 3   | Rythme                   | d'ancre en ancre (l'ouverture, chaque projet, le contact), sur ordinateur comme sur mobile           |
-| 4   | Texte de l'ouverture     | reste net au premier plan, puis s'efface avant le premier projet                                     |
-| 5   | Disposition              | alternance gauche/droite irrégulière, centre libre                                                   |
-| 6   | Fin                      | le contact dans le vide, sans photo                                                                  |
-| 7   | Ouvrir un projet         | plongée dans la carte ; au retour, on retrouve le parcours au même endroit                           |
-| 8   | Mobile                   | le même parcours, adapté ; version allégée automatique si le téléphone peine                         |
-| 9   | Repère                   | aucun : le compteur de distance a été retiré (22 octobre 2026)                                       |
-| 10  | Maquette                 | un nouveau canevas Claude Design                                                                     |
-| 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                           |
-| 12  | Projet suivant           | directement l'étude suivante, par une plongée dans son image                                         |
-| 13  | Indice de clic           | sur ordinateur, un curseur « Voir le projet » en disque clair ; sur mobile, une pastille sur l'image |
-| 14  | Appel de l'ouverture     | un seul, en bas au centre : « Voir les projets » (22 octobre 2026)                                   |
-| 15  | Liens de l'en-tête       | un fondu au noir, rapide, quel que soit le lien (22 octobre 2026)                                    |
+| #   | Sujet                    | Choix                                                                                                                      |
+| --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Mouvement de caméra      | un seul travelling arrière                                                                                                 |
+| 2   | Présentation d'un projet | mise au point automatique (profondeur de champ), cartel affiché tant que la carte est nette                                |
+| 3   | Rythme                   | d'ancre en ancre (l'ouverture, chaque projet, le contact), sur ordinateur comme sur mobile                                 |
+| 4   | Texte de l'ouverture     | reste net au premier plan, puis s'efface avant le premier projet                                                           |
+| 5   | Disposition              | alternance gauche/droite irrégulière, centre libre                                                                         |
+| 6   | Fin                      | le contact dans le vide, sans photo                                                                                        |
+| 7   | Ouvrir un projet         | plongée dans la carte ; au retour, on retrouve le parcours au même endroit                                                 |
+| 8   | Mobile                   | le même parcours, adapté ; version allégée automatique si le téléphone peine                                               |
+| 9   | Repère                   | aucun : le compteur de distance a été retiré (22 octobre 2026)                                                             |
+| 10  | Maquette                 | un nouveau canevas Claude Design                                                                                           |
+| 11  | Technique de la maquette | prototype interactif en 3D CSS, complété par un storyboard                                                                 |
+| 12  | Projet suivant           | directement l'étude suivante, par une plongée dans son image                                                               |
+| 13  | Indice de clic           | sur ordinateur, un curseur « Voir le projet » en disque clair ; sur mobile, une flèche d'ouverture dans le coin de l'image |
+| 14  | Appel de l'ouverture     | un seul, en bas au centre : « Voir les projets » (22 octobre 2026)                                                         |
+| 15  | Liens de l'en-tête       | un fondu au noir, rapide, quel que soit le lien (22 octobre 2026)                                                          |
 
 ## 3. Le canevas v3
 
@@ -80,7 +80,7 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 - **Profondeur de champ** : nette dans une zone d'environ ±10 % autour de la distance de netteté ; au-delà, le flou croît jusqu'à 12 px. La planète suit la même règle : nette sur l'ouverture, floue dès que la caméra s'éloigne. Une carte qui arrive apparaît en fondu ; une carte qui s'éloigne descend jusqu'à une opacité d'environ 0,25.
 - **Carte nette** : anneau blanc de 1 px à 55 % et léger halo blanc, comme le survol de la v2.
 - **Cartel** : du côté du centre, 300 px de large au plus : titre (Libre Franklin 600, 28 px), tag (« 2024 — Three.js · génératif », Libre Franklin 600, 12 px, capitales), description courte (Manrope, 15 px). Il apparaît en 300 ms et s'efface en 200 ms.
-- **Indice de clic** : sur ordinateur, au survol de la carte nette, la souris devient un disque clair de 96 px (#F3F3F1) où « Voir le projet » s'écrit en capitales sombres (Libre Franklin 600, 11 px) ; il apparaît en grandissant (300 ms). Sur mobile, sans survol, une pastille « + Voir le projet » s'affiche sur l'image de la carte nette.
+- **Indice de clic** : sur ordinateur, au survol de la carte nette, la souris devient un disque clair de 96 px (#F3F3F1) où « Voir le projet » s'écrit en capitales sombres (Libre Franklin 600, 11 px) ; il apparaît en grandissant (300 ms). Sur mobile, sans survol, un rond sombre de 38 px s'affiche dans le coin bas droit de l'image de la carte nette, avec une flèche d'ouverture (↗) au trait de 1,5 px : la pastille « + Voir le projet », qui cachait le bas de l'image, a été remplacée le 29 octobre 2026 (choix de Grégoire parmi quatre variantes).
 - **Survol** : la carte nette se soulève à peine (450 ms).
 - **Clavier** : Tab passe d'un projet à l'autre dans l'ordre ; la caméra glisse jusqu'à l'ancre du projet qui reçoit le focus ; Entrée l'ouvre.
 - **Plongée** : au clic, la caméra repart vers l'avant pendant 0,9 s (`cubic-bezier(0.65, 0, 0.35, 1)`) ; la carte, redressée, vole droit à la place du média d'ouverture de l'étude de cas (toute la largeur, collée en haut, en 16:9) en gardant son format du début à la fin, tout le reste s'efface en 300 ms, puis l'étude de cas s'ouvre autour d'elle. « Retour aux projets » joue l'inverse : l'étude de cas s'efface autour de l'image, qui revient dans sa carte pendant que le reste réapparaît, et rend le parcours à la même progression. « Projet suivant » fait voler l'image du projet suivant de la même façon.
