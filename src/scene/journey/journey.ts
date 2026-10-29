@@ -87,6 +87,9 @@ function styler(): {
 /** At rest, the time between two frames, in ms. */
 const AMBIENT_FRAME = 50;
 
+/** How far in front of the cards the cartels sit, in px (see where they are placed). */
+const CARTEL_Z = 120;
+
 /** The dive (journey spec §6): the card's flight, the rest fading out over its first third. */
 const DIVE_MS = 900;
 /** Before the dive, the camera's sway comes to rest; it comes back as long after the way back. */
@@ -162,6 +165,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let worlds: WorldParts[] = [];
   /** The screen's height the track was laid out for, in px. */
   let screen = 0;
+  /** The screen's height the track's length was last set for: it follows the address bar, unlike `screen`. */
+  let trackScreen = 0;
   let positions: number[] = [];
   let range = 1;
   let planetRest = { x: 0, y: 0 };
@@ -202,6 +207,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     screen = height;
     range = SCREENS * screen;
     positions = anchorPositions(anchors, SCREENS, screen);
+    trackScreen = screen;
     set(track, 'height', `${String(Math.round(range + screen))}px`);
     markers.forEach((marker, i) => {
       marker.style.top = `${String(positions[i] ?? 0)}px`;
@@ -628,6 +634,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       // On phones, the address bar coming and going changes the height a little: the journey keeps its track.
       const mobile = width < 768;
       if (width === scene.view.width && (Math.abs(height - screen) < (mobile ? 160 : 1) || height === screen)) {
+        // The page keeps its last screen of scroll under the contact, so that the arrival still ends at the bottom
+        // whatever the bar does.
+        if (height !== trackScreen) {
+          trackScreen = height;
+          set(track, 'height', `${String(Math.round(range + height))}px`);
+          // The office fills the screen: its canvas and the screen, the pictures and the links over it follow.
+          officeView?.resize();
+        }
         if (renderer && height !== scene.view.height) {
           scene = { ...scene, view: { ...scene.view, height } };
           renderer.resize(scene.view);
@@ -752,7 +766,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       parts.item.classList.toggle('lit', lit);
       if (parts.cartel) {
         const cartel = cartelPlace(place, look, view);
-        set(parts.cartel, 'translate', `${cartel.x.toFixed(1)}px ${cartel.y.toFixed(1)}px`);
+        // Brought forward, out of reach of the turned card: in the same 3D scene, the card and its shadow would
+        // otherwise cut through the cartel, half of the shadow drawn over the text. Placed and scaled back so that
+        // the perspective shows it where and how big it was.
+        const back = (view.perspective - CARTEL_Z) / view.perspective;
+        const x = view.vpX + (cartel.x - view.vpX) * back;
+        const y = view.vpY + (cartel.y - view.vpY) * back;
+        set(parts.cartel, 'translate', `${x.toFixed(1)}px ${y.toFixed(1)}px ${String(CARTEL_Z)}px`);
+        set(parts.cartel, 'scale', back.toFixed(4));
         set(parts.cartel, '--cartel-width', `${cartel.width.toFixed(1)}px`);
       }
     });

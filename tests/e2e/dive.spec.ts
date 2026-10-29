@@ -90,3 +90,27 @@ test.describe('with reduced motion', () => {
     expect(await dives(page)).toBe(0);
   });
 });
+
+test('a slow case study keeps the home still under the picture, then opens', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the wheel and the keys are the desktop gestures');
+  const errors = trackErrors(page);
+  await page.goto('./#what-we-play');
+  const root = page.locator('[data-journey-root]');
+  await expect(root).toHaveAttribute('data-anchor', '2', { timeout: 20_000 });
+  // The case study takes three seconds to come.
+  await page.route('**/projets/what-we-play/', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await route.continue();
+  });
+  const before = await page.evaluate(() => window.scrollY);
+  await page.locator('#what-we-play a.card').click();
+  await page.waitForTimeout(1200);
+  await page.mouse.wheel(0, 600);
+  await page.keyboard.press('PageDown');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await expect(page).toHaveURL(/projets\/what-we-play\/$/, { timeout: 10_000 });
+  await expect(page.locator('[data-case-slug]')).toBeVisible();
+  await expect(page.locator('.dive')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
