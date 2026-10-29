@@ -8,6 +8,8 @@ export interface JourneyHandle {
   has(id: string): boolean;
   /** Whether the camera is already on the anchor of `id`. */
   isAt(id: string): boolean;
+  /** The fragment of the anchor nearest the scroll (the opening, a project, the contact), or null if it has none. */
+  here(): string | null;
   /** Lands at once on the anchor of `id`. */
   jumpTo(id: string): void;
   /** Glides to the anchor at `index` (0 is the opening, the last one the contact), as a key press would. */

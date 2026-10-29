@@ -67,6 +67,22 @@ test('the live planet takes over its image after a gesture, and leaves it to the
   expect(errors).toEqual([]);
 });
 
+test('the language switch keeps the project the journey has scrolled to', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the arrow keys and the header are the desktop ones');
+  await openJourney(page, './#recoding');
+  await expectAnchor(page, 5);
+  // The address still says #recoding: the journey moved on without it.
+  await page.keyboard.press('ArrowDown');
+  await expectAnchor(page, 6);
+  const slug = await page.locator('[data-project="5"]').getAttribute('id');
+  await page
+    .getByRole('banner')
+    .getByRole('link', { name: /English/ })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/en/#${String(slug)}$`));
+  await expectAnchor(page, 6);
+});
+
 test('?gl=0 keeps the planet as an image', async ({ page }) => {
   await openJourney(page, './?gl=0');
   await page.mouse.move(200, 200);
