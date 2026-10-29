@@ -108,11 +108,14 @@ function refreshRate(): Promise<number> {
   });
 }
 
-/** The GPU's name, when the browser tells it. */
-function gpu(): string {
-  const gl = document.createElement('canvas').getContext('webgl');
+/** The GPU's name, when the browser tells it, and whether it links shaders out of the page's way. */
+function gpu(): { gpu: string; parallelCompile: boolean } {
+  const gl = document.createElement('canvas').getContext('webgl2');
   const info = gl?.getExtension('WEBGL_debug_renderer_info');
-  return gl && info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : 'unknown';
+  return {
+    gpu: gl && info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : 'unknown',
+    parallelCompile: Boolean(gl?.getExtension('KHR_parallel_shader_compile')),
+  };
 }
 
 function panel(): { show(text: string): void; append(node: Node): void; remove(): void } {
@@ -249,7 +252,7 @@ export function startMeasure(root: HTMLElement): () => void {
       userAgent: navigator.userAgent,
       screen: `${String(innerWidth)} × ${String(innerHeight)} @${String(devicePixelRatio)}`,
       refreshHz: refresh,
-      gpu: gpu(),
+      ...gpu(),
       phases: Object.fromEntries([...phases].map(([name, times]) => [name, summarize(times)])),
       office: document.documentElement.dataset.officeScene ?? '',
       slow: slowScenes(),
