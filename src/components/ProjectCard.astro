@@ -177,6 +177,13 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
     transform-style: preserve-3d;
   }
 
+  /* Firefox: each card flattened into its own picture, with its own perspective (see `journey.ts`). */
+  @supports (-moz-appearance: none) {
+    :global(html[data-journey='on']) .float {
+      transform-style: flat;
+    }
+  }
+
   :global(html[data-journey='on']) .card {
     position: absolute;
     width: auto;
