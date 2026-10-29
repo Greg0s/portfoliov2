@@ -138,6 +138,76 @@ function halo(texture: Texture, layer: number): Group {
   return group;
 }
 
+/** What three's programs answer and its types leave out. */
+interface Program {
+  program: globalThis.WebGLProgram;
+  isReady(): boolean;
+}
+
+/** Resolves once no scrolling, wheel, touch or key came for a quarter of a second, or `patience` ms gone by. */
+function atRest(patience: number): Promise<void> {
+  let last = performance.now();
+  const moved = (): void => {
+    last = performance.now();
+  };
+  const events = ['scroll', 'wheel', 'touchmove', 'keydown'] as const;
+  events.forEach((name) => {
+    window.addEventListener(name, moved, { capture: true, passive: true });
+  });
+  const start = performance.now();
+  return new Promise<void>((resolve) => {
+    const check = (): void => {
+      const now = performance.now();
+      if (now - last >= 250 || now - start >= patience) {
+        events.forEach((name) => {
+          window.removeEventListener(name, moved, { capture: true });
+        });
+        resolve();
+      } else setTimeout(check, 50);
+    };
+    setTimeout(check, 50);
+  });
+}
+
+/**
+ * Compiles the office's programs without holding the page. Where the driver links them in parallel
+ * (`KHR_parallel_shader_compile`), all are started in this task and finished out of its way. Elsewhere (phones,
+ * among them), the first draw would wait for every link at once, seconds long: each program is linked in a task of
+ * its own instead, while the page is at rest.
+ */
+async function compileOffice(renderer: WebGLRenderer, office: Office, camera: PerspectiveCamera): Promise<void> {
+  const programs = (): Program[] => (renderer.info.programs ?? []) as unknown as Program[];
+  if (renderer.extensions.has('KHR_parallel_shader_compile')) {
+    await office.compile(renderer, camera, () => Promise.resolve());
+    endStep('shaders (start)');
+    while (!programs().every((program) => program.isReady())) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    startStep();
+    return;
+  }
+  const gl = renderer.getContext();
+  let linked = 0;
+  // Waiting for rest, five seconds in all at most: the office has to be ready before the journey reaches it.
+  let patience = 5000;
+  await office.compile(renderer, camera, async () => {
+    // Asking whether it is linked makes this task wait for it, and for it alone.
+    const all = programs();
+    for (; linked < all.length; linked += 1) {
+      const program = all[linked];
+      if (program) gl.getProgramParameter(program.program, gl.LINK_STATUS);
+    }
+    endStep(`shader ${String(linked)}`);
+    await breathe();
+    if (patience > 0) {
+      const waited = performance.now();
+      await atRest(patience);
+      patience -= performance.now() - waited;
+    }
+    startStep();
+  });
+}
+
 export interface LiveOptions {
   moment: Moment;
   framing: Framing;
@@ -235,12 +305,8 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   const textures: Texture[] = [];
 
   endStep('halos and pictures');
-  // Compiling starts in this task; the drivers that can link in parallel finish it later, out of the page's way.
   startStep();
-  const compiled = office.compile(renderer, rest);
-  endStep('shaders (start)');
-  await compiled;
-  startStep();
+  await compileOffice(renderer, office, rest);
   // Then each layer drawn once, out of sight, in a step of its own: together, in the first draw, they held the page.
   const warmCamera = rest.clone();
   let warmed = 'shaders (end)';

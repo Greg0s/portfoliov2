@@ -51,8 +51,11 @@ export interface Office {
   moment: OfficeMoment;
   /** Draws the three passes; the room and the desk can be faded (during the arrival). */
   render(renderer: WebGLRenderer, cameras: OfficeCameras, opacity?: { room: number; desk: number }): void;
-  /** Compiles every pass's shaders without blocking the page. */
-  compile(renderer: WebGLRenderer, camera: Camera): Promise<void>;
+  /**
+   * Compiles the programs every pass draws with, one object at a time; `settle` runs after each one that made a new
+   * program, and can wait for the driver to link it.
+   */
+  compile(renderer: WebGLRenderer, camera: Camera, settle: () => Promise<void>): Promise<void>;
   /** Draws one layer alone, on a cleared canvas, as the fallback layers are. */
   renderLayer(renderer: WebGLRenderer, camera: Camera, layer: Layer): void;
   /**
@@ -86,18 +89,20 @@ function fader() {
   };
   return {
     /**
-     * Compiles, without holding the page, what the passes drawn off screen need: drawn into the target, every
-     * material takes other shaders (no tone mapping, a linear output), which would otherwise compile in the middle
-     * of the arrival, at the first frame where the room fades in.
+     * Runs `compile` with the target bound: drawn into it, every material takes other shaders (no tone mapping, a
+     * linear output), which would otherwise compile in the middle of the arrival, at the first frame where the room
+     * fades in.
      */
-    async compile(renderer: WebGLRenderer, compilePass: () => Promise<void>): Promise<void> {
+    within(renderer: WebGLRenderer, compile: () => void): void {
       const previous = renderer.getRenderTarget();
       renderer.setRenderTarget(targetFor(renderer));
-      const passes = compilePass();
+      compile();
       renderer.setRenderTarget(previous);
       material.map = targetFor(renderer).texture;
-      await Promise.all([passes, renderer.compileAsync(scene, camera)]);
     },
+    /** The scene that lays the pass over the canvas, and its camera. */
+    scene,
+    camera,
     draw(renderer: WebGLRenderer, opacity: number, pass: () => void): void {
       const previous = renderer.getRenderTarget();
       renderer.setRenderTarget(targetFor(renderer));
@@ -203,21 +208,39 @@ export async function createOffice(
       }
       target.autoClear = autoClear;
     },
-    async compile(target, camera) {
+    async compile(target, camera, settle) {
+      // One object at a time, and only those its layer draws: `compile` alone would take every material of the
+      // scene under each layer's lights, programs never used. `settle` runs after each new program.
+      const each = async (
+        layer: Layer | null,
+        root: Object3D,
+        seenBy: Camera,
+        compileOne: (object: Object3D) => void,
+      ): Promise<void> => {
+        const objects: Object3D[] = [];
+        root.traverse((node) => {
+          if ('material' in node && node.material && node.layers.test(seenBy.layers)) objects.push(node);
+        });
+        for (const object of objects) {
+          const before = target.info.programs?.length ?? 0;
+          compileOne(object);
+          if ((target.info.programs?.length ?? 0) === before) continue;
+          await settle();
+          if (layer) prepare(camera, layer);
+        }
+      };
       for (const layer of ['city', 'room', 'desk'] as const) {
         prepare(camera, layer);
-        await target.compileAsync(scene, camera);
+        await each(layer, scene, camera, (object) => target.compile(object, camera, scene));
       }
-      // The room and the desk again, for the off-screen passes that fade them in. Each compile starts at once, with
-      // its layer's lights, then the next.
-      await fade.compile(target, async () => {
-        const started: Promise<unknown>[] = [];
-        for (const layer of ['room', 'desk'] as const) {
-          prepare(camera, layer);
-          started.push(target.compileAsync(scene, camera));
-        }
-        await Promise.all(started);
-      });
+      // The room and the desk again, for the off-screen passes that fade them in, then what lays them over.
+      for (const layer of ['room', 'desk'] as const) {
+        prepare(camera, layer);
+        await each(layer, scene, camera, (object) => {
+          fade.within(target, () => target.compile(object, camera, scene));
+        });
+      }
+      await each(null, fade.scene, fade.camera, (object) => target.compile(object, fade.camera, fade.scene));
     },
     renderLayer(target, camera, layer) {
       target.toneMappingExposure = moment.room.exposure;
