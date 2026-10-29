@@ -17,6 +17,8 @@ export default defineConfig({
   trailingSlash: 'always',
   // The old site's URLs (main spec §4); static pages that send the visitor on.
   redirects: buildRedirects(base),
+  // Only where the code asks for it: a card's case study, from the first touch (src/motion/dive.ts).
+  prefetch: { prefetchAll: false },
   integrations: [contentChecks(), sitemap({ i18n: { defaultLocale: 'fr', locales: { fr: 'fr', en: 'en' } } })],
   markdown: {
     // The case studies need remark directives (`:::challenge`), which the default Markdown processor does not run.

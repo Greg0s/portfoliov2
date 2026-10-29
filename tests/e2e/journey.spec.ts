@@ -242,6 +242,21 @@ test('?gl=0 shows the office over its layers', async ({ page }) => {
   await expect(page.locator('.office-canvas')).toHaveCount(0);
 });
 
+test('the address bar coming and going leaves the contact at the end of its arrival', async ({ page }) => {
+  await openJourney(page, './?office=layers#contact');
+  await expectAnchor(page, CONTACT);
+  const size = page.viewportSize() ?? { width: 0, height: 0 };
+  // A taller screen, as when the bar hides, then a shorter one: the page still scrolls to the arrival's end.
+  for (const height of [size.height + 80, size.height - 60]) {
+    await page.setViewportSize({ width: size.width, height });
+    await page.waitForTimeout(500);
+    await page.evaluate(() => {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
+    });
+    await expectAnchor(page, CONTACT);
+  }
+});
+
 test('?office=live arrives at the seat in the live office, and logs no error', async ({ page }) => {
   test.slow();
   const errors = trackErrors(page);

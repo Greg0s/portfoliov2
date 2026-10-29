@@ -9,6 +9,7 @@
  * replaces it (main spec §5.6). The home's URL carries the project's fragment before leaving, so that coming back, by
  * either way, finds the journey on the same project.
  */
+import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
 import { prefersReducedMotion } from './reducedMotion';
 import { currentJourney } from '../scene/journey/registry';
@@ -89,6 +90,47 @@ function overlay(
   return { root, backdrop, picture };
 }
 
+/** Keys that scroll the page. */
+const SCROLL_KEYS = new Set([' ', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End']);
+
+/**
+ * Holds the page still while the picture covers it: scrolled under the picture, the home would move on (the journey
+ * toward the contact) while the case study loads. Returns the release.
+ */
+function holdScroll(): () => void {
+  const hold = (event: Event): void => {
+    if (event instanceof KeyboardEvent && !SCROLL_KEYS.has(event.key)) return;
+    // Neither the browser nor the journey, which glides on the wheel, the finger and the keys, moves the page.
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  // The journey reads a swipe from its start and its end too.
+  const hide = (event: Event): void => {
+    event.stopPropagation();
+  };
+  const options = { capture: true, passive: false } as const;
+  const listeners = [
+    ['wheel', hold],
+    ['touchmove', hold],
+    ['keydown', hold],
+    ['touchstart', hide],
+    ['touchend', hide],
+  ] as const;
+  listeners.forEach(([name, listener]) => {
+    window.addEventListener(name, listener, options);
+  });
+  return () => {
+    listeners.forEach(([name, listener]) => {
+      window.removeEventListener(name, listener, options);
+    });
+  };
+}
+
+const wait = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
 /** The site's header, which fades with the rest of the home. */
 const siteHeader = (): HTMLElement | null => document.querySelector<HTMLElement>('body > .header');
 
@@ -99,19 +141,25 @@ const siteHeader = (): HTMLElement | null => document.querySelector<HTMLElement>
 async function dive(href: string, image: HTMLImageElement, slug: string | null, target: string): Promise<void> {
   if (diving) return;
   diving = true;
+  // The case study loads during the flight, rather than after it with the picture waiting on screen.
+  prefetch(href, { ignoreSlowConnection: true });
+  const release = holdScroll();
   try {
     if (slug) history.replaceState(history.state, '', `#${slug}`);
     const flight = slug ? currentJourney()?.dive(slug) : null;
+    let cover: HTMLElement;
     if (flight) {
       siteHeader()?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_MS, easing: 'linear', fill: 'both' });
-      await flight;
+      // Never longer than the flight: a journey that stopped drawing meanwhile would hold the case study back.
+      await Promise.race([flight, wait(DIVE_MS + 300)]);
       // The card is on the opening media's place: a flat copy takes over from it, for the router.
-      const { backdrop, picture } = overlay(image, openingMedia());
+      const { root, backdrop, picture } = overlay(image, openingMedia());
       backdrop.style.opacity = '0';
       picture.style.viewTransitionName = `cover-${target}`;
+      cover = root;
     } else {
       const from = boxOf(image.parentElement ?? image);
-      const { backdrop, picture } = overlay(image, from);
+      const { root, backdrop, picture } = overlay(image, from);
       backdrop.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, easing: 'linear', fill: 'both' });
       await picture.animate([keyframe(from), keyframe(openingMedia())], {
         duration: DIVE_MS,
@@ -120,9 +168,15 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
       }).finished;
       // The router's view transition hands the picture over to the case study's opening media.
       picture.style.viewTransitionName = `cover-${target}`;
+      cover = root;
     }
     await navigate(href);
+    // The router swaps the page, the picture with it. Still there a moment later, the page never changed (the
+    // navigation was dropped on the way, and no other took its place): the browser opens the case study itself.
+    if (cover.isConnected) await wait(1500);
+    if (cover.isConnected) location.assign(href);
   } finally {
+    release();
     diving = false;
   }
 }
@@ -222,6 +276,17 @@ export function initDive(): void {
     const reason: unknown = event.reason;
     if (reason instanceof DOMException && reason.message.startsWith('Transition was')) event.preventDefault();
   });
+
+  // A finger or a button on a card: its case study loads already, before the click.
+  document.documentElement.addEventListener(
+    'pointerdown',
+    (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const link = target?.closest<HTMLAnchorElement>('a.card, a[data-dive]');
+      if (link) prefetch(link.href, { ignoreSlowConnection: true });
+    },
+    { passive: true },
+  );
 
   // Leaving a case study for the home: the picture comes back over it.
   document.addEventListener('astro:before-preparation', () => {
