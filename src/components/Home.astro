@@ -74,6 +74,12 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
     inset: 0;
   }
 
+  /* Until the journey has drawn its first frame (and marked where it rests), the opening shows alone: the projects and
+     the contact, stacked on it in the scene, wait for their places. */
+  :global(html[data-journey='on']) .home:not([data-anchor]) .stage > :global(:not(.opening)) {
+    visibility: hidden;
+  }
+
   :global(html[data-journey='on']) .stage :global(.scene-canvas) {
     position: absolute;
     inset: 0;
