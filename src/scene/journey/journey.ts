@@ -28,6 +28,7 @@ import {
   easeFrom,
   easeInOutCubic,
   glideDuration,
+  nearestAnchor,
   settleAnchor,
   stepAnchor,
   wheelGestures,
@@ -160,6 +161,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   if (world3d.id) fragmentAnchor.set(world3d.id, 1);
   cards.forEach(({ item }, i) => fragmentAnchor.set(item.id, i + 1));
   if (contact?.id) fragmentAnchor.set(contact.id, anchors.length - 1);
+  // And the other way: each anchor's first fragment (the projects' rather than the first project's).
+  const anchorFragment = new Map<number, string>();
+  for (const [id, index] of fragmentAnchor) if (!anchorFragment.has(index)) anchorFragment.set(index, id);
 
   let scene: Scene;
   let worlds: WorldParts[] = [];
@@ -1072,6 +1076,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   setJourney({
     has: (id) => fragmentAnchor.has(id),
+    here: () => anchorFragment.get(nearestAnchor(window.scrollY, positions)) ?? null,
     isAt: (id) => {
       const index = fragmentAnchor.get(id);
       return index !== undefined && anchorAt(scrolled, positions) === index && current === target;

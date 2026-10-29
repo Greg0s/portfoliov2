@@ -60,16 +60,19 @@ export function initNav(): void {
     true,
   );
 
-  // The language switch keeps the place: `#projets` leads to `#projects`, a project's slug stays as it is.
+  // The language switch keeps the place: on the journey, the anchor nearest the scroll (the address keeps the last one
+  // jumped to, or none); elsewhere the fragment, `#projets` leading to `#projects` and a project's slug staying as it is.
   document.addEventListener(
     'click',
     (event) => {
       const target = event.target instanceof Element ? event.target : null;
       const link = target?.closest<HTMLAnchorElement>('a[data-lang-switch]');
       const lang = link?.dataset.langSwitch;
-      if (!link || !lang || !location.hash) return;
+      if (!link || !lang) return;
+      const here = currentJourney()?.here() ?? (decodeURIComponent(location.hash.slice(1)) || null);
+      if (!here) return;
       const url = new URL(link.href);
-      url.hash = translateFragment(decodeURIComponent(location.hash.slice(1)), lang as Locale);
+      url.hash = translateFragment(here, lang as Locale);
       link.href = url.href;
     },
     true,
