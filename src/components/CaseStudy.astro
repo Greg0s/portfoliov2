@@ -134,6 +134,21 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     pointer-events: none;
   }
 
+  /* Over the opening media the shade only darkens: the blur comes in as the text starts scrolling under it. */
+  @supports (animation-timeline: scroll()) {
+    .case-header::before {
+      animation: shade-blur linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 240px;
+    }
+  }
+
+  @keyframes shade-blur {
+    from {
+      backdrop-filter: none;
+    }
+  }
+
   .back {
     display: inline-flex;
     align-items: center;
@@ -217,15 +232,15 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
    */
   @media (prefers-reduced-motion: no-preference) {
     .case-header {
-      animation: case-drop 700ms cubic-bezier(0.22, 1, 0.36, 1) 250ms both;
+      animation: case-drop 700ms cubic-bezier(0.22, 1, 0.36, 1) var(--case-delay, 250ms) both;
     }
 
     .sheet {
-      animation: case-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 250ms both;
+      animation: case-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) var(--case-delay, 250ms) both;
     }
 
     .cover::before {
-      animation: case-fade 700ms linear 250ms both;
+      animation: case-fade 700ms linear var(--case-delay, 250ms) both;
     }
   }
 
@@ -234,6 +249,20 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
       opacity: 0;
       translate: 0 var(--rise);
     }
+  }
+
+  /*
+   * After a dive, the content rose already over the flying picture (motion/dive.ts): the page shows it in place.
+   * `--case-delay` lets the dive start the rise with the flight.
+   */
+  :global(html[data-dive-landed]) .case-header,
+  :global(html[data-dive-landed]) .sheet,
+  :global(html[data-dive-landed]) .cover::before {
+    animation: none;
+  }
+
+  :global(html[data-dive-landed]) .cover img {
+    view-transition-name: none !important;
   }
 
   @keyframes case-drop {

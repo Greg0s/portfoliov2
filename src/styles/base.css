@@ -135,11 +135,29 @@ html[data-dive='back'] [data-journey-root] *::after {
   transition: none !important;
 }
 
+/* The case study's header and opening, rising over the picture while it flies (motion/dive.ts). */
+.dive-page {
+  position: fixed;
+  inset: 0;
+  z-index: 81;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .dive-picture img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Leaving a case study scrolled past its opening media, the page fades into the picture (motion/dive.ts). */
+html[data-dive-fade]::view-transition-old(root) {
+  animation: view-fade-out 400ms ease both !important;
+}
+
+html[data-dive-fade]::view-transition-new(root) {
+  animation: view-fade-in 400ms ease both !important;
 }
 
 /* With reduced motion, a 200 ms fade replaces the dive (main spec §5.6): the router's own CSS turns every view

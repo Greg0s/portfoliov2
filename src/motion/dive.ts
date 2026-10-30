@@ -7,7 +7,9 @@
  * other way: the home comes back with only the picture, on the opening media's place, the journey lands on the same
  * project, and the card flies back into its place while the rest fades in. With "reduce motion", the router's fade
  * replaces it (main spec §5.6). The home's URL carries the project's fragment before leaving, so that coming back, by
- * either way, finds the journey on the same project.
+ * either way, finds the journey on the same project. During the flight, the case study's header and opening rise
+ * over the picture, taken from its prefetched page, so that the page opens with them in place; left scrolled past its
+ * opening media, the case study fades into the picture rather than slide it in from above the screen.
  */
 import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
@@ -24,6 +26,12 @@ let ready = false;
 let diving = false;
 /** The project whose case study the visitor is leaving for the home. */
 let returning: string | null = null;
+/** The dive showed the case study's opening rising already: the page shows it in place. */
+let landing = false;
+/** The case study was left scrolled past its opening media: the page fades into the picture rather than slide it. */
+let fading = false;
+/** How long the case study takes to fade into the picture, on the way back. */
+const FADE_BACK_MS = 400;
 
 function isPlainClick(event: MouseEvent): boolean {
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
@@ -131,6 +139,59 @@ const wait = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
+/** When the content starts rising, into the flight. */
+const RISE_DELAY_MS = 100;
+
+/** A stylesheet of the case study's page, loaded into this one before its opening shows. */
+function adoptStylesheet(link: HTMLLinkElement): Promise<void> {
+  const href = link.getAttribute('href');
+  if (!href || document.head.querySelector(`link[rel=stylesheet][href="${href}"]`)) return Promise.resolve();
+  // The same element as the case study's: the router keeps it when the page changes.
+  const adopted = document.importNode(link, true);
+  const loaded = new Promise<void>((resolve, reject) => {
+    adopted.addEventListener('load', () => {
+      resolve();
+    });
+    adopted.addEventListener('error', reject);
+  });
+  document.head.append(adopted);
+  return loaded;
+}
+
+/**
+ * The case study's header and opening, from its page (prefetched): its content rises over the picture during the
+ * flight, as it does on the page, rather than once the page has opened. Null when the page has not come.
+ */
+async function caseOpening(href: string): Promise<HTMLElement | null> {
+  const response = await fetch(href);
+  if (!response.ok) return null;
+  const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+  const header = page.querySelector('.case-header');
+  const article = page.querySelector('article.case');
+  if (!header || !article) return null;
+  await Promise.all(Array.from(page.head.querySelectorAll<HTMLLinkElement>('link[rel=stylesheet]'), adoptStylesheet));
+  // The picture flies under the opening media's place, and the body lies below the screen. The page's own media is
+  // decoded meanwhile, so that it shows at once when the page takes over from the picture.
+  const cover = article.querySelector<HTMLElement>('.cover');
+  const media = cover?.querySelector('img');
+  if (media) {
+    const decoded = new Image();
+    decoded.sizes = media.sizes;
+    decoded.srcset = media.getAttribute('srcset') ?? '';
+    decoded.src = media.getAttribute('src') ?? '';
+    await Promise.race([decoded.decode().catch(() => undefined), wait(DIVE_MS)]);
+    media.remove();
+  }
+  cover?.style.setProperty('background', 'transparent');
+  article.querySelector('.case-content')?.remove();
+  const layer = document.createElement('div');
+  layer.className = 'dive-page';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.style.setProperty('--case-delay', `${String(RISE_DELAY_MS)}ms`);
+  layer.append(document.importNode(header, true), document.importNode(article, true));
+  return layer;
+}
+
 /** The site's header, which fades with the rest of the home. */
 const siteHeader = (): HTMLElement | null => document.querySelector<HTMLElement>('body > .header');
 
@@ -144,8 +205,18 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
   // The case study loads during the flight, rather than after it with the picture waiting on screen.
   prefetch(href, { ignoreSlowConnection: true });
   const release = holdScroll();
+  // Set from the page's arrival, during the flight.
+  const ahead: { opening: HTMLElement | null; flown: boolean } = { opening: null, flown: false };
   try {
     if (slug) history.replaceState(history.state, '', `#${slug}`);
+    // Its opening rises with the flight, if the page comes in time.
+    void caseOpening(href)
+      .then((layer) => {
+        if (!layer || ahead.flown) return;
+        ahead.opening = layer;
+        document.body.append(layer);
+      })
+      .catch(() => undefined);
     const flight = slug ? currentJourney()?.dive(slug) : null;
     let cover: HTMLElement;
     if (flight) {
@@ -170,12 +241,25 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
       picture.style.viewTransitionName = `cover-${target}`;
       cover = root;
     }
+    ahead.flown = true;
+    if (ahead.opening) {
+      // The content ends its rise, then the page takes over with it in place.
+      const rising = ahead.opening.getAnimations({ subtree: true }).map(({ finished }) => finished);
+      await Promise.race([Promise.allSettled(rising), wait(400)]);
+      landing = true;
+      // The picture is in place under the content: the page takes over without a named transition, which would draw
+      // the picture over the content while the router changes the page.
+      cover.querySelector<HTMLElement>('.dive-picture')?.style.removeProperty('view-transition-name');
+    }
     await navigate(href);
     // The router swaps the page, the picture with it. Still there a moment later, the page never changed (the
     // navigation was dropped on the way, and no other took its place): the browser opens the case study itself.
     if (cover.isConnected) await wait(1500);
     if (cover.isConnected) location.assign(href);
   } finally {
+    ahead.flown = true;
+    landing = false;
+    ahead.opening?.remove();
     release();
     diving = false;
   }
@@ -185,13 +269,13 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
  * The way back: the home shows only the picture, on the opening media's place, until the journey rests on the
  * project; then its card takes over and flies back into place. In the list, the picture itself flies into the card.
  */
-async function shrink(slug: string): Promise<void> {
+async function shrink(slug: string, faded: boolean): Promise<void> {
   const item = document.getElementById(slug);
   const image = item?.querySelector<HTMLImageElement>('.card img');
   if (!item || !image) return;
   const { root, backdrop, picture } = overlay(image, openingMedia());
-  // The router's view transition hands the case study's opening media over to it.
-  picture.style.viewTransitionName = `cover-${slug}`;
+  // The router's view transition hands the case study's opening media over to it, or the page fades into it.
+  if (!faded) picture.style.viewTransitionName = `cover-${slug}`;
   const header = siteHeader();
   header?.style.setProperty('opacity', '0');
   const html = document.documentElement;
@@ -206,6 +290,7 @@ async function shrink(slug: string): Promise<void> {
     });
   };
   const start = performance.now();
+  if (faded) await wait(FADE_BACK_MS - 100);
   // The journey starts once the home has loaded, then lands on the project's fragment; the list only needs a frame.
   let landed = false;
   for (;;) {
@@ -314,13 +399,27 @@ export function initDive(): void {
   // Leaving a case study for the home: the picture comes back over it.
   document.addEventListener('astro:before-preparation', () => {
     returning = document.querySelector<HTMLElement>('[data-case-slug]')?.dataset.caseSlug ?? null;
+    // Scrolled past its opening media, the picture would slide in from above the screen: the page fades into it.
+    const media = document.querySelector<HTMLElement>('[data-case-slug] .cover img');
+    fading = Boolean(returning && media && media.getBoundingClientRect().bottom < innerHeight / 4);
+    if (fading) media?.style.setProperty('view-transition-name', 'none');
     stopFling();
   });
+  // The overlay already shows the page as it opens: it changes at once, without the router's fade.
+  document.addEventListener('astro:before-swap', (event) => {
+    if (landing) event.viewTransition.skipTransition();
+  });
   document.addEventListener('astro:after-swap', () => {
+    // Set before the page is drawn: the router has just given the root element the new page's attributes.
+    if (landing) document.documentElement.dataset.diveLanded = '';
+    if (fading) document.documentElement.dataset.diveFade = '';
+    const faded = fading;
+    landing = false;
+    fading = false;
     stopFling();
     const slug = returning;
     returning = null;
     if (!slug || prefersReducedMotion() || !document.getElementById(slug)?.matches('[data-project]')) return;
-    void shrink(slug);
+    void shrink(slug, faded);
   });
 }
