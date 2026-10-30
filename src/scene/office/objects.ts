@@ -29,6 +29,7 @@ import {
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   Object3D,
+  Path,
   PlaneGeometry,
   QuadraticBezierCurve3,
   Quaternion,
@@ -572,9 +573,9 @@ function buildPlant(): Group {
 }
 
 /**
- * A small photo frame standing on the desk, leaning back on its strut: a slim frame of light wood around a photo in
- * the 4:5 format, whose face is white (the site lays a photo over it, picked at random). The grain runs along each
- * side of the frame.
+ * A small photo frame standing on the desk, leaning back on its strut: a slim frame of light wood, in one piece with
+ * rounded edges, around a photo in the 4:5 format, whose face is white (the site lays a photo over it, picked at
+ * random).
  */
 function buildDeskFrame(): Group {
   const g = new Group();
@@ -583,17 +584,39 @@ function buildDeskFrame(): Group {
   const bd = 0.013;
   const ow = iw + 2 * bd;
   const oh = ih + 2 * bd;
-  const across = woodTexture('light');
-  across.repeat.set(0.25, 0.05);
-  const along = across.clone();
-  along.rotation = Math.PI / 2;
-  const rail = std(0xffffff, 0.6, 0, { map: across });
-  const stile = std(0xffffff, 0.6, 0, { map: along });
+  const wood = woodTexture('light');
+  // The extrusion's UVs are in metres: the texture spans 0.4 by 0.1 m.
+  wood.repeat.set(2.5, 10);
+  const light = std(0xffffff, 0.6, 0, { map: wood });
+  // The outline is cut short by the bevel, which rounds its edges out to the frame's size.
+  const bevel = 0.0016;
+  const rounded = (path: Path, w: number, h: number, y: number, r: number): void => {
+    path.moveTo(-w / 2 + r, y);
+    path.lineTo(w / 2 - r, y);
+    path.quadraticCurveTo(w / 2, y, w / 2, y + r);
+    path.lineTo(w / 2, y + h - r);
+    path.quadraticCurveTo(w / 2, y + h, w / 2 - r, y + h);
+    path.lineTo(-w / 2 + r, y + h);
+    path.quadraticCurveTo(-w / 2, y + h, -w / 2, y + h - r);
+    path.lineTo(-w / 2, y + r);
+    path.quadraticCurveTo(-w / 2, y, -w / 2 + r, y);
+  };
+  const outline = new Shape();
+  rounded(outline, ow - 2 * bevel, oh - 2 * bevel, 0, 0.003);
+  const opening = new Path();
+  rounded(opening, iw + 2 * bevel, ih + 2 * bevel, bd - 2 * bevel, 0.0005);
+  outline.holes.push(opening);
+  const depth = 0.012 - 2 * bevel;
+  const moulding = new ExtrudeGeometry(outline, {
+    depth,
+    bevelEnabled: true,
+    bevelSize: bevel,
+    bevelThickness: bevel,
+    bevelSegments: 3,
+    curveSegments: 6,
+  }).translate(0, bevel, -depth / 2);
   const face = new Group();
-  face.add(box(ow, bd, 0.012, rail, 0, oh - bd / 2, 0, 0.002));
-  face.add(box(ow, bd, 0.012, rail, 0, bd / 2, 0, 0.002));
-  face.add(box(bd, ih, 0.012, stile, -ow / 2 + bd / 2, oh / 2, 0, 0.002));
-  face.add(box(bd, ih, 0.012, stile, ow / 2 - bd / 2, oh / 2, 0, 0.002));
+  face.add(new Mesh(moulding, light));
   face.add(box(ow - 0.004, oh - 0.004, 0.003, std(0xb59670, 0.8), 0, oh / 2, -0.0045));
   const picture = box(iw, ih, 0.0015, std(0xffffff, 0.9), 0, oh / 2, 0.0035);
   picture.name = 'picture-desk';
@@ -602,7 +625,7 @@ function buildDeskFrame(): Group {
   face.add(picture);
   face.rotation.x = -11 * DEG;
   g.add(face);
-  const strut = box(0.022, 0.155, 0.004, stile, 0, 0.07, -0.058);
+  const strut = box(0.022, 0.155, 0.004, light, 0, 0.07, -0.058, 0.0015);
   strut.rotation.x = 0.42;
   g.add(strut);
   return g;
