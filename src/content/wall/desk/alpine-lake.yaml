@@ -1,5 +1,6 @@
 image: ./alpine-lake.webp
 title: Beautiful nature
+author: Grégoire Tinnes
 place: { fr: 'Eibsee, Allemagne', en: 'Eibsee, Germany' }
 year: 2024
 focus: 50% 45%
