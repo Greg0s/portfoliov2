@@ -47,11 +47,31 @@ test.describe('on desktop', () => {
     await page.locator('.email > a').hover();
     await expect(desktop).toHaveAttribute('data-open', 'mail');
 
-    // Away from the links, the window stays 0.6 s, then shrinks back.
+    // Away from the links, the window stays 0.6 s, then shrinks back. Timed in the page, from the pointer leaving the
+    // link to the window closing: a busy runner delays the test's own steps, never the page's clock.
+    await desktop.evaluate((node) => {
+      const closed = new Promise<number>((resolve) => {
+        let left = 0;
+        document.querySelector('.email > a')?.addEventListener(
+          'pointerout',
+          () => {
+            left = performance.now();
+          },
+          { once: true },
+        );
+        new MutationObserver((_, observer) => {
+          if (node.getAttribute('data-open') !== '') return;
+          observer.disconnect();
+          resolve(performance.now() - left);
+        }).observe(node, { attributeFilter: ['data-open'] });
+      });
+      Object.assign(window, { windowClosed: closed });
+    });
     await page.mouse.move(700, 860);
-    await page.waitForTimeout(300);
-    await expect(desktop).toHaveAttribute('data-open', 'mail');
-    await expect(desktop).toHaveAttribute('data-open', '', { timeout: 2000 });
+    const stayed = await page.evaluate(() => (window as unknown as { windowClosed: Promise<number> }).windowClosed);
+    expect(stayed).toBeGreaterThanOrEqual(590);
+    expect(stayed).toBeLessThan(2000);
+    await expect(desktop).toHaveAttribute('data-open', '');
     expect(errors).toEqual([]);
   });
 
