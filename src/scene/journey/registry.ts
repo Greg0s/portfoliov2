@@ -19,8 +19,11 @@ export interface JourneyHandle {
    * flush with the top, while the rest fades out. Resolves once it is there, where it stays; null if `id` is no project.
    */
   dive(id: string): Promise<void> | null;
-  /** The way back: drawn at once on the opening media, the card flies back to its place while the rest fades in. */
-  undive(id: string): Promise<void> | null;
+  /**
+   * The way back: drawn at once on the opening media, the card flies back to its place while the rest fades in. `swift`,
+   * it sets off at once rather than ease out of the opening media (the case study fading away over it as it goes).
+   */
+  undive(id: string, swift?: boolean): Promise<void> | null;
 }
 
 let active: JourneyHandle | null = null;

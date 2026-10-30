@@ -9,7 +9,8 @@
  * replaces it (main spec §5.6). The home's URL carries the project's fragment before leaving, so that coming back, by
  * either way, finds the journey on the same project. During the flight, the case study's header and opening rise
  * over the picture, taken from its prefetched page, so that the page opens with them in place; left scrolled past its
- * opening media, the case study fades into the picture rather than slide it in from above the screen.
+ * opening media, the case study fades away from over the picture as it already shrinks, rather than slide it in from
+ * above the screen.
  */
 import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
@@ -20,6 +21,8 @@ import { currentJourney } from '../scene/journey/registry';
 const DIVE_MS = 900;
 const FADE_MS = 300;
 const EASE = 'cubic-bezier(0.65, 0, 0.35, 1)';
+/** The way back from a case study left scrolled: the picture sets off at once, as the page fades away over it. */
+const EASE_OUT = 'cubic-bezier(0.33, 1, 0.68, 1)';
 /** How long the way back waits for the journey to rest on the project before giving up on the shrink. */
 const WAIT_MS = 4000;
 
@@ -31,8 +34,6 @@ let returning: string | null = null;
 let landing = false;
 /** The case study was left scrolled past its opening media: the page fades into the picture rather than slide it. */
 let fading = false;
-/** How long the case study takes to fade into the picture, on the way back. */
-const FADE_BACK_MS = 400;
 
 function isPlainClick(event: MouseEvent): boolean {
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
@@ -303,8 +304,8 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
       fill: 'backwards',
     });
   };
+  // Faded, the picture does not wait for the page to be gone: it shrinks as the page fades away from over it.
   const start = performance.now();
-  if (faded) await wait(FADE_BACK_MS - 100);
   // The journey starts once the home has loaded, then lands on the project's fragment; the list only needs a frame.
   let landed = false;
   for (;;) {
@@ -322,7 +323,7 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
     if (journey?.isAt(slug)) {
       await frame();
       picture.style.viewTransitionName = '';
-      const back = journey.undive(slug);
+      const back = journey.undive(slug, faded);
       if (back) {
         root.remove();
         // The card's cartel and pill, lit while the journey waited under the picture, go at once: transitions come
@@ -352,7 +353,7 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
   });
   await picture.animate([keyframe(openingMedia()), keyframe(boxOf(image.parentElement ?? image))], {
     duration: DIVE_MS,
-    easing: EASE,
+    easing: faded ? EASE_OUT : EASE,
     fill: 'forwards',
   }).finished;
   root.remove();
