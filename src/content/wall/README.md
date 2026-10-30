@@ -9,6 +9,7 @@ image: ./still.webp
 title: { fr: Le Voyage de Chihiro, en: Spirited Away } # or a plain string; optional
 originalTitle: Sen to Chihiro no Kamikakushi # optional
 author: Hayao Miyazaki # optional
+place: Louvre, Paris # optional, where a photo was taken
 year: 2001 # optional
 credit: Studio Ghibli # optional, required by some pictures
 focus: 50% 40% # optional, the point kept when cropping

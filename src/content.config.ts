@@ -70,6 +70,7 @@ const wall = defineCollection({
       title: z.union([z.string().min(1), localized]).optional(),
       originalTitle: z.string().min(1).optional(),
       author: z.string().min(1).optional(),
+      place: z.string().min(1).optional(),
       year: z.number().int().optional(),
       credit: z.string().min(1).optional(),
       focus,
