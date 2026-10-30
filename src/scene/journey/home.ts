@@ -40,12 +40,13 @@ function start(root: HTMLElement): void {
       startJourney(root, {
         still,
         webgl: webglAllowed(location.search),
-        onLite: () => {
-          // After this frame: the journey stops, and the page starts again as the list.
+        onLite: (fragment) => {
+          // After this frame: the journey stops, and the page starts again as the list, on the project shown.
           requestAnimationFrame(() => {
             if (started !== generation) return;
             stop();
             start(root);
+            if (fragment) document.getElementById(fragment)?.scrollIntoView({ block: 'center', behavior: 'instant' });
           });
         },
       }),

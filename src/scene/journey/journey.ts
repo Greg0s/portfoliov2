@@ -46,7 +46,7 @@ import type { Handoff } from '../planet/handoff';
 import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
 import { withBase } from '../../lib/url';
-import { frameSampler, isSlow, markSlow, type FrameSampler } from '../quality';
+import { frameSampler, isSlow, markSlow, SAMPLE_TIME, type FrameSampler } from '../quality';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
 const LIGHT = {
@@ -117,13 +117,19 @@ interface WorldParts {
   body: HTMLElement;
 }
 
+/** The journey's own floor, in frames per second over the projects: under it, the list takes over. */
+const JOURNEY_MIN_FPS = 25;
+
 export interface JourneyOptions {
   /** Frozen time: no drift, no floating, no twinkle (`?still=1`). */
   still: boolean;
   /** Draw the stars in WebGL (unless `?gl=0` or without WebGL). */
   webgl: boolean;
-  /** Called when this device is found too slow for the journey, at its start: the page turns to the list. */
-  onLite?: () => void;
+  /**
+   * Called when this device is found too slow for the journey, once the camera rests: the page turns to the list, on
+   * the project shown (its fragment), or at its top.
+   */
+  onLite?: (fragment: string | null) => void;
 }
 
 /** Starts the journey in `root`; returns a function that stops it and gives the page back its list. */
@@ -400,7 +406,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         // The light version, for the rest of the visit (main spec §6.3): the list, without 3D. This page turns to it
         // only while the visitor rests at the opening, so that nothing moves under their eyes.
         markSlow('lite');
-        if (!glide && current === target && current < (anchors[1] ?? 0) * 0.5) options.onLite?.();
+        if (!glide && current === target && current < (anchors[1] ?? 0) * 0.5) options.onLite?.(null);
       }
     }
   }
@@ -1151,9 +1157,34 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   // arrival at the office into much more on a device drawing a few frames a second. Up to 250 ms, it moves as far as
   // the time the frame took.
   let lastFrame = 0;
+  // Through the projects, a device that keeps the journey under 25 frames per second (a browser drawing without its
+  // graphics card, say) is given the list for the rest of the visit, once the camera rests (main spec §6.4). Only the
+  // frames of a move count. The measurement run (`?mesure=`) and `?lite=0` keep the journey; so do automated
+  // browsers, which draw in software on CI, unless `?lite=auto` asks for the measure.
+  const params = new URLSearchParams(location.search);
+  const judged =
+    params.get('lite') === 'auto' || (!navigator.webdriver && !params.has('mesure') && params.get('lite') !== '0');
+  let journeySampler: FrameSampler | null = judged ? frameSampler(SAMPLE_TIME, JOURNEY_MIN_FPS) : null;
+  let liteDue = false;
   const stopTick = onTick((now, delta) => {
-    const elapsed = delta >= 64 && lastFrame > 0 ? Math.min(250, now - lastFrame) : delta;
+    const frame = lastFrame > 0 ? now - lastFrame : 0;
+    const elapsed = delta >= 64 && lastFrame > 0 ? Math.min(250, frame) : delta;
     lastFrame = now;
+    const onProjects = current >= (anchors[1] ?? 0) && current <= LAST_PROJECT;
+    // A frame over a second is a hidden tab or a pause, not the device's pace.
+    if (journeySampler && frame > 0 && frame < 1000 && onProjects && (glide || current !== target)) {
+      const verdict = journeySampler.add(frame);
+      if (verdict !== 'measuring') journeySampler = null;
+      if (verdict === 'slow') {
+        markSlow('lite');
+        liteDue = true;
+      }
+    }
+    if (liteDue && !glide && current === target) {
+      liteDue = false;
+      options.onLite?.(anchorFragment.get(nearestAnchor(window.scrollY, positions)) ?? null);
+      return;
+    }
     pointer.update(delta);
     followCamera(elapsed);
     const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
