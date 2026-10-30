@@ -3,7 +3,9 @@
  * `.design-assets/screen/`, out of the repository, and the web versions go to `public/images/screen/` (the wallpaper and
  * the pages, loaded on the first hover of a link) and `public/images/taskbar/` (the icons).
  *
- * - `wallpaper.jpg`: Grégoire's photo, cropped to the 16:10 screen, 1280 × 800.
+ * - `wallpaper.jpg`, `wallpaper-2.jpg`…: Grégoire's photos, each cropped to the 16:10 screen, 1280 × 800, into
+ *   `wallpaper-1.webp`, `wallpaper-2.webp`…; the screen shows one of them, drawn again each time the Recycle Bin is
+ *   emptied.
  * - `linkedin`, `github`, `instagram`: full-page captures, brought to the 1280 px Firefox shows them at; LinkedIn's long
  *   page is cut into slices no taller than 4096 px, which every GPU takes as one texture.
  * - `cv.png`: the CV's page (rendered from `public/cv/`'s PDF), brought to its 794 × 1123 px in Firefox.
@@ -40,13 +42,20 @@ mkdirSync(screen, { recursive: true });
 mkdirSync(taskbar, { recursive: true });
 for (const file of readdirSync(screen)) rmSync(join(screen, file));
 
-report(
-  'wallpaper.webp',
-  await sharp(find('wallpaper'))
-    .resize({ width: WIDTH, height: 800, fit: 'cover' })
-    .webp({ quality: 80 })
-    .toFile(join(screen, 'wallpaper.webp')),
-);
+const wallpapers = readdirSync(source)
+  .filter((entry) => /^wallpaper(-\d+)?\./.test(entry))
+  .sort((a, b) => Number(/\d+/.exec(a)?.[0] ?? 1) - Number(/\d+/.exec(b)?.[0] ?? 1));
+if (!wallpapers.length) find('wallpaper');
+for (const [k, file] of wallpapers.entries()) {
+  const name = `wallpaper-${String(k + 1)}.webp`;
+  report(
+    name,
+    await sharp(join(source, file))
+      .resize({ width: WIDTH, height: 800, fit: 'cover' })
+      .webp({ quality: 72 })
+      .toFile(join(screen, name)),
+  );
+}
 
 for (const name of ['linkedin', 'github', 'instagram']) {
   const page = await sharp(find(name)).resize({ width: WIDTH }).toBuffer({ resolveWithObject: true });
