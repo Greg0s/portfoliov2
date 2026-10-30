@@ -5,6 +5,8 @@ const base = process.env.BASE_PATH ?? '/portfoliov2/';
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // Every test opens its own page: they spread over the workers, and CI's shards, one by one rather than file by file.
+  fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',

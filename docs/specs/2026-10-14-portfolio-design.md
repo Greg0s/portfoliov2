@@ -348,7 +348,7 @@ Déjà fournis, gardés dans les fichiers du canevas : le CV (en anglais seuleme
 
 ## 10. Mise en ligne
 
-- **CI** (`.github/workflows/ci.yml`), à chaque push et à chaque pull request : installation, lint, formatage, `astro check`, tests unitaires, build, tests e2e.
+- **CI** (`.github/workflows/ci.yml`), à chaque push et à chaque pull request : installation, lint, formatage, `astro check`, tests unitaires, build, tests e2e (répartis sur plusieurs tâches en parallèle), Lighthouse.
 - **Déploiement** (`.github/workflows/deploy.yml`), à chaque push sur `main` : build, puis publication sur GitHub Pages.
 - **Branches** : `main` est la branche publiée ; chaque tâche se fait sur sa propre branche, ouverte depuis `main`, avec sa propre pull request, que Grégoire relit et fusionne.
 - **Prévisualisation** : pendant la construction, le site est publié sur `https://greg0s.github.io/portfoliov2/`. L'ancien site reste en ligne sur `gregoiretinn.es`.
