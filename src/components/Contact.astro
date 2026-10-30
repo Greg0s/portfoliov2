@@ -55,7 +55,7 @@ const links = [
     overflow: hidden;
   }
 
-  /* A shadow at the top keeps the header readable over the office. */
+  /* A shadow at the top keeps the header readable over the office; on mobile, one at the bottom frames the desk. */
   .contact::before {
     content: '';
     position: absolute;
@@ -131,6 +131,16 @@ const links = [
   @media (width < 768px) {
     .contact {
       min-height: max(100svh, 760px);
+    }
+
+    .contact::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      bottom: 0;
+      height: 150px;
+      background: linear-gradient(to top, rgb(6 6 7 / 55%), rgb(6 6 7 / 0%));
+      pointer-events: none;
     }
 
     .text {
