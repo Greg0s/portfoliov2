@@ -147,6 +147,23 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
   room.style.transformOrigin = `${px(axis[0])} ${px(axis[1])}`;
   desk.style.transformOrigin = `${px(axis[0])} ${px(axis[1])}`;
 
+  // A layer that will change its transform keeps the scale it was first drawn at, and the arrival starts at 14 times
+  // the rest: on a phone, drawing the town, the room and the desk that large runs out of GPU memory, and the desk and
+  // the screen stay half drawn, even at rest. Once the camera rests, each layer lets go of its hint for a frame, so
+  // that it is drawn again at its size; the hint comes back for the head's moves.
+  let resting = false;
+  let redrawn = 0;
+  const redrawAtRest = (): void => {
+    cancelAnimationFrame(redrawn);
+    const layers = [city, room, desk];
+    layers.forEach((node) => (node.style.willChange = 'auto'));
+    redrawn = requestAnimationFrame(() => {
+      redrawn = requestAnimationFrame(() => {
+        layers.forEach((node) => (node.style.willChange = ''));
+      });
+    });
+  };
+
   return {
     element: root,
     rest,
@@ -157,6 +174,9 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
       const opacity = { room: layerFade(state.camZ, FADE_PLANES.room), desk: layerFade(state.camZ, FADE_PLANES.desk) };
       const sRoom = layerScale(state.camZ, -1.2);
       const sDesk = layerScale(state.camZ, -0.85);
+      const atRest = Math.abs(sRoom - 1) < 1e-4 && Math.abs(sDesk - 1) < 1e-4;
+      if (atRest && !resting) redrawAtRest();
+      resting = atRest;
       room.style.transform = `translate(${px(-head.x * par.room[0])}, ${px(-head.y * par.room[1])}) scale(${sRoom.toFixed(5)})`;
       room.style.opacity = opacity.room.toFixed(3);
       room.style.visibility = opacity.room > 0.002 ? 'visible' : 'hidden';
@@ -185,6 +205,7 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
       }
     },
     dispose() {
+      cancelAnimationFrame(redrawn);
       root.remove();
     },
   };
