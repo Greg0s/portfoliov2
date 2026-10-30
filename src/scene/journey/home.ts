@@ -50,8 +50,8 @@ function start(root: HTMLElement): void {
         },
       }),
     );
-    // The measurement run, on a real device (`?mesure=1`): loaded only when asked for.
-    if (new URLSearchParams(location.search).get('mesure') !== '1') return;
+    // The measurement run, on a real device (`?mesure=1`, or `?mesure=rapide`): loaded only when asked for.
+    if (!['1', 'rapide'].includes(new URLSearchParams(location.search).get('mesure') ?? '')) return;
     void import('./measure').then(({ startMeasure }) => {
       if (started === generation && root.isConnected) stops.push(startMeasure(root));
     });

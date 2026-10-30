@@ -7,13 +7,16 @@
  * nothing is drawn.
  */
 import {
+  CustomBlending,
   Fog,
-  HalfFloatType,
   Mesh,
-  MeshBasicMaterial,
+  OneFactor,
+  OneMinusSrcAlphaFactor,
   OrthographicCamera,
   PlaneGeometry,
   Scene,
+  ShaderMaterial,
+  SRGBColorSpace,
   Vector2,
   Vector3,
   WebGLRenderTarget,
@@ -68,12 +71,30 @@ export interface Office {
 
 let rectAreaReady = false;
 
-/** A pass drawn off screen, then laid over the canvas with an opacity: the room and the desk fading in. */
+/**
+ * A pass drawn off screen, then laid over the canvas with an opacity: the room and the desk fading in, as the mockup's
+ * layers did in CSS. The pass is drawn into the target exactly as onto the canvas, tone mapped and in sRGB, so that it
+ * uses the canvas's own programs: drawn into an ordinary target, every material of the room and the desk would take a
+ * second program (no tone mapping, a linear output), a third of the office's, each linked on its own on a phone.
+ */
 function fader() {
   let target: WebGLRenderTarget | null = null;
-  const material = new MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false });
-  material.premultipliedAlpha = true;
+  // The texture as it is, already premultiplied by its alpha, weighed by the opacity.
+  const uniforms = { map: { value: null as Texture | null }, opacity: { value: 1 } };
+  const material = new ShaderMaterial({
+    uniforms,
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader:
+      'uniform sampler2D map; uniform float opacity; varying vec2 vUv; void main() { gl_FragColor = texture2D(map, vUv) * opacity; }',
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    blending: CustomBlending,
+    blendSrc: OneFactor,
+    blendDst: OneMinusSrcAlphaFactor,
+  });
   const quad = new Mesh(new PlaneGeometry(2, 2), material);
+  quad.frustumCulled = false;
   const scene = new Scene();
   scene.add(quad);
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -82,24 +103,16 @@ function fader() {
     renderer.getDrawingBufferSize(size);
     if (target?.width !== size.x || target.height !== size.y) {
       target?.dispose();
-      // Linear and before tone mapping: the canvas's tone mapping applies when the pass is laid over it.
-      target = new WebGLRenderTarget(size.x, size.y, { samples: 4, type: HalfFloatType });
+      target = new WebGLRenderTarget(size.x, size.y, { samples: 4, colorSpace: SRGBColorSpace });
+      // Stored as the canvas stores it (8 bits, sRGB values, no decoding when read).
+      target.texture.internalFormat = 'RGBA8';
+      // three.js tone maps and encodes only what is drawn onto the canvas, or into a WebXR target: this one is
+      // treated as such, so that its programs are the canvas's.
+      (target as WebGLRenderTarget & { isXRRenderTarget: boolean }).isXRRenderTarget = true;
     }
     return target;
   };
   return {
-    /**
-     * Runs `compile` with the target bound: drawn into it, every material takes other shaders (no tone mapping, a
-     * linear output), which would otherwise compile in the middle of the arrival, at the first frame where the room
-     * fades in.
-     */
-    within(renderer: WebGLRenderer, compile: () => void): void {
-      const previous = renderer.getRenderTarget();
-      renderer.setRenderTarget(targetFor(renderer));
-      compile();
-      renderer.setRenderTarget(previous);
-      material.map = targetFor(renderer).texture;
-    },
     /** The scene that lays the pass over the canvas, and its camera. */
     scene,
     camera,
@@ -110,8 +123,8 @@ function fader() {
       renderer.clear();
       pass();
       renderer.setRenderTarget(previous);
-      material.map = targetFor(renderer).texture;
-      material.opacity = opacity;
+      uniforms.map.value = targetFor(renderer).texture;
+      uniforms.opacity.value = opacity;
       renderer.render(scene, camera);
     },
     dispose(): void {
@@ -236,13 +249,7 @@ export async function createOffice(
         prepare(camera, layer);
         await each(layer, scene, camera, (object) => target.compile(object, camera, scene));
       }
-      // The room and the desk again, for the off-screen passes that fade them in, then what lays them over.
-      for (const layer of ['room', 'desk'] as const) {
-        prepare(camera, layer);
-        await each(layer, scene, camera, (object) => {
-          fade.within(target, () => target.compile(object, camera, scene));
-        });
-      }
+      // What lays the room and the desk over the canvas as they fade in (they are drawn with the canvas's programs).
       await each(null, fade.scene, fade.camera, (object) => target.compile(object, fade.camera, fade.scene));
     },
     renderLayer(target, camera, layer) {
