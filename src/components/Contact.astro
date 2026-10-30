@@ -1,7 +1,7 @@
 ---
 /**
  * The contact, at the end of the journey, in the office (office spec §6): "Shall we talk?", the email with its
- * actions, LinkedIn, GitHub, the CV and Instagram, then the copyright. On desktop the text sits on the left, over the
+ * actions, LinkedIn, GitHub, the CV and Instagram. On desktop the text sits on the left, over the
  * wall darkened by a halo; on mobile it is centred in the sky, under the planet.
  */
 import { existsSync } from 'node:fs';
@@ -46,7 +46,6 @@ const links = [
       ))}
     </ul>
   </div>
-  <p class="copyright">© 2026 {config.name}</p>
 </section>
 
 <style>
@@ -56,25 +55,15 @@ const links = [
     overflow: hidden;
   }
 
-  /* Shadows at the top and bottom keep the header and the copyright readable over the office. */
-  .contact::before,
-  .contact::after {
+  /* A shadow at the top keeps the header readable over the office. */
+  .contact::before {
     content: '';
     position: absolute;
     inset-inline: 0;
-    pointer-events: none;
-  }
-
-  .contact::before {
     top: 0;
     height: 160px;
     background: linear-gradient(to bottom, rgb(6 6 7 / 45%), rgb(6 6 7 / 0%));
-  }
-
-  .contact::after {
-    bottom: 0;
-    height: 150px;
-    background: linear-gradient(to top, rgb(6 6 7 / 55%), rgb(6 6 7 / 0%));
+    pointer-events: none;
   }
 
   .text {
@@ -139,15 +128,6 @@ const links = [
     min-height: 44px;
   }
 
-  .copyright {
-    position: absolute;
-    z-index: 1;
-    left: var(--gutter);
-    bottom: 24px;
-    font-size: 13px;
-    color: rgb(243 243 241 / 72%);
-  }
-
   @media (width < 768px) {
     .contact {
       min-height: max(100svh, 760px);
@@ -182,12 +162,6 @@ const links = [
 
     .links a span {
       display: none;
-    }
-
-    .copyright {
-      left: 50%;
-      translate: -50% 0;
-      white-space: nowrap;
     }
   }
 </style>

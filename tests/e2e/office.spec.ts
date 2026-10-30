@@ -151,7 +151,7 @@ test.describe('on phones', () => {
     // A tap elsewhere closes it too.
     await email.locator(':scope > a').tap();
     await expect(email).toHaveAttribute('data-bubble-open', '');
-    await page.locator('.contact .copyright').tap();
+    await page.locator('.contact .title').tap();
     await expect(email).not.toHaveAttribute('data-bubble-open');
 
     // The links open directly, and no capture of the screen loads.
