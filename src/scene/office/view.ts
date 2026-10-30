@@ -235,11 +235,13 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
 
   // ---- In front of the canvas: the screen, then the planet's button.
   const screen = el('div', 'office-screen', front);
-  // Emptying the Recycle Bin: the view goes dark, every frame draws a new picture, and the view comes back.
+  // Emptying the Recycle Bin: the view goes dark, every frame draws a new picture, the screen a new wallpaper, and the
+  // view comes back.
   const empty = (): void => {
     void blackout(async () => {
       picks = draw(options.pools, picks);
       cartels.set(picks);
+      const wallpaper = desktop?.drawWallpaper();
       // The new pictures, ready before the view comes back (or after a second at most).
       await new Promise<void>((resolve) => {
         let waiting = picks.size;
@@ -254,6 +256,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
           }
         });
       });
+      await wallpaper;
       desktop?.redrawn();
     });
   };

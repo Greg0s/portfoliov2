@@ -4,7 +4,8 @@
  * with the four pages in four tabs, the hovered one in front; the email opens Thunderbird instead, and Firefox shrinks
  * back. A page left under the mouse scrolls slowly down after 1.1 s, to its end in 5 to 12 s (at most 140 px/s); the
  * windows shrink back 0.6 s after the mouse leaves the links. The Recycle Bin asks whether to empty itself, hands
- * « Oui » over to the office (which goes dark and draws new pictures), then owns up that nothing happened. On phones the
+ * « Oui » over to the office (which goes dark and draws new pictures, and a new wallpaper), then owns up that nothing
+ * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones the
  * desktop shows alone, and no capture loads. The taskbar's clock shows the visitor's time.
  */
 
@@ -36,6 +37,8 @@ export interface Screen {
   setLive(live: boolean): void;
   /** The new draw is done, in the dark: the desktop comes back, and once the scene is back, the message. */
   redrawn(): void;
+  /** Draws another wallpaper, in the dark; resolves once it is ready to show (or after a second at most). */
+  drawWallpaper(): Promise<void>;
   dispose(): void;
 }
 
@@ -47,6 +50,20 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
   const tabs = new Map(query('[data-tab]').map((node) => [node.dataset.tab ?? '', node]));
   const pages = new Map(query('[data-page]').map((node) => [node.dataset.page ?? '', node]));
   const address = element.querySelector<HTMLElement>('[data-address]');
+
+  // ---- The wallpaper, set before the copy reaches the page so that only the drawn one loads.
+  const wallpaper = element.querySelector<HTMLImageElement>('.wallpaper');
+  const wallpapers = JSON.parse(wallpaper?.dataset.wallpapers ?? '[]') as string[];
+  let current = '';
+  const drawWallpaper = (): HTMLImageElement | null => {
+    const candidates = wallpapers.length > 1 ? wallpapers.filter((src) => src !== current) : wallpapers;
+    const next = candidates[Math.floor(Math.random() * candidates.length)];
+    if (!wallpaper || next === undefined) return null;
+    current = next;
+    wallpaper.src = next;
+    return wallpaper;
+  };
+  drawWallpaper();
 
   // ---- Windows: which one is open, and the tab in front (kept while Firefox shrinks back).
   let open: ScreenPage | '' = '';
@@ -197,6 +214,14 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
       doneTimer = window.setTimeout(() => {
         setDialog('done');
       }, DONE_AFTER);
+    },
+    drawWallpaper() {
+      const image = drawWallpaper();
+      if (!image) return Promise.resolve();
+      return Promise.race([
+        image.decode().catch(() => undefined),
+        new Promise<void>((resolve) => setTimeout(resolve, 1000)),
+      ]);
     },
     dispose() {
       window.clearTimeout(scrollTimer);
