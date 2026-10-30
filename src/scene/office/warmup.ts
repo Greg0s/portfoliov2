@@ -26,6 +26,8 @@ export interface OfficeOptions {
   still: boolean;
   /** Prepare it even on a software renderer (`?office=live`). */
   forced: boolean;
+  /** Stops the preparation (its layers played the arrival): it rejects with the signal's reason. */
+  signal?: AbortSignal;
 }
 
 interface PictureData {
@@ -56,7 +58,12 @@ export async function prepareOffice(
     rose: model.rose,
     size: { width: section.clientWidth, height: section.clientHeight },
     forced: options.forced,
+    signal: options.signal,
   });
+  if (options.signal?.aborted) {
+    live.dispose();
+    throw options.signal.reason;
+  }
   return viewOf(section, host, live, options);
 }
 

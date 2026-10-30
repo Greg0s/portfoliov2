@@ -3,9 +3,16 @@
  * draws the journey's stars now and the planet and the office from step 7. Its pixel ratio is capped (2, and 1.5 on
  * phones); it stops drawing while the tab is hidden or the context is lost, and says when it is back.
  */
-import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { PerspectiveCamera, Scene, ShaderChunk, WebGLRenderer } from 'three';
 import { cameraPosition, projectionMatrix } from './journey/camera3d';
 import type { View } from './journey/layout';
+
+// A first visit, again and again (`?froid=1`, and the fast measurement run): the browser keeps the programs it linked
+// in a cache of its own, which makes every later visit fast. A comment that changes at each visit, in the code every
+// material of the planet and the office shares, makes it miss.
+if (typeof location !== 'undefined' && /[?&](froid=1|mesure=rapide)\b/.test(location.search)) {
+  ShaderChunk.common = `// ${String(Math.random())}\n${ShaderChunk.common}`;
+}
 
 export interface Renderer {
   canvas: HTMLCanvasElement;

@@ -166,12 +166,14 @@ async function compileOffice(
   office: Office,
   camera: PerspectiveCamera,
   forced: boolean,
+  signal?: AbortSignal,
 ): Promise<void> {
   const programs = (): Program[] => (renderer.info.programs ?? []) as unknown as Program[];
   if (renderer.extensions.has('KHR_parallel_shader_compile')) {
     await office.compile(renderer, camera, () => Promise.resolve());
     endStep('shaders (start)');
     while (!programs().every((program) => program.isReady())) {
+      signal?.throwIfAborted();
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
     startStep();
@@ -185,6 +187,7 @@ async function compileOffice(
   const moves = watchMoves();
   try {
     await office.compile(renderer, camera, async () => {
+      signal?.throwIfAborted();
       const start = performance.now();
       // Asking whether it is linked makes this task wait for it, and for it alone.
       const all = programs();
@@ -218,6 +221,8 @@ export interface LiveOptions {
   size: { width: number; height: number };
   /** Kept live whatever the device (`?office=live`). */
   forced?: boolean;
+  /** Stops the preparation between two programs. */
+  signal?: AbortSignal | undefined;
 }
 
 export async function createLiveOffice(options: LiveOptions): Promise<OfficeScene> {
@@ -309,7 +314,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   endStep('halos and pictures');
   startStep();
   try {
-    await compileOffice(renderer, office, rest, options.forced ?? false);
+    await compileOffice(renderer, office, rest, options.forced ?? false, options.signal);
   } catch (error) {
     office.dispose();
     renderer.dispose();

@@ -940,9 +940,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   window.addEventListener('touchend', onTouchEnd, { passive: true });
   // ---------- The live office ----------
 
-  // It is prepared from the middle of the journey on (at once on `#contact`), once the planet is let go, and drawn
-  // while the contact shows. Its first seconds on screen are measured: too slow, it gives way to its layers, which
-  // also stand in without WebGL.
+  // It is prepared from the first project on (at once on `#contact`), and drawn while the contact shows. On a phone,
+  // which links its programs one by one, that takes seconds: begun at the middle of the journey, it was not ready for a
+  // visitor going through the projects at a swipe each. Its first seconds on screen are measured: too slow, it gives way
+  // to its layers, which also stand in without WebGL, and for the arrival when it is not ready in time.
+  const OFFICE_START = anchors[1] ?? 0.1;
+  // Not ready by the middle of the journey, its layers get ready too.
   const OFFICE_WARM = anchors[5] ?? 0.5;
   // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
   const officeMode = new URLSearchParams(location.search).get('office');
@@ -953,6 +956,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let officeFailed = false;
   let lastOfficeDraw = 0;
   let officeFraming = '';
+  /** The layers, ready to play the arrival if it comes before the live office, and what stops the live office then. */
+  let standIn: OfficeView | null = null;
+  let standInLoading = false;
+  let officeAbort: AbortController | null = null;
 
   function loadOffice(): void {
     if (officeLoading || !office) return;
@@ -961,6 +968,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     officeFraming = scene.view.mobile ? 'mobile' : 'desktop';
     const layers = officeSlow;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
+    const abort = new AbortController();
+    officeAbort = abort;
     // Out of the frame: preparing reads the section's size, which would force a layout in the middle of a frame.
     void new Promise((resolve) => setTimeout(resolve))
       .then(() => import('../office/warmup'))
@@ -972,6 +981,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
               moment,
               still: options.still,
               forced: officeMode === 'live',
+              signal: abort.signal,
             }).catch((error: unknown) => {
               if (error instanceof SlowOffice) {
                 officeSlow = true;
@@ -980,37 +990,96 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
               }
               throw error;
             }));
-        if (stopped || !officeLoading) {
+        if (stopped || !officeLoading || abort.signal.aborted) {
           created.dispose();
           return;
         }
+        // Ready before the arrival: the layers standing by are no longer needed.
+        freeStandIn();
         officeView = created;
         officeSampler = officeSlow || officeMode === 'live' ? null : frameSampler();
         html.dataset.office = 'live';
         // Which one draws it, for the measurement run: the live scene or its layers.
         html.dataset.officeScene = officeSlow ? 'layers' : 'live';
+        performance.mark('journey:office-ready');
         redraw = true;
       })
       .catch(() => {
+        // Stopped for its layers, which play the arrival.
+        if (abort.signal.aborted) return;
         officeLoading = false;
         // Without the model, the worker or the layers, the still image stays, for the rest of the page.
         officeFailed = true;
       });
   }
 
+  /** Gets the layers ready to play the arrival in place of the live office, if it comes first. */
+  function loadStandIn(): void {
+    if (standIn || standInLoading || !office) return;
+    const host = office;
+    standInLoading = true;
+    const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
+    void import('../office/warmup')
+      .then(({ prepareLayers }) => prepareLayers(host, host, { moment, still: options.still }))
+      .then((created) => {
+        if (stopped || !standInLoading || officeView) {
+          created.dispose();
+          return;
+        }
+        standInLoading = false;
+        standIn = created;
+      })
+      .catch(() => {
+        standInLoading = false;
+      });
+  }
+
+  function freeStandIn(): void {
+    standInLoading = false;
+    standIn?.dispose();
+    standIn = null;
+  }
+
   function freeOffice(): void {
     officeLoading = false;
+    officeAbort?.abort();
+    officeAbort = null;
+    freeStandIn();
     officeView?.dispose();
     officeView = null;
     officeSampler = null;
     if (html.dataset.office === 'live') html.dataset.office = 'near';
   }
 
-  /** Prepares the office past the middle of the journey and draws it while the contact shows. */
+  /** What played the first arrival of the page, and when, for the measurement run: the live office, its layers or its image. */
+  function arrivedWith(scene: string): void {
+    html.dataset.officeArrival = scene;
+    performance.mark('journey:arrival');
+  }
+
+  /**
+   * Prepares the office from the first project on, its layers too if it is not ready by the middle of the journey, and
+   * draws it while the contact shows.
+   */
   function drawOffice(now: number, u: number, arrival: number): void {
     if (!officeView) {
-      if (u >= OFFICE_WARM - 0.01 && !officeFailed) loadOffice();
-      return;
+      // While the planet measures its first seconds on screen, the office's links would count against it.
+      const planetMeasured =
+        planetSampler !== null && html.dataset.planet !== undefined && html.dataset.planet !== 'image';
+      if (!officeFailed && (u >= OFFICE_WARM - 0.01 || (u >= OFFICE_START - 0.01 && !planetMeasured))) loadOffice();
+      if (u >= OFFICE_WARM - 0.01 && officeLoading && !officeSlow && officeMode !== 'live') loadStandIn();
+      if (arrival <= 0) return;
+      if (!html.dataset.officeArrival) arrivedWith(standIn ? 'layers' : 'image');
+      if (!standIn) return;
+      // The arrival comes before the live office: its layers play it, and stay for the rest of the page. Its programs
+      // are now in the browser's cache, so the next visit prepares it much faster.
+      officeAbort?.abort();
+      officeView = standIn;
+      standIn = null;
+      html.dataset.office = 'live';
+      html.dataset.officeScene = 'layers';
+    } else if (arrival > 0 && !html.dataset.officeArrival) {
+      arrivedWith(html.dataset.officeScene ?? 'live');
     }
     const previousDraw = lastOfficeDraw;
     lastOfficeDraw = now;
@@ -1167,6 +1236,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     delete html.dataset.introFaded;
     delete html.dataset.office;
     delete html.dataset.officeScene;
+    delete html.dataset.officeArrival;
     styles.reset();
     cards.forEach(({ item }) => {
       item.classList.remove('lit');

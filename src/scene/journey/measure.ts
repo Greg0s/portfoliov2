@@ -6,6 +6,11 @@
  * Each frame over 100 ms is listed too, with what the browser says held it where it can (Chromium's long animation
  * frames: the scripts that ran, the style and layout, the rendering), and the office's state at the end: whether the
  * live scene stayed, or gave way to its layers.
+ *
+ * `?mesure=rapide` goes through as a hurried visitor does on a first visit: a glance at the opening, then a swipe as
+ * soon as each project is reached, without the rest, every program linked as if the browser had never seen it
+ * (`src/scene/renderer.ts`). It says what played the arrival (the live office, its layers, or its still image), when the
+ * arrival began and when the live office was ready, from the page's start.
  */
 import { anchors } from './anchors';
 import { currentJourney } from './registry';
@@ -50,6 +55,12 @@ interface Hitch {
 
 const HITCH_MS = 100;
 const MAX_HITCHES = 20;
+
+/** When the page's mark `name` was set, from the page's start, in ms; null if it never was. */
+function markAt(name: string): number | null {
+  const entry = performance.getEntriesByName(name, 'mark')[0];
+  return entry ? round(entry.startTime) : null;
+}
 
 /** The scenes found too slow during the visit (`src/scene/quality.ts`). */
 function slowScenes(): string {
@@ -170,6 +181,7 @@ export function startMeasure(root: HTMLElement): () => void {
   const hitches: { phase: Phase; start: number; ms: number }[] = [];
   const longFrames: LongFrame[] = [];
   const out = panel();
+  const hurried = new URLSearchParams(location.search).get('mesure') === 'rapide';
 
   let observer: PerformanceObserver | null = null;
   if (PerformanceObserver.supportedEntryTypes.includes('long-animation-frame')) {
@@ -236,15 +248,16 @@ export function startMeasure(root: HTMLElement): () => void {
     }
     journey.glideTo(0);
     await until(() => anchorIs(0));
-    // Let the page load what it loads late (Three.js, the stars) before the first phase.
-    await wait(2500);
+    // Let the page load what it loads late (Three.js, the stars) before the first phase; a hurried visitor glances.
+    await wait(hurried ? 1000 : 2500);
     frame = requestAnimationFrame(tick);
     const contact = anchors.length - 1;
     for (let index = 1; index <= contact && !stopped; index += 1) {
       enter(index === 1 ? 'ouverture' : index === contact ? 'fin' : 'projets');
       journey.glideTo(index);
       await until(() => anchorIs(index));
-      if (index === 4) {
+      if (hurried) await wait(150);
+      else if (index === 4) {
         // A rest on a project: the cards float, the stars twinkle.
         enter('repos');
         await wait(3000);
@@ -263,6 +276,12 @@ export function startMeasure(root: HTMLElement): () => void {
       ...gpu(),
       phases: Object.fromEntries([...phases].map(([name, times]) => [name, summarize(times)])),
       office: document.documentElement.dataset.officeScene ?? '',
+      // What played the first arrival at the office (live, layers or image), and when, from the page's start.
+      arrival: {
+        scene: document.documentElement.dataset.officeArrival ?? '',
+        atMs: markAt('journey:arrival'),
+        officeReadyMs: markAt('journey:office-ready'),
+      },
       slow: slowScenes(),
       // The worst ones, in the order they came.
       hitches: [...hitches]
