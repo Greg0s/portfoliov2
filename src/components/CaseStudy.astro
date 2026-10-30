@@ -136,16 +136,22 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
 
   /* Over the opening media the shade only darkens: the blur comes in as the text starts scrolling under it. */
   @supports (animation-timeline: scroll()) {
+    /* Without a scroll to follow (a page that cannot scroll yet, the dive's copy), the shade does not blur. */
     .case-header::before {
+      backdrop-filter: none;
       animation: shade-blur linear both;
+    }
+
+    /* A rule of its own: merged into the shorthand by the minifier, the timeline would void the declaration. */
+    :global(:root) .case-header::before {
       animation-timeline: scroll(root);
       animation-range: 0 240px;
     }
   }
 
   @keyframes shade-blur {
-    from {
-      backdrop-filter: none;
+    to {
+      backdrop-filter: blur(10px);
     }
   }
 
@@ -232,7 +238,8 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
    */
   @media (prefers-reduced-motion: no-preference) {
     .case-header {
-      animation: case-drop 700ms cubic-bezier(0.22, 1, 0.36, 1) var(--case-delay, 250ms) both;
+      /* Not held once over: a held opacity would keep the shade's blur from seeing the page. */
+      animation: case-drop 700ms cubic-bezier(0.22, 1, 0.36, 1) var(--case-delay, 250ms) backwards;
     }
 
     .sheet {

@@ -144,6 +144,11 @@ html[data-dive='back'] [data-journey-root] *::after {
   pointer-events: none;
 }
 
+/* The copy's header shade does not follow the scroll of the page it flies over. */
+.dive-page .case-header::before {
+  animation: none !important;
+}
+
 .dive-picture img {
   display: block;
   width: 100%;
