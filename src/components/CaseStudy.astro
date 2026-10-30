@@ -104,10 +104,11 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
 </Base>
 
 <style>
+  /* The header stays at the top while the page scrolls. */
   .case-header {
-    position: absolute;
+    position: fixed;
     inset: 0 0 auto;
-    z-index: 2;
+    z-index: 50;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -116,6 +117,22 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     padding-inline: var(--gutter);
     font-size: var(--size-nav);
     font-weight: 500;
+  }
+
+  /*
+   * Its shade keeps it readable over any cover and over the text scrolling under it: darkened and blurred at the top,
+   * fading out below.
+   */
+  .case-header::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: -1;
+    height: calc(var(--header-height) + 56px);
+    background: linear-gradient(to bottom, rgb(6 6 7 / 75%), rgb(6 6 7 / 0%));
+    backdrop-filter: blur(10px);
+    mask-image: linear-gradient(to bottom, #000 50%, transparent);
+    pointer-events: none;
   }
 
   .back {
@@ -169,15 +186,6 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     object-fit: cover;
   }
 
-  /* The header stays readable over any cover. */
-  .cover::after {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto;
-    height: 160px;
-    background: linear-gradient(to bottom, rgb(6 6 7 / 70%), rgb(6 6 7 / 0%));
-  }
-
   /*
    * The dark fade the content rises over, down to the page's own dark: it starts a little above the tag and darkens
    * quickly, so that the media keeps its colours above the text.
@@ -206,9 +214,13 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
 
   /*
    * Once the case study is open (after the dive lands, or on a direct visit), the content comes up from under the
-   * media into place while the fade darkens it.
+   * media into place while the fade darkens it, and the header comes down into place with its shade.
    */
   @media (prefers-reduced-motion: no-preference) {
+    .case-header {
+      animation: case-drop 700ms cubic-bezier(0.22, 1, 0.36, 1) 250ms both;
+    }
+
     .sheet {
       animation: case-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 250ms both;
     }
@@ -222,6 +234,13 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     from {
       opacity: 0;
       translate: 0 var(--rise);
+    }
+  }
+
+  @keyframes case-drop {
+    from {
+      opacity: 0;
+      translate: 0 -12px;
     }
   }
 
