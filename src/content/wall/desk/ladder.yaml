@@ -1,4 +1,4 @@
 image: ./ladder.webp
 title: On the way to Portofino
-place: Italy
+place: { fr: Italie, en: Italy }
 year: 2026
