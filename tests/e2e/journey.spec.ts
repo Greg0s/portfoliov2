@@ -201,6 +201,29 @@ test('?lite=1 keeps the list, for slow machines', async ({ page }) => {
   await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(8);
 });
 
+test('a journey kept under 25 frames per second over the projects gives way to the list, on the project shown', async ({
+  page,
+}) => {
+  test.slow();
+  // Frames 70 ms apart, as on a browser drawing without its graphics card; `?lite=auto` measures them, as automated
+  // browsers are otherwise left out. The scenes are known slow already, so the planet's own measure keeps out of it.
+  await page.addInitScript(() => {
+    sessionStorage.setItem('portfolio:slow', 'planet,office');
+    const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback) => raf(() => setTimeout(() => raf(callback), 54));
+  });
+  await openJourney(page, './?lite=auto#la-fabrique-des-mondes');
+  for (let i = 0; i < 6 && (await page.locator('html').getAttribute('data-journey')) === 'on'; i += 1) {
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(1500);
+  }
+  await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on', { timeout: 20_000 });
+  const shown = await page.evaluate(() => sessionStorage.getItem('portfolio:slow'));
+  expect(shown).toContain('lite');
+  // The list stands where the journey rested, on a project, not at the top of the page.
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(400);
+});
+
 // The plan asks for no long task over 50 ms while scrolling. Without a GPU, as on CI, the browser composites in
 // software and its own commits take longer than that, whatever the page does: the frame rate is measured on real
 // devices with `?mesure=1`. What the page controls is its own work, and the classic cause of slow frames: writing

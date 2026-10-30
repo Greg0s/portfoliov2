@@ -14,7 +14,9 @@ export function applyJourneyMode(): void {
   } catch {
     // Without storage, only the URL decides.
   }
-  const lite = new URLSearchParams(location.search).get('lite') === '1' || slow;
+  // `?lite=0` keeps the journey, even on a device found too slow for it (to look at it, or to test it there).
+  const asked = new URLSearchParams(location.search).get('lite');
+  const lite = asked === '1' || (slow && asked !== '0');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const has3d = typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d');
   if (!lite && !reduce && has3d) root.dataset.journey = 'on';
