@@ -110,7 +110,7 @@ a console error; step 3 replaces it.
 | `src/pages/index.astro`, `en/index.astro`, `404.astro` | placeholders                                                                                                                              |
 | `scripts/budgets.ts`                                   | reads `dist/`, prints and asserts the budgets of main spec §9.4 that exist yet                                                            |
 | `lighthouserc.json`                                    | mobile preset, home FR and EN; warnings only                                                                                              |
-| `.github/workflows/ci.yml`                             | on push to `main` and pull request: install (cached), lint, format, check, unit, build, budgets, e2e, Lighthouse                          |
+| `.github/workflows/ci.yml`                             | on push to `main` and pull request: install (cached), lint, format, check, unit, build, budgets, e2e, Lighthouse, in parallel jobs        |
 | `.github/workflows/deploy.yml`                         | on push to `main`: build, `actions/upload-pages-artifact`, `actions/deploy-pages`                                                         |
 | `README.md`                                            | in English, for recruiters: what the site is, stack, how to run, how to add a project                                                     |
 | `CLAUDE.md`                                            | the site's commands and layout, the checks of §9, the existing rules kept                                                                 |

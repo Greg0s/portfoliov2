@@ -12,22 +12,16 @@ concurrency:
 permissions:
   contents: read
 
+# The checks run side by side, each on its own runner: the static checks, the end-to-end suite split in shards, and
+# Lighthouse. `check` waits for them all, so the result keeps one name.
 jobs:
-  check:
+  static:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       - name: Lint
         run: pnpm lint
@@ -47,23 +41,72 @@ jobs:
       - name: Budgets
         run: pnpm budgets
 
-      - name: Install Playwright's Chromium and WebKit
-        run: pnpm exec playwright install --with-deps chromium webkit
+  e2e:
+    name: e2e (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Chromium's desktop and mobile projects, split in three; Playwright balances them test by test.
+          - { name: chromium 1/3, browser: chromium, args: --project=desktop --project=mobile --shard=1/3 }
+          - { name: chromium 2/3, browser: chromium, args: --project=desktop --project=mobile --shard=2/3 }
+          - { name: chromium 3/3, browser: chromium, args: --project=desktop --project=mobile --shard=3/3 }
+          # WebKit runs the smoke test alone, so it is the only job that installs it.
+          - { name: webkit, browser: webkit, args: --project=webkit }
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Playwright's ${{ matrix.browser }}
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
 
       - name: End-to-end tests
-        run: pnpm test:e2e
+        run: pnpm test:e2e ${{ matrix.args }}
 
-      - name: Lighthouse
-        # Performance under 90 fails the build from step 7 on (implementation plan §2.9).
-        run: pnpm exec lhci autorun
-
-      - name: Upload reports
+      - name: Upload the report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: reports
-          path: |
-            playwright-report/
-            .lighthouseci/
+          name: playwright-report-${{ strategy.job-index }}
+          path: playwright-report/
           retention-days: 14
           if-no-files-found: ignore
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Build
+        run: pnpm build
+
+      - name: Lighthouse
+        # Performance under 90 fails the build from step 7 on (implementation plan §2.9). It runs on the runner's Chrome.
+        run: pnpm exec lhci autorun
+
+      - name: Upload the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  check:
+    needs: [static, e2e, lighthouse]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: |
+          [ "${{ needs.static.result }}" = success ] && [ "${{ needs.e2e.result }}" = success ] && [ "${{ needs.lighthouse.result }}" = success ]
