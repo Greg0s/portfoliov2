@@ -14,6 +14,7 @@
 import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
 import { prefersReducedMotion } from './reducedMotion';
+import { holdStill } from '../scene/rest';
 import { currentJourney } from '../scene/journey/registry';
 
 const DIVE_MS = 900;
@@ -205,6 +206,8 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
   // The case study loads during the flight, rather than after it with the picture waiting on screen.
   prefetch(href, { ignoreSlowConnection: true });
   const release = holdScroll();
+  // The scenes' long work (the office's preparation) waits: a step of it would stop the flight for a frame or more.
+  const still = holdStill();
   // Set from the page's arrival, during the flight.
   const ahead: { opening: HTMLElement | null; flown: boolean } = { opening: null, flown: false };
   try {
@@ -261,6 +264,7 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
     landing = false;
     ahead.opening?.remove();
     release();
+    still();
     diving = false;
   }
 }
@@ -270,6 +274,16 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
  * project; then its card takes over and flies back into place. In the list, the picture itself flies into the card.
  */
 async function shrink(slug: string, faded: boolean): Promise<void> {
+  // The scenes' long work, which the home starts on its way in, waits until the card is home.
+  const still = holdStill();
+  try {
+    await flyBack(slug, faded);
+  } finally {
+    still();
+  }
+}
+
+async function flyBack(slug: string, faded: boolean): Promise<void> {
   const item = document.getElementById(slug);
   const image = item?.querySelector<HTMLImageElement>('.card img');
   if (!item || !image) return;
