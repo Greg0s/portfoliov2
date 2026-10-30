@@ -597,10 +597,24 @@ function buildPlant() {
       }
     }
     if (!tipLeaf) continue;
+    // Each leaf hangs from the stem on a short stalk, bent outward, from the stem to the notch at its base: laid
+    // straight on the stem, a leaf turned away showed no join and seemed to float.
+    const stalk = (from, leaf, kind) => {
+      const [len] = leafSizes[kind];
+      leaf.updateMatrix();
+      const base = new THREE.Vector3(0, len * 0.06, len * 0.025).applyMatrix4(leaf.matrix);
+      const mid = from.clone().lerp(base, 0.5).addScaledVector(new THREE.Vector3(0, 1, 0), base.distanceTo(from) * 0.25);
+      g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(from, mid, base), 6, 0.0016, 5, false), stemMat));
+    };
+    const reachOut = (leaf, by) => {
+      leaf.position.addScaledVector(new THREE.Vector3(0, 1, 0).applyQuaternion(leaf.quaternion), by);
+    };
     const stemPts = [];
     for (let i = 0; i <= 20; i++) stemPts.push(curve.getPoint((i / 20) * tip));
     g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stemPts), 20, 0.0025, 6, false), stemMat));
+    reachOut(tipLeaf, 0.01);
     g.add(tipLeaf);
+    stalk(curve.getPoint(tip), tipLeaf, v % 3);
     const n = 4 + Math.floor(r() * 3);
     for (let k = 0; k < n; k++) {
       const t = (0.25 + (k / n) * 0.65) * tip;
@@ -614,7 +628,11 @@ function buildPlant() {
       const yaw = Math.atan2(out.x, out.z) + side * (0.6 + r() * 0.5);
       leaf.rotation.set(-0.9 + r() * 0.7 + (trailing ? 0.9 : 0), yaw, side * (0.3 + r() * 0.3), 'YXZ');
       leaf.scale.setScalar(0.8 + r() * 0.5);
-      if (fits(leaf, kind)) g.add(leaf);
+      reachOut(leaf, 0.012 + (k % 3) * 0.004);
+      if (fits(leaf, kind)) {
+        g.add(leaf);
+        stalk(p, leaf, kind);
+      }
     }
   }
   return g;

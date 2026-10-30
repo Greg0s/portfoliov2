@@ -128,11 +128,15 @@ for (const { dir, pattern, limit, label } of sets) {
   }
 }
 
-// The office's layers: what one visitor loads (one moment, one framing), with the screen at rest: its wallpaper, the
-// taskbar's icons and the Recycle Bin (main spec §9.4).
+// The office's layers: what one visitor loads (one moment, one framing), with the screen at rest: its wallpaper (the
+// heaviest, since it is drawn at random), the taskbar's icons and the Recycle Bin (main spec §9.4).
 const layers = join(dist, 'images/office/layers');
-const screen = ['images/screen/wallpaper.webp', 'images/taskbar/logos.webp', 'images/taskbar/recycle-bin.webp']
+const wallpaper = listFiles(join(dist, 'images/screen'))
+  .filter((path) => /wallpaper-\d+\.webp$/.test(path))
+  .sort((a, b) => statSync(b).size - statSync(a).size)[0];
+const screen = ['images/taskbar/logos.webp', 'images/taskbar/recycle-bin.webp']
   .map((path) => join(dist, path))
+  .concat(wallpaper ?? [])
   .filter((path) => existsSync(path));
 const layerSets = new Map<string, string[]>();
 for (const file of listFiles(layers)) {

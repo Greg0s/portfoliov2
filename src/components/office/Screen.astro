@@ -18,6 +18,8 @@ const { locale } = Astro.props;
 const label = t(locale);
 const image = (path: string): string => withBase(`/images/${path}`);
 const cvFile = config.cv.split('/').at(-1) ?? '';
+/** Grégoire's photos made by `pnpm optimize-screen`: the screen draws one, and another each time the bin is emptied. */
+const WALLPAPERS = [1, 2, 3, 4].map((n) => image(`screen/wallpaper-${String(n)}.webp`));
 
 /** The taskbar's apps, in the order of Grégoire's own (validated on 22 October 2026): their place in the icon strip. */
 const APPS = [
@@ -73,7 +75,7 @@ const binIcon = image('taskbar/recycle-bin.webp');
 
 <template data-screen-template>
   <div class="desktop">
-    <img class="wallpaper" src={image('screen/wallpaper.webp')} alt="" />
+    <img class="wallpaper" src={WALLPAPERS[0]} data-wallpapers={JSON.stringify(WALLPAPERS)} alt="" />
     <div class="bin" data-bin>
       <img src={binIcon} alt="" width="48" height="48" />
       <span>{label('screen.bin')}</span>
@@ -291,10 +293,15 @@ const binIcon = image('taskbar/recycle-bin.webp');
     font-size: 12px;
     line-height: normal;
     letter-spacing: normal;
-    /* Firefox shows the plain text of the screen, on its corners in 3D, for an instant and then loses it, while the
-       Recycle Bin's, which has a shadow, stays: a shadow too faint to see takes the rest of the text the same way. */
-    text-shadow: 0 0 1px rgb(0 0 0 / 2%);
     cursor: default;
+  }
+
+  /* Firefox drawing in software loses the text laid straight into the screen's perspective (the taskbar, the tabs),
+     and keeps what it first draws flat on its own: a blur too small to see makes it draw the whole desktop that way. */
+  @supports (-moz-appearance: none) {
+    .desktop {
+      filter: blur(0.01px);
+    }
   }
 
   .desktop svg {
