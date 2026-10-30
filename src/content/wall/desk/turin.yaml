@@ -1,5 +1,5 @@
 image: ./turin.webp
 title: Turin
-place: Italy
+place: { fr: Italie, en: Italy }
 year: 2026
 focus: 50% 62%

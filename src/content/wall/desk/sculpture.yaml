@@ -1,4 +1,4 @@
 image: ./sculpture.webp
 title: Leopold Museum
-place: Vienna
+place: { fr: Vienne, en: Vienna }
 year: 2024

@@ -55,7 +55,9 @@ describe('cartelFields', () => {
       sub: 'Louvre, Paris, 2023',
       credit: undefined,
     });
-    expect(cartelFields({ place: 'Eibsee, Germany', year: 2024 }, 'en')).toMatchObject({
+    const eibsee = { place: { fr: 'Eibsee, Allemagne', en: 'Eibsee, Germany' }, year: 2024 };
+    expect(cartelFields(eibsee, 'fr')).toMatchObject({ main: 'Eibsee, Allemagne' });
+    expect(cartelFields(eibsee, 'en')).toMatchObject({
       main: 'Eibsee, Germany',
       isTitle: false,
       sub: '2024',

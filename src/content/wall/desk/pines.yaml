@@ -1,4 +1,4 @@
 image: ./pines.webp
 title: Above the trees
-place: Eibsee, Germany
+place: { fr: 'Eibsee, Allemagne', en: 'Eibsee, Germany' }
 year: 2024
