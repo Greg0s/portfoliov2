@@ -291,6 +291,9 @@ const binIcon = image('taskbar/recycle-bin.webp');
     font-size: 12px;
     line-height: normal;
     letter-spacing: normal;
+    /* Firefox shows the plain text of the screen, on its corners in 3D, for an instant and then loses it, while the
+       Recycle Bin's, which has a shadow, stays: a shadow too faint to see takes the rest of the text the same way. */
+    text-shadow: 0 0 1px rgb(0 0 0 / 2%);
     cursor: default;
   }
 
