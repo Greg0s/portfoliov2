@@ -199,11 +199,10 @@ async function compileOffice(
       if (performance.now() - start > SLOW_LINK) slowLinks += 1;
       if (slowLinks >= 2 && !forced) throw new SlowOffice();
       await breathe();
-      if (patience > 0) {
-        const waited = performance.now();
-        await atRest(moves, patience);
-        patience -= performance.now() - waited;
-      }
+      // Its patience spent, the office still waits for an animation that holds the page.
+      const waited = performance.now();
+      await atRest(moves, Math.max(0, patience));
+      patience -= performance.now() - waited;
       startStep();
     });
   } finally {

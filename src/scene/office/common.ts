@@ -19,6 +19,7 @@ import {
   type Object3D,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { whenFree } from '../rest';
 
 export const DEG = Math.PI / 180;
 
@@ -41,15 +42,18 @@ export function endStep(step: string): void {
 
 /**
  * Waits for the next frame to be drawn, then for a task of its own: long work cut into such steps never holds a frame.
- * `step` names the work done since the last pause.
+ * An animation holding the page (`holdStill()`, the dive) plays out first. `step` names the work done since the last
+ * pause.
  */
 export const breathe = (step?: string): Promise<void> => {
   if (step) endStep(step);
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       setTimeout(() => {
-        stepStart = performance.now();
-        resolve();
+        void whenFree().then(() => {
+          stepStart = performance.now();
+          resolve();
+        });
       });
     });
   });

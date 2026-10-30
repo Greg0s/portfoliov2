@@ -91,6 +91,8 @@ const AMBIENT_FRAME = 50;
 /** How far in front of the cards the cartels sit, in px (see where they are placed). */
 const CARTEL_Z = 120;
 
+/** How far the sharp card stands out toward the mouse over it, in px. */
+const HOVER_LIFT = 24;
 /** The dive (journey spec §6): the card's flight, the rest fading out over its first third. */
 const DIVE_MS = 900;
 /** Before the dive, the camera's sway comes to rest; it comes back as long after the way back. */
@@ -208,7 +210,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
    * The dive into a case study, or back from it: the card at `index` between its place (0) and the opening media
    * (1). Forward, it stays on the opening media until the page leaves.
    */
-  let dive: { index: number; forward: boolean; start: number; radius: number; done: () => void } | null = null;
+  let dive: { index: number; forward: boolean; start: number; radius: number; lift: number; done: () => void } | null =
+    null;
   /** The sway and the cards' float coming to rest for the dive (`forward`), or back once it is over. */
   let rest: { forward: boolean; start: number } | null = null;
   /** Whether the next frame must be drawn, even at rest. */
@@ -784,7 +787,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         set(
           parts.link,
           'transform',
-          `rotateY(${(place.rotateY * (1 - k)).toFixed(2)}deg) rotateZ(${(place.rotateZ * (1 - k)).toFixed(2)}deg) translateZ(0px)`,
+          `rotateY(${(place.rotateY * (1 - k)).toFixed(2)}deg) rotateZ(${(place.rotateZ * (1 - k)).toFixed(2)}deg) translateZ(${(dive.lift * (1 - k)).toFixed(2)}px)`,
         );
         // The card follows the flight frame by frame, its shadow fading out.
         set(parts.link, 'transition', 'box-shadow 450ms ease');
@@ -801,7 +804,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         set(
           parts.link,
           'transform',
-          `rotateY(${place.rotateY.toFixed(2)}deg) rotateZ(${place.rotateZ.toFixed(2)}deg) translateZ(${lit && hovered === i ? '24' : '0'}px)`,
+          `rotateY(${place.rotateY.toFixed(2)}deg) rotateZ(${place.rotateZ.toFixed(2)}deg) translateZ(${lit && hovered === i ? String(HOVER_LIFT) : '0'}px)`,
         );
         set(parts.link, 'transition', '');
         set(parts.link, 'box-shadow', '');
@@ -1213,8 +1216,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       if (index === undefined || !parts || dive) return null;
       const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
       endGlide();
+      // The card under the mouse stands out of the screen (its hover): the flight brings it back from there, rather
+      // than jump back at its first frame.
+      const lift = focus === index - 1 && hovered === index - 1 && !scene.view.mobile ? HOVER_LIFT : 0;
       return new Promise<void>((resolve) => {
-        dive = { index: index - 1, forward: true, start: -1, radius, done: resolve };
+        dive = { index: index - 1, forward: true, start: -1, radius, lift, done: resolve };
         rest = { forward: true, start: -1 };
         redraw = true;
       });
@@ -1225,7 +1231,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       if (index === undefined || !parts) return null;
       const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
       const back = new Promise<void>((resolve) => {
-        dive = { index: index - 1, forward: false, start: -1, radius, done: resolve };
+        dive = { index: index - 1, forward: false, start: -1, radius, lift: 0, done: resolve };
         // Everything is already at rest: the sway and the float come back once the card is home.
         rest = { forward: true, start: performance.now() - DIVE_MS };
       });

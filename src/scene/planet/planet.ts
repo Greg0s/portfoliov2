@@ -262,11 +262,10 @@ function pauses(patience: number): { pause: (step: string | null) => Promise<voi
     pause: async (step) => {
       if (step) performance.measure(`planet:${step}`, { start, end: performance.now() });
       await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
-      if (left > 0) {
-        const waited = performance.now();
-        await atRest(moves, left);
-        left -= performance.now() - waited;
-      }
+      // Its patience spent, the planet still waits for an animation that holds the page.
+      const waited = performance.now();
+      await atRest(moves, Math.max(0, left));
+      left -= performance.now() - waited;
       start = performance.now();
     },
     stop: () => {
