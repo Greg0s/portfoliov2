@@ -37,6 +37,8 @@ export interface PictureInfo {
   /** A film's original title, its title on the English site. */
   originalTitle?: string | undefined;
   author?: string | undefined;
+  /** Where a photo was taken, such as "Louvre, Paris". */
+  place?: string | undefined;
   year?: number | string | undefined;
   /** A credit line the picture requires, such as "NASA, Apollo 8, Bill Anders". */
   credit?: string | undefined;
@@ -47,7 +49,7 @@ export interface CartelFields {
   main: string;
   /** Whether `main` is a title (set in the light italic of titles of works). */
   isTitle: boolean;
-  /** Author and year under a title; the year under an author alone. */
+  /** Author, place and year under a title; what follows the first known of them when there is no title. */
   sub: string | undefined;
   credit: string | undefined;
 }
@@ -59,20 +61,18 @@ function titleIn(info: PictureInfo, locale: Locale): string | undefined {
 }
 
 /**
- * What a picture's label says: only what is known, adapted to it (office spec §3). Without a title the author leads;
- * with nothing known there is no label (`undefined`). French films carry their French title, English ones their
- * original title.
+ * What a picture's label says: only what is known, adapted to it (office spec §3). Without a title the author leads,
+ * or else the place, or else the year; with nothing known there is no label (`undefined`). French films carry their
+ * French title, English ones their original title.
  */
 export function cartelFields(info: PictureInfo, locale: Locale): CartelFields | undefined {
   const title = titleIn(info, locale);
-  const year = info.year === undefined ? undefined : String(info.year);
-  const main = title ?? info.author ?? year;
+  const known = [info.author, info.place, info.year === undefined ? undefined : String(info.year)].filter(
+    (part) => part !== undefined,
+  );
+  const main = title ?? known[0];
   if (main === undefined) return undefined;
-  const sub = title
-    ? [info.author, year].filter((part) => part !== undefined).join(', ') || undefined
-    : info.author !== undefined
-      ? year
-      : undefined;
+  const sub = (title ? known : known.slice(1)).join(', ') || undefined;
   return { main, isTitle: title !== undefined, sub, credit: info.credit };
 }
 

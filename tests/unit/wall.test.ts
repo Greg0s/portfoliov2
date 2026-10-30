@@ -48,6 +48,20 @@ describe('cartelFields', () => {
     });
   });
 
+  it('puts the place between the author and the year', () => {
+    expect(cartelFields({ title: 'Alone?', place: 'Louvre, Paris', year: 2023 }, 'fr')).toEqual({
+      main: 'Alone?',
+      isTitle: true,
+      sub: 'Louvre, Paris, 2023',
+      credit: undefined,
+    });
+    expect(cartelFields({ place: 'Eibsee, Germany', year: 2024 }, 'en')).toMatchObject({
+      main: 'Eibsee, Germany',
+      isTitle: false,
+      sub: '2024',
+    });
+  });
+
   it('has no cartel when nothing is known', () => {
     expect(cartelFields({}, 'fr')).toBeUndefined();
     expect(cartelFields({ credit: 'Unsplash' }, 'fr')).toBeUndefined();

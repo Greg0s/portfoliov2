@@ -2,7 +2,8 @@
 /**
  * The office behind the contact (office spec §3 to §6). Without JavaScript, with "reduce motion" and until the live
  * office is ready, it is a still image: the mockup's layers (sky, town, room, desk, the screen with its wallpaper,
- * the wall pictures) flattened into one picture per moment and framing. Both moments are in the page; only the
+ * the wall pictures) flattened into one picture per moment and framing, with the desk's photo frame redrawn from the
+ * site's own desk layer since it changed. Both moments are in the page; only the
  * visitor's shows, and lazy loading leaves the hidden one unloaded. In the journey, it waits for the camera to reach
  * the first project (`data-office` on the root element), and the live office (step 7) lays itself over it: the sky in
  * HTML, the scene in its canvas, the screen. Its data attributes carry what the live office shows: the screen and
@@ -33,7 +34,7 @@ const WIDTHS: Record<string, number> = {
   'photo-portrait': 280,
   'photo-landscape': 280,
   album: 300,
-  desk: 280,
+  desk: 320,
 };
 /** What a picture's cartel says, in the page's language (office spec §3); nothing known, no cartel. */
 const cartelOf = (info: Parameters<typeof cartelFields>[0]) => {

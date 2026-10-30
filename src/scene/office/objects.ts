@@ -29,6 +29,7 @@ import {
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   Object3D,
+  Path,
   PlaneGeometry,
   QuadraticBezierCurve3,
   Quaternion,
@@ -59,7 +60,7 @@ const PLACES = {
   mouse: [0.67, -0.775, -0.2, 0.0036],
   lamp: [-0.5, -1.04, 0],
   plant: [-0.68, -0.6, 0.4],
-  frame: [0.19, -1.07, 0.16],
+  frame: [0.2, -1.07, 0.16],
   succulent: [0.05, -1.08, 0.3],
   rose: [0.85, -1.04, 4.26],
   pencils: [0.8, -0.86, 0],
@@ -77,15 +78,22 @@ const lathe = (points: readonly (readonly [number, number])[], material: Materia
     material,
   );
 
-function woodTexture(): ReturnType<typeof canvasTexture> {
+/** A wood grain running along the texture's width: the desk's dark wood, or the light wood of the photo frame. */
+const WOODS = {
+  dark: { base: '#5a3a26', grain: ['38,22,13', '118,80,50'] },
+  light: { base: '#d8bc94', grain: ['150,108,68', '240,222,196'] },
+} as const;
+
+function woodTexture(kind: keyof typeof WOODS = 'dark'): ReturnType<typeof canvasTexture> {
+  const { base, grain } = WOODS[kind];
   return canvasTexture(1024, 256, (ctx, w, h) => {
-    ctx.fillStyle = '#5a3a26';
+    ctx.fillStyle = base;
     ctx.fillRect(0, 0, w, h);
     const r = rng(41);
     for (let i = 0; i < 150; i += 1) {
       const y = r() * h;
       const amp = 2 + r() * 6;
-      ctx.strokeStyle = `rgba(${r() < 0.5 ? '38,22,13' : '118,80,50'},${String(0.07 + r() * 0.16)})`;
+      ctx.strokeStyle = `rgba(${r() < 0.5 ? grain[0] : grain[1]},${String(0.07 + r() * 0.16)})`;
       ctx.lineWidth = 0.6 + r() * 2.2;
       ctx.beginPath();
       for (let x = 0; x <= w; x += 16) {
@@ -586,23 +594,51 @@ function buildPlant(): Group {
 }
 
 /**
- * A small photo frame standing on the desk, leaning back on its strut: a slim black frame around a photo in the 4:5
- * format, whose face is white (the site lays a photo over it, picked at random).
+ * A small photo frame standing on the desk, leaning back on its strut: a slim frame of light wood, in one piece with
+ * rounded edges, around a photo in the 4:5 format, whose face is white (the site lays a photo over it, picked at
+ * random).
  */
 function buildDeskFrame(): Group {
   const g = new Group();
-  const iw = 0.1;
-  const ih = 0.125;
-  const bd = 0.011;
+  const iw = 0.13;
+  const ih = 0.1625;
+  const bd = 0.013;
   const ow = iw + 2 * bd;
   const oh = ih + 2 * bd;
+  const wood = woodTexture('light');
+  // The extrusion's UVs are in metres: the texture spans 0.4 by 0.1 m.
+  wood.repeat.set(2.5, 10);
+  const light = std(0xffffff, 0.6, 0, { map: wood });
+  // The outline is cut short by the bevel, which rounds its edges out to the frame's size.
+  const bevel = 0.0016;
+  const rounded = (path: Path, w: number, h: number, y: number, r: number): void => {
+    path.moveTo(-w / 2 + r, y);
+    path.lineTo(w / 2 - r, y);
+    path.quadraticCurveTo(w / 2, y, w / 2, y + r);
+    path.lineTo(w / 2, y + h - r);
+    path.quadraticCurveTo(w / 2, y + h, w / 2 - r, y + h);
+    path.lineTo(-w / 2 + r, y + h);
+    path.quadraticCurveTo(-w / 2, y + h, -w / 2, y + h - r);
+    path.lineTo(-w / 2, y + r);
+    path.quadraticCurveTo(-w / 2, y, -w / 2 + r, y);
+  };
+  const outline = new Shape();
+  rounded(outline, ow - 2 * bevel, oh - 2 * bevel, 0, 0.003);
+  const opening = new Path();
+  rounded(opening, iw + 2 * bevel, ih + 2 * bevel, bd - 2 * bevel, 0.0005);
+  outline.holes.push(opening);
+  const depth = 0.012 - 2 * bevel;
+  const moulding = new ExtrudeGeometry(outline, {
+    depth,
+    bevelEnabled: true,
+    bevelSize: bevel,
+    bevelThickness: bevel,
+    bevelSegments: 3,
+    curveSegments: 6,
+  }).translate(0, bevel, -depth / 2);
   const face = new Group();
-  const black = std(0x1d1b1a, 0.55);
-  face.add(box(ow, bd, 0.012, black, 0, oh - bd / 2, 0, 0.002));
-  face.add(box(ow, bd, 0.012, black, 0, bd / 2, 0, 0.002));
-  face.add(box(bd, ih, 0.012, black, -ow / 2 + bd / 2, oh / 2, 0, 0.002));
-  face.add(box(bd, ih, 0.012, black, ow / 2 - bd / 2, oh / 2, 0, 0.002));
-  face.add(box(ow - 0.004, oh - 0.004, 0.003, std(0x2a2725, 0.8), 0, oh / 2, -0.0045));
+  face.add(new Mesh(moulding, light));
+  face.add(box(ow - 0.004, oh - 0.004, 0.003, std(0xb59670, 0.8), 0, oh / 2, -0.0045));
   const picture = box(iw, ih, 0.0015, std(0xffffff, 0.9), 0, oh / 2, 0.0035);
   picture.name = 'picture-desk';
   const data: PictureData = { type: 'photo', w: iw, h: ih, d: 0.0015 };
@@ -610,7 +646,7 @@ function buildDeskFrame(): Group {
   face.add(picture);
   face.rotation.x = -11 * DEG;
   g.add(face);
-  const strut = box(0.018, 0.12, 0.004, black, 0, 0.055, -0.045);
+  const strut = box(0.022, 0.155, 0.004, light, 0, 0.07, -0.058, 0.0015);
   strut.rotation.x = 0.42;
   g.add(strut);
   return g;
