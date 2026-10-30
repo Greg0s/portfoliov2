@@ -210,15 +210,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
    * The dive into a case study, or back from it: the card at `index` between its place (0) and the opening media
    * (1). Forward, it stays on the opening media until the page leaves.
    */
-  let dive: {
-    index: number;
-    forward: boolean;
-    start: number;
-    radius: number;
-    lift: number;
-    swift: boolean;
-    done: () => void;
-  } | null = null;
+  let dive: { index: number; forward: boolean; start: number; radius: number; lift: number; done: () => void } | null =
+    null;
   /** The sway and the cards' float coming to rest for the dive (`forward`), or back once it is over. */
   let rest: { forward: boolean; start: number } | null = null;
   /** Whether the next frame must be drawn, even at rest. */
@@ -747,7 +740,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       }
     }
     const diving = dive?.index ?? -1;
-    const k = dive?.swift ? 1 - easeOut(1 - diveT) : easeInOutCubic(diveT);
+    const k = easeInOutCubic(diveT);
     const others = diving >= 0 ? 1 - smoothstep(0, 0.33, diveT) : 1;
     let swayRest = 0;
     let floatRest = 0;
@@ -1227,18 +1220,18 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       // than jump back at its first frame.
       const lift = focus === index - 1 && hovered === index - 1 && !scene.view.mobile ? HOVER_LIFT : 0;
       return new Promise<void>((resolve) => {
-        dive = { index: index - 1, forward: true, start: -1, radius, lift, swift: false, done: resolve };
+        dive = { index: index - 1, forward: true, start: -1, radius, lift, done: resolve };
         rest = { forward: true, start: -1 };
         redraw = true;
       });
     },
-    undive: (id, swift = false) => {
+    undive: (id) => {
       const index = fragmentAnchor.get(id);
       const parts = index === undefined ? undefined : cards[index - 1];
       if (index === undefined || !parts) return null;
       const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
       const back = new Promise<void>((resolve) => {
-        dive = { index: index - 1, forward: false, start: -1, radius, lift: 0, swift, done: resolve };
+        dive = { index: index - 1, forward: false, start: -1, radius, lift: 0, done: resolve };
         // Everything is already at rest: the sway and the float come back once the card is home.
         rest = { forward: true, start: performance.now() - DIVE_MS };
       });
