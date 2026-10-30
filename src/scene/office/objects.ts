@@ -59,7 +59,7 @@ const PLACES = {
   mouse: [0.67, -0.775, -0.2, 0.0036],
   lamp: [-0.5, -1.04, 0],
   plant: [-0.68, -0.6, 0.4],
-  frame: [0.19, -1.07, 0.16],
+  frame: [0.2, -1.07, 0.16],
   succulent: [0.05, -1.08, 0.3],
   rose: [0.85, -1.04, 4.26],
   pencils: [0.8, -0.86, 0],
@@ -77,15 +77,22 @@ const lathe = (points: readonly (readonly [number, number])[], material: Materia
     material,
   );
 
-function woodTexture(): ReturnType<typeof canvasTexture> {
+/** A wood grain running along the texture's width: the desk's dark wood, or the light wood of the photo frame. */
+const WOODS = {
+  dark: { base: '#5a3a26', grain: ['38,22,13', '118,80,50'] },
+  light: { base: '#d8bc94', grain: ['150,108,68', '240,222,196'] },
+} as const;
+
+function woodTexture(kind: keyof typeof WOODS = 'dark'): ReturnType<typeof canvasTexture> {
+  const { base, grain } = WOODS[kind];
   return canvasTexture(1024, 256, (ctx, w, h) => {
-    ctx.fillStyle = '#5a3a26';
+    ctx.fillStyle = base;
     ctx.fillRect(0, 0, w, h);
     const r = rng(41);
     for (let i = 0; i < 150; i += 1) {
       const y = r() * h;
       const amp = 2 + r() * 6;
-      ctx.strokeStyle = `rgba(${r() < 0.5 ? '38,22,13' : '118,80,50'},${String(0.07 + r() * 0.16)})`;
+      ctx.strokeStyle = `rgba(${r() < 0.5 ? grain[0] : grain[1]},${String(0.07 + r() * 0.16)})`;
       ctx.lineWidth = 0.6 + r() * 2.2;
       ctx.beginPath();
       for (let x = 0; x <= w; x += 16) {
@@ -565,23 +572,29 @@ function buildPlant(): Group {
 }
 
 /**
- * A small photo frame standing on the desk, leaning back on its strut: a slim black frame around a photo in the 4:5
- * format, whose face is white (the site lays a photo over it, picked at random).
+ * A small photo frame standing on the desk, leaning back on its strut: a slim frame of light wood around a photo in
+ * the 4:5 format, whose face is white (the site lays a photo over it, picked at random). The grain runs along each
+ * side of the frame.
  */
 function buildDeskFrame(): Group {
   const g = new Group();
-  const iw = 0.1;
-  const ih = 0.125;
-  const bd = 0.011;
+  const iw = 0.13;
+  const ih = 0.1625;
+  const bd = 0.013;
   const ow = iw + 2 * bd;
   const oh = ih + 2 * bd;
+  const across = woodTexture('light');
+  across.repeat.set(0.25, 0.05);
+  const along = across.clone();
+  along.rotation = Math.PI / 2;
+  const rail = std(0xffffff, 0.6, 0, { map: across });
+  const stile = std(0xffffff, 0.6, 0, { map: along });
   const face = new Group();
-  const black = std(0x1d1b1a, 0.55);
-  face.add(box(ow, bd, 0.012, black, 0, oh - bd / 2, 0, 0.002));
-  face.add(box(ow, bd, 0.012, black, 0, bd / 2, 0, 0.002));
-  face.add(box(bd, ih, 0.012, black, -ow / 2 + bd / 2, oh / 2, 0, 0.002));
-  face.add(box(bd, ih, 0.012, black, ow / 2 - bd / 2, oh / 2, 0, 0.002));
-  face.add(box(ow - 0.004, oh - 0.004, 0.003, std(0x2a2725, 0.8), 0, oh / 2, -0.0045));
+  face.add(box(ow, bd, 0.012, rail, 0, oh - bd / 2, 0, 0.002));
+  face.add(box(ow, bd, 0.012, rail, 0, bd / 2, 0, 0.002));
+  face.add(box(bd, ih, 0.012, stile, -ow / 2 + bd / 2, oh / 2, 0, 0.002));
+  face.add(box(bd, ih, 0.012, stile, ow / 2 - bd / 2, oh / 2, 0, 0.002));
+  face.add(box(ow - 0.004, oh - 0.004, 0.003, std(0xb59670, 0.8), 0, oh / 2, -0.0045));
   const picture = box(iw, ih, 0.0015, std(0xffffff, 0.9), 0, oh / 2, 0.0035);
   picture.name = 'picture-desk';
   const data: PictureData = { type: 'photo', w: iw, h: ih, d: 0.0015 };
@@ -589,7 +602,7 @@ function buildDeskFrame(): Group {
   face.add(picture);
   face.rotation.x = -11 * DEG;
   g.add(face);
-  const strut = box(0.018, 0.12, 0.004, black, 0, 0.055, -0.045);
+  const strut = box(0.022, 0.155, 0.004, stile, 0, 0.07, -0.058);
   strut.rotation.x = 0.42;
   g.add(strut);
   return g;
