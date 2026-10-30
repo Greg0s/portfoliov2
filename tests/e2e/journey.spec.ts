@@ -295,6 +295,20 @@ test('the address bar coming and going leaves the contact at the end of its arri
   }
 });
 
+test('the page keeps room under the contact, for a bar that hides before the journey hears of it', async ({ page }) => {
+  await openJourney(page, './?office=layers#contact');
+  await expectAnchor(page, CONTACT);
+  // Firefox on Android hides its bar while the finger scrolls down, then shows it again at the bottom: the screen
+  // grows before the journey resizes the track. The contact must stay within reach meanwhile, or the snapping would
+  // send the page back to the last project.
+  const room = await page.evaluate(() => {
+    const anchors = [...document.querySelectorAll<HTMLElement>('.journey-anchor')];
+    const contact = anchors.at(-1)?.offsetTop ?? 0;
+    return document.documentElement.scrollHeight - window.innerHeight - contact;
+  });
+  expect(room).toBeGreaterThanOrEqual(150);
+});
+
 test('?office=live arrives at the seat in the live office, and logs no error', async ({ page }) => {
   test.slow();
   const errors = trackErrors(page);

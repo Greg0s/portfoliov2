@@ -95,6 +95,13 @@ const CARTEL_Z = 120;
 const DIVE_MS = 900;
 /** Before the dive, the camera's sway comes to rest; it comes back as long after the way back. */
 const SWAY_REST_MS = 600;
+/**
+ * Scroll left under the contact, in px, past the screen the page already keeps there. A phone's bar that hides or
+ * shows changes the screen's height before the journey hears of it (Firefox on Android shows its bar again at the
+ * bottom of a page): without this margin, the end of the page could stop short of the contact for a moment, and the
+ * snapping would then send the page back to the last project.
+ */
+const TRACK_SLACK = 200;
 const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
 
 interface CardParts {
@@ -221,7 +228,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     range = SCREENS * screen;
     positions = anchorPositions(anchors, SCREENS, screen);
     trackScreen = screen;
-    set(track, 'height', `${String(Math.round(range + screen))}px`);
+    set(track, 'height', `${String(Math.round(range + screen + TRACK_SLACK))}px`);
     markers.forEach((marker, i) => {
       marker.style.top = `${String(positions[i] ?? 0)}px`;
     });
@@ -484,7 +491,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     window.scrollTo({ top, behavior: 'instant' });
     scrolled = top;
     target = progressOf(top);
-    if (t >= 1) endGlide();
+    // Held a little longer if the page stopped short of the anchor (its end moved under the glide), so that the
+    // snapping never takes over away from it.
+    if (t >= 1 && (Math.abs(window.scrollY - glide.to) < 2 || now - glide.start > glide.duration + 600)) endGlide();
   }
 
   /** Lands at once on the anchor at `index`: the camera jumps there too. */
@@ -515,7 +524,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const onScroll = (): void => {
     const now = window.scrollY;
     scrolled = now;
-    if (now !== lastScroll) direction = Math.sign(now - lastScroll);
+    // While a glide runs, it sets the direction: the page's end moving under it is no move of the visitor's.
+    if (now !== lastScroll && !glide) direction = Math.sign(now - lastScroll);
     lastScroll = now;
     target = progressOf(now);
     settleSoon();
@@ -660,11 +670,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       // On phones, the address bar coming and going changes the height a little: the journey keeps its track.
       const mobile = width < 768;
       if (width === scene.view.width && (Math.abs(height - screen) < (mobile ? 160 : 1) || height === screen)) {
-        // The page keeps its last screen of scroll under the contact, so that the arrival still ends at the bottom
-        // whatever the bar does.
+        // The page keeps its last screen of scroll under the contact, and some more, so that the arrival still ends
+        // on the contact whatever the bar does.
         if (height !== trackScreen) {
           trackScreen = height;
-          set(track, 'height', `${String(Math.round(range + height))}px`);
+          set(track, 'height', `${String(Math.round(range + height + TRACK_SLACK))}px`);
           // The office fills the screen: its canvas and the screen, the pictures and the links over it follow.
           officeView?.resize();
         }
