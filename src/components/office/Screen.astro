@@ -291,10 +291,15 @@ const binIcon = image('taskbar/recycle-bin.webp');
     font-size: 12px;
     line-height: normal;
     letter-spacing: normal;
-    /* Firefox shows the plain text of the screen, on its corners in 3D, for an instant and then loses it, while the
-       Recycle Bin's, which has a shadow, stays: a shadow too faint to see takes the rest of the text the same way. */
-    text-shadow: 0 0 1px rgb(0 0 0 / 2%);
     cursor: default;
+  }
+
+  /* Firefox drawing in software loses the text laid straight into the screen's perspective (the taskbar, the tabs),
+     and keeps what it first draws flat on its own: a blur too small to see makes it draw the whole desktop that way. */
+  @supports (-moz-appearance: none) {
+    .desktop {
+      filter: blur(0.01px);
+    }
   }
 
   .desktop svg {
