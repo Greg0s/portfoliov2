@@ -291,7 +291,7 @@ Claude rédige une première version des études de cas en français et en angla
 ### 8.2 À fournir par Grégoire
 
 - les vidéos en boucle des 8 projets ;
-- les années et rôles à confirmer, en particulier pour Le Petit Prince et Obaine, et l'adresse en ligne de Lyrix ;
+- les années et rôles à confirmer, en particulier pour Le Petit Prince et Obaine (l'adresse en ligne de Lyrix est arrivée le 29 octobre 2026 : lyrix.mintymoon.app) ;
 - des images pour chaque cadre du mur et pour le petit cadre du bureau : au moins 600 px de côté, d'un format proche de celui du cadre, avec le titre, l'auteur, l'année et la mention de crédit quand il les connaît. Pour l'instant, chaque cadre n'a qu'une image (sélection actuelle : spec du bureau, section 3) ;
 - les photos et visuels en haute définition des études de cas ;
 - de nouvelles captures de LinkedIn, GitHub et Instagram si ces pages changent avant la mise en service (méthode : spec du bureau, section 6).
