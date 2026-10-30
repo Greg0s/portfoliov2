@@ -178,18 +178,21 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     background: linear-gradient(to bottom, rgb(6 6 7 / 70%), rgb(6 6 7 / 0%));
   }
 
-  /* The dark fade the content rises over, down to the page's own dark. */
+  /*
+   * The dark fade the content rises over, down to the page's own dark: it starts a little above the tag and darkens
+   * quickly, so that the media keeps its colours above the text.
+   */
   .cover::before {
     content: '';
     position: absolute;
     inset: auto 0 0;
     z-index: 1;
-    height: min(100%, calc(var(--rise) * 1.7));
+    height: min(100%, var(--rise) * 1.1);
     background: linear-gradient(
       to bottom,
       rgb(6 6 7 / 0%),
-      rgb(6 6 7 / 50%) 35%,
-      rgb(6 6 7 / 85%) 65%,
+      rgb(6 6 7 / 72%) 32%,
+      rgb(6 6 7 / 92%) 58%,
       rgb(6 6 7 / 100%)
     );
     pointer-events: none;
