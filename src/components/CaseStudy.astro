@@ -93,7 +93,6 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
   </div>
 
   <footer class="case-footer" slot="footer">
-    <span>© 2026 {config.name}</span>
     <div class="mobile-only">
       <LanguageSwitch locale={locale} path={path} />
     </div>
@@ -383,7 +382,7 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 12px;
     padding: 28px var(--gutter);
     border-top: 1px solid rgb(243 243 241 / 10%);
@@ -398,6 +397,10 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
   @media (width < 768px) {
     .desktop-only {
       display: none;
+    }
+
+    .case-footer {
+      justify-content: space-between;
     }
 
     .mobile-only {

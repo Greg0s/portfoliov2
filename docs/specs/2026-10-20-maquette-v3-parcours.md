@@ -100,7 +100,7 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 Cette fin est remplacée par le bureau (`2026-10-21-maquette-v3-bureau.md`) ; elle reste décrite ici pour mémoire.
 
 - Après le dernier projet, la caméra continue de reculer ; les cartes passées s'éloignent vers la planète, devenue une petite lumière floue au centre ; les étoiles se raréfient.
-- Le contact apparaît en fondu au centre-gauche : le libellé « Contact », « Vous recrutez, ou vous avez un projet ? » (Libre Franklin 500), l'email avec « Copier », LinkedIn, GitHub, CV, Instagram, puis « © 2026 Grégoire Tinnes ».
+- Le contact apparaît en fondu au centre-gauche : le libellé « Contact », « Vous recrutez, ou vous avez un projet ? » (Libre Franklin 500), l'email avec « Copier », LinkedIn, GitHub, CV, Instagram (le copyright a été retiré le 30 octobre 2026).
 - Plus de photo, donc plus de crédit photo.
 - Au survol de cette lumière (au toucher sur mobile), un minuscule libellé « B 612 » apparaît à côté, relié par un trait fin.
 - Le compteur s'arrête sur sa valeur finale (environ 100 millions de km). C'est un point d'arrivée stable : on ne défile pas plus loin ; en remontant, on refait le trajet jusqu'à la planète.

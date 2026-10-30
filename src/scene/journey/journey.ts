@@ -159,7 +159,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const cta = root.querySelector<HTMLAnchorElement>('.cta');
   const contact = root.querySelector<HTMLElement>('.contact');
   const office = contact?.querySelector<HTMLElement>('.office') ?? null;
-  const contactText = contact?.querySelectorAll<HTMLElement>('.text, .copyright') ?? [];
+  const contactText = contact?.querySelectorAll<HTMLElement>('.text') ?? [];
   const cursorElement = root.querySelector<HTMLElement>('[data-cursor]');
   const cursor = cursorElement ? discCursor(cursorElement) : null;
 
