@@ -6,7 +6,7 @@
       "url": [
         "http://localhost:4322/portfoliov2/",
         "http://localhost:4322/portfoliov2/en/",
-        "http://localhost:4322/portfoliov2/projets/la-fabrique-des-mondes/"
+        "http://localhost:4322/portfoliov2/projets/lyrix/"
       ],
       "numberOfRuns": 3,
       "settings": {
