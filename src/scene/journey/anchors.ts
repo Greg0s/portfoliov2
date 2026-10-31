@@ -1,29 +1,31 @@
 /**
- * The journey's anchors and the camera's depth along it (journey spec §4). The journey is 12.5 screens of scroll: the
+ * The journey's anchors and the camera's depth along it (journey spec §4). The journey is 11.25 screens of scroll: the
  * opening and the fading of its text (1 screen), 1.25 screens per project, 1.5 screens for the end. The scroll always
- * stops on an anchor: the opening, each of the 8 projects (its card sharp), the contact.
+ * stops on an anchor: the opening, each of the 7 projects (its card sharp), the contact.
  */
 import { step } from './steps';
 
-/** Screens of scroll, from the opening to the contact. */
-export const SCREENS = 12.5;
-export const PROJECTS = 8;
+export const PROJECTS = 7;
 
 const OPENING = 1;
 const PER_PROJECT = 1.25;
+const END = 1.5;
+
+/** Screens of scroll, from the opening to the contact. */
+export const SCREENS = OPENING + PER_PROJECT * PROJECTS + END;
 
 /** Progress (0 to 1) where the projects' stretch starts and ends, and where the end starts. */
 export const PROJECTS_START = OPENING / SCREENS;
 export const END_START = (OPENING + PER_PROJECT * PROJECTS) / SCREENS;
 
-/** Progress of each anchor: the opening, the 8 projects in the middle of their stretch, the contact. */
+/** Progress of each anchor: the opening, the projects in the middle of their stretch, the contact. */
 export const anchors: readonly number[] = [
   0,
   ...Array.from({ length: PROJECTS }, (_, i) => (OPENING + PER_PROJECT * i + PER_PROJECT / 2) / SCREENS),
   1,
 ];
 
-/** The anchor of the project at `index` (0 to 7). */
+/** The anchor of the project at `index` (0 to `PROJECTS - 1`). */
 export function projectAnchor(index: number): number {
   return anchors[index + 1] ?? 0;
 }
@@ -37,8 +39,8 @@ function smoothstep(t: number): number {
 
 /**
  * The camera's distance from the planet, in perspective units, for a scroll progress `u` (0 to 1). The opening eases
- * from 0 to 1; each project's stretch adds 1 through the steps, its card sharp at depth `1.5 + i`; the end goes from
- * 9 to 29, slowing down onto the contact.
+ * from 0 to 1; each project's stretch adds 1 through the steps, its card sharp at depth `1.5 + i`; the end goes 20
+ * further back, slowing down onto the contact.
  */
 export function cameraDepth(u: number): number {
   const p = Math.max(0, Math.min(1, u));
@@ -52,7 +54,7 @@ export function cameraDepth(u: number): number {
     return 1 + i + step(x - i);
   }
   const t = Math.min(1, (p - END_START) / (1 - END_START));
-  return 9 + 20 * (smoothstep(t) + 0.105 * (t * t * t - 2 * t * t + t));
+  return 1 + PROJECTS + 20 * (smoothstep(t) + 0.105 * (t * t * t - 2 * t * t + t));
 }
 
 /** Progress through the end (0 to 1): the last card leaves, then the office arrives. */
@@ -66,8 +68,9 @@ export function cardDepth(index: number): number {
 }
 
 // The end runs on its own clock (journey spec, office spec §5): time through the end, from the last project (0) to
-// the contact (1). The last card leaves over its first 12 %, then the office arrives, evenly in time.
-const END_SPLIT = 0.904;
+// the contact (1). The last card leaves over its first 12 % (0.3 screen into the end), then the office arrives, evenly
+// in time.
+const END_SPLIT = END_START + 0.3 / SCREENS;
 
 /** From scroll progress to time through the end. */
 export function endClock(u: number): number {

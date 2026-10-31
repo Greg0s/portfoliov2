@@ -1,5 +1,6 @@
 ---
-// The case study's facts (main spec §4): year, role, stack and links, four columns on desktop, two on mobile.
+// The case study's facts (main spec §4): year (or period), role, stack and links, four columns on desktop, two on
+// mobile.
 import { t, type Locale } from '../i18n';
 import type { Project } from '../lib/projects';
 
@@ -11,6 +12,7 @@ interface Props {
 const { locale, project } = Astro.props;
 const label = t(locale);
 const { year, stack, links } = project.data;
+const { period, role } = project.text.data;
 const linkKeys = ['live', 'code', 'video', 'gallery'] as const;
 const linkLabels = {
   live: label('case.link.live'),
@@ -26,12 +28,12 @@ const shown = linkKeys.flatMap((key) => {
 
 <dl class="facts">
   <div>
-    <dt>{label('case.year')}</dt>
-    <dd>{year}</dd>
+    <dt>{label(period ? 'case.period' : 'case.year')}</dt>
+    <dd>{period ?? year}</dd>
   </div>
   <div>
     <dt>{label('case.role')}</dt>
-    <dd>{project.text.data.role}</dd>
+    <dd>{role}</dd>
   </div>
   <div>
     <dt>{label('case.stack')}</dt>

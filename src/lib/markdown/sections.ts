@@ -1,6 +1,6 @@
 /**
  * Wraps each `##` section of a case study in a `<section>`: the heading on one side, its content on the other, as in
- * the mockup's case study (Context, What I did, Technical challenges).
+ * the mockup's case study (Context, What I did, Technical challenges, Results).
  */
 import type { Element, ElementContent, Root, RootContent } from 'hast';
 

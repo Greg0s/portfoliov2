@@ -1,0 +1,6 @@
+order: 4
+year: 2026
+stack: [Nuxt, Symfony, PostgreSQL, Docker]
+links:
+  live: https://perfmanager.com/
+cover: ./cover.jpg

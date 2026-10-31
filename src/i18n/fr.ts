@@ -44,6 +44,7 @@ export const fr = {
   'screen.pages': 'sur 1',
   'case.back': 'Retour aux projets',
   'case.year': 'Année',
+  'case.period': 'Période',
   'case.role': 'Rôle',
   'case.stack': 'Stack',
   'case.links': 'Liens',

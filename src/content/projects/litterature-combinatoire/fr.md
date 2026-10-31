@@ -22,14 +22,15 @@ réalisé la vidéo promotionnelle, du tournage au montage sous Premiere Pro et 
 
 Le même texte devait vivre sur un écran d’exposition et dans la main des visiteurs.
 
-:::challenge[Piloter l’écran de l’exposition depuis un téléphone]
-::problem[Dans l’exposition, les visiteurs devaient mélanger eux-mêmes les bristols affichés sur grand écran, sans toucher à l’écran.]
-::solution[Un petit serveur Node.js avec Socket.io relaie chaque geste fait sur la page mobile vers la page de l’exposition, qui tire aussitôt une nouvelle série.]
-::result[Un toucher sur le téléphone recompose le texte sur l’écran, en temps réel.]
-:::
+**Piloter l’écran de l’exposition depuis un téléphone.** Dans l’exposition, les visiteurs devaient mélanger eux-mêmes
+les bristols affichés sur grand écran, sans toucher à l’écran. Un petit serveur Node.js avec Socket.io relaie chaque
+geste fait sur la page mobile vers la page de l’exposition, qui tire aussitôt une nouvelle série.
 
-:::challenge[Des textes qui tiennent debout]
-::problem[Combiner des fragments au hasard donne vite des phrases bancales : il fallait garder la forme de chaque genre, du vers du sonnet au déroulé du conte.]
-::solution[Les fragments sont rangés en base par genre et par place dans le texte ; l’API tire une combinaison place par place, et chaque genre a sa page qui explique sa règle.]
-::result[Chaque génération respecte la forme de son genre, et le visiteur comprend comment elle est née.]
-:::
+**Des textes qui tiennent debout.** Combiner des fragments au hasard donne vite des phrases bancales : il fallait garder
+la forme de chaque genre, du vers du sonnet au déroulé du conte. Les fragments sont rangés en base par genre et par
+place dans le texte ; l’API tire une combinaison place par place, et chaque genre a sa page qui explique sa règle.
+
+## Résultats
+
+- Un toucher sur le téléphone recompose le texte sur l’écran, en temps réel.
+- Chaque génération respecte la forme de son genre, et le visiteur comprend comment elle est née.

@@ -3,32 +3,40 @@ title: Obaine
 kind: Front-end
 role: Développement front-end
 summary: Le front-end d’une plateforme où les fans financent des athlètes en échange de contenus exclusifs.
-coverAlt: 'La page d’accueil d’Obaine : « Accédez à des expériences uniques », un athlète dans un cadre et une foule de supporters en silhouettes roses.'
+coverAlt: 'La page d’accueil d’Obaine : « Accédez à des expériences uniques », une nageuse dans un cadre et une foule de supporters en silhouettes, sur un dégradé violet et rose.'
 ---
 
 ## Contexte
 
-Obaine est une plateforme où les fans soutiennent financièrement des athlètes, en échange de contenus et
-d’expériences exclusifs. J’en ai développé le front-end à partir des maquettes de l’équipe.
+Obaine est une plateforme où les fans soutiennent financièrement des athlètes, en échange de contenus et d’expériences
+exclusifs. Dans le cadre du lancement de l’entreprise, j’en ai développé le front-end complet à partir des maquettes de
+l’équipe, pour une ouverture au public à date fixe.
+
+![Obaine sur un ordinateur portable et un téléphone, côte à côte : la page d’accueil et ses supporters en silhouettes.](./devices.webp 'Obaine, sur ordinateur et sur téléphone.')
 
 ## Ce que j’ai fait
 
-Les pages d’accueil, des actions et de tous les athlètes, avec leurs carrousels, l’en-tête qui change entre ordinateur
-et mobile, la connexion à l’API, l’état partagé des athlètes et la navigation entre les pages, en Vue 3 avec Pinia et
-Vue Router, testés avec Vitest et livrés dans Docker.
+Le front-end complet de la plateforme, en collaboration étroite avec un UI designer et un développeur back-end :
+
+- les pages d’accueil, des actions et de tous les athlètes ;
+- la version mobile du site ;
+- la communication avec l’API et un état partagé dans l’application.
+
+Le tout en Vue 3 avec Pinia et Vue Router, testé avec Vitest et livré dans Docker.
+
+![La page des actions : « Ensemble, faisons rayonner les athlètes français », un carrousel sur la situation des athlètes, puis ce que finance l’abonnement.](./actions.webp 'La page des actions.')
+
+![Quatre écrans de téléphone : l’accueil, les actions, tous les athlètes et les athlètes sponsorisés.](./phone-home.webp 'La version mobile : l’accueil, les actions, les athlètes et les athlètes sponsorisés.') ![](./phone-actions.webp) ![](./phone-athletes.webp) ![](./phone-sponsored.webp)
 
 ## Défis techniques
 
-Une interface très visuelle, pleine de carrousels, qui devait rester la même d’une page à l’autre.
+Un MVP fonctionnel en un temps record, avec une échéance stricte et une grande autonomie.
 
-:::challenge[Les mêmes données sur toutes les pages]
-::problem[La liste des athlètes servait à l’accueil, aux carrousels et à la page de tous les athlètes : la charger sur chaque page multipliait les appels.]
-::solution[Un store Pinia charge les athlètes une fois depuis l’API et les partage entre les composants et les pages.]
-::result[Un seul appel, et des pages qui restent à jour entre elles.]
-:::
+![Le prototype Figma de l’équipe, sur un ordinateur portable : la page de tous les athlètes et la fenêtre « Félicitations ! » après un parrainage.](./figma.webp 'Le prototype Figma de l’équipe, la référence de l’intégration.')
 
-:::challenge[Des carrousels fidèles aux maquettes]
-::problem[Les maquettes prévoyaient des carrousels différents selon les sections et la taille de l’écran.]
-::solution[Des composants de carrousel réutilisables, construits sur Swiper et réglés par section, avec une version mobile et une version ordinateur.]
-::result[Des pages fidèles aux maquettes, sur téléphone comme sur ordinateur.]
-:::
+## Résultats
+
+- Le MVP intégré en entier et fonctionnel en 2 mois.
+- Plus de 100 clients sur la plateforme.
+
+![La page de tous les athlètes : un carrousel de portraits, puis la fiche d’un athlète avec ses vidéos exclusives, son espace de partage et le calendrier des temps forts.](./athletes.webp 'La page de tous les athlètes.')

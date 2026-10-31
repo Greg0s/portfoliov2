@@ -1,4 +1,4 @@
-order: 6
+order: 1
 year: 2026
 stack: [React, TypeScript, Vite, Cloudflare Workers, Hono, Durable Objects, Workers KV, Playwright]
 links:

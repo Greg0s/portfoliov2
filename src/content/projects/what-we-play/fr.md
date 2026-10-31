@@ -2,35 +2,39 @@
 title: What we play?
 kind: Web · 3D en CSS
 role: Conception, design et développement
-summary: Trouver un jeu en ligne à plusieurs, guidé par une TV-personnage qui réagit à chacun de vos gestes.
+summary: Trouver un jeu en ligne à plusieurs, dans une interface colorée et dynamique.
 coverAlt: Le logo What we play? dans une bulle de dialogue, à côté d’un vieux Mac au visage de télé et de quatre pions de couleur.
 ---
 
 ## Contexte
 
-Un projet personnel né d’une question qui revient à chaque soirée : à quoi joue-t-on, à combien, et sans rien
-installer ? Le site répond en une touche : on donne le nombre de joueurs, il propose des jeux en ligne gratuits qui
-conviennent.
+Un projet personnel né d’une question qui revient à chaque soirée : à quoi joue-t-on sans se prendre la tête ? Le site
+répond en une touche : on donne le nombre de joueurs, il propose des jeux en ligne gratuits qui correspondent, avec la
+possibilité de les filtrer selon différents critères.
+
+![L’accueil de What we play? sur ordinateur : « À quoi on joue à 6 ? » dans une bulle, le clavier des nombres de joueurs, un vieux Mac au visage de télé et six pions de couleur, puis la recherche et les filtres.](./home.webp 'L’accueil, pour une soirée à six.')
 
 ## Ce que j’ai fait
 
-Tout, de la maquette à la mise en ligne : une TV-personnage qui réagit à ce que fait l’utilisateur et parle dans sa
-bulle, un clavier de sélection, un mode 3D où la TV devient un Mac en 3D en CSS pur avec un pion animé par joueur, un
-thème clair et sombre, trois langues (anglais, français, espagnol) et une recherche qui ignore les accents.
+Tout, de la maquette à la mise en ligne :
+
+- la direction artistique ;
+- le développement web ;
+- la 3D en CSS pur ;
+- la sélection des sites listés.
+
+![Trois écrans de téléphone : le choix du nombre de joueurs, puis la TV qui propose Le Petit Bac, puis Lyrix après un nouveau tirage.](./phone-count.webp 'Sur téléphone : le nombre de joueurs, puis un jeu tiré au sort, à relancer.') ![](./phone-pick.webp) ![](./phone-reroll.webp)
 
 ## Défis techniques
 
-Un site très illustré qui devait rester rapide, se trouver dans les moteurs de recherche, et ne jamais clignoter au
-chargement.
+Un site agréable à utiliser, rapide sur tous les supports, optimisé pour le référencement (SEO et GEO) et
+multilingue.
 
-:::challenge[Être trouvé dans trois langues]
-::problem[Une application React rendue dans le navigateur arrive vide aux moteurs de recherche, et chaque page existe en trois langues et pour chaque nombre de joueurs.]
-::solution[Les 33 pages sont pré-rendues au build à partir d’une seule table de routes typées, qui génère aussi les liens canoniques, les alternatives hreflang, le plan du site et les données structurées ; le build échoue si une langue n’a pas toutes ses clés.]
-::result[Chaque page arrive complète et décrite, et ajouter une langue ou un nombre de joueurs met tout le site à jour d’un coup.]
-:::
+![La page des jeux à jouer seul, en thème clair : « À quoi je joue en solo ? », les filtres, puis sept jeux en cartes de couleur.](./solo-light.webp 'Une page par nombre de joueurs et par langue, ici en solo et en thème clair.')
 
-:::challenge[Ni flash ni saut au chargement]
-::problem[Le thème sombre et le mode 3D sont mémorisés dans le navigateur, mais React ne les lit qu’après le premier affichage : la page apparaissait d’abord claire et à plat.]
-::solution[Un petit script en ligne dans l’en-tête relit ces préférences avant le premier rendu et les pose sur la page, avec la même logique que l’application.]
-::result[La page s’affiche directement dans le bon thème et le bon mode, sans clignotement.]
-:::
+## Résultats
+
+- Plus de 30 jeux sélectionnés à la main, avec des ajouts réguliers.
+- Un affichage en 2D et en 3D optimisé pour tous les supports.
+
+![Une grille de cartes de jeux colorées : Wikipedia Speedruns, Le Petit Bac, Make it Meme, Codenames, skribbl.io et d’autres, chacune avec sa catégorie et son nombre de joueurs.](./games.webp 'Une partie de la sélection : vingt jeux pour quatre joueurs.')

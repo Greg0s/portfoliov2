@@ -8,8 +8,8 @@ test('the home is complete and usable without JavaScript', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Grégoire Tinnes' })).toBeVisible();
   await expect(page.getByRole('img', { name: /planète/i })).toBeVisible();
 
-  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(8);
-  for (const title of ['La Fabrique des Mondes', 'Lyrix', 'Obaine']) {
+  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(7);
+  for (const title of ['Lyrix', 'Siemens', 'Obaine']) {
     await expect(page.getByRole('heading', { level: 3, name: title })).toBeVisible();
   }
 
@@ -34,6 +34,6 @@ test('the home is complete and usable without JavaScript', async ({ page }) => {
 test('a case study reads without JavaScript', async ({ page }) => {
   await page.goto('projets/sncf-wrapped/');
   await expect(page.getByRole('heading', { level: 1, name: 'SNCF Wrapped' })).toBeVisible();
-  await expect(page.locator('.challenge')).toHaveCount(2);
+  await expect(page.getByRole('heading', { level: 2, name: 'Résultats' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Retour aux projets' })).toBeVisible();
 });

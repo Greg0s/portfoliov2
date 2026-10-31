@@ -21,14 +21,15 @@ page that helps request your data, and the tools to test without ever using real
 
 Very personal data, an incomplete file, and hundreds of different traveller profiles.
 
-:::challenge[Sending nothing, and proving it]
-::problem[The export holds the traveller’s identity, address and phone number: it must never leave their browser.]
-::solution[No server, no account, no tracking, no third-party font: everything is computed in the page. An automated test fails if a network API shows up in the app’s code.]
-::result[Privacy is not a promise but a constraint checked on every change.]
-:::
+**Sending nothing, and proving it.** The export holds the traveller’s identity, address and phone number: it must never
+leave their browser. No server, no account, no tracking, no third-party font: everything is computed in the page. An
+automated test fails if a network API shows up in the app’s code.
 
-:::challenge[Telling a story from an incomplete file]
-::problem[The export lists bookings, but no delays, durations or distances.]
-::solution[Distances are estimated as the crow flies between stations, plus 20%, and shown as an estimate; hundreds of randomly generated fake exports check that every screen stays right whatever the profile.]
-::result[Honest figures, and a story that holds for one trip a year as well as for a commuter.]
-:::
+**Telling a story from an incomplete file.** The export lists bookings, but no delays, durations or distances. Distances
+are estimated as the crow flies between stations, plus 20%, and shown as an estimate; hundreds of randomly generated
+fake exports check that every screen stays right whatever the profile.
+
+## Results
+
+- Privacy is not a promise but a constraint checked on every change.
+- Honest figures, and a story that holds for one trip a year as well as for a commuter.

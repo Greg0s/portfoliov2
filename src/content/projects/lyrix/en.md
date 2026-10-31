@@ -12,29 +12,25 @@ A free web game inspired by Pedantix, built on song lyrics instead of Wikipedia 
 progressively reveal the lyrics, and the round is won once the title is fully uncovered. You play alone, or with others
 in a live room.
 
+![A game of Lyrix on a computer: the title “Les Démons de minuit” found, the lyrics still hidden under orange bars, the guessed words and the hints on the right.](./game.webp 'A round won: the title is found, some lyrics are left to uncover.')
+
 ## What I did
 
 The whole project: the React and TypeScript front end, the API on Cloudflare Workers with Hono, the multiplayer rooms,
-the proximity hints, the installable app, and the tests, unit and end-to-end.
+the proximity hints, the installable app (PWA), the art direction, and the tests, unit and end-to-end.
+
+![Lyrix in its light theme: the song of the day to guess, its verses hidden under pale orange bars, and the field to guess a word.](./light.webp 'The light theme, on the song of the day.')
 
 ## Technical challenges
 
-A game whose answer must stay secret, hints that understand meaning, and games shared live.
+A game that is appealing, easy to pick up and smooth. Playing together in real time. All of the players’ data kept
+locally, in the browser.
 
-:::challenge[Keeping the lyrics secret]
-::problem[If the lyrics reach the browser, opening the developer tools is enough to win.]
-::solution[The Worker keeps the lyrics and only ever sends masked words: it only says where a guessed word appears, never which word hides in each place.]
-::result[The game stays fair, even for a player who inspects the network.]
-:::
+![The window of a multiplayer room: the room code, Z9YK9N, to share, the list of players and the button to start the game.](./room.webp 'A multiplayer room: a code to share, and everyone’s finds live.')
 
-:::challenge[Hints that understand meaning]
-::problem[A word missing from the lyrics still had to say how close it is, without running a language model on every guess.]
-::solution[Proximities are precomputed offline with French word embeddings, then stored in Workers KV as one table per song; the score is a rank (80: among a hidden word’s 10 nearest neighbours).]
-::result[Every guess gets an instant hint about meaning, and a close enough word is written in place of the hidden one.]
-:::
+## Results
 
-:::challenge[Playing together in real time]
-::problem[Players in the same room must see each other’s finds as they happen.]
-::solution[Each room is a Cloudflare Durable Object, which keeps the game state and its members connected over WebSockets.]
-::result[A room is created on the fly, and every find shows up for all players at once.]
-:::
+- An original game that already wins over many players.
+- A new song every day, and the songs of the last 30 days still playable.
+
+![The Lyrix archives: a grid of the last 30 days, the songs found shown in full, the others still to play.](./archives.webp 'The archives: the last 30 days, to catch up on.')

@@ -46,6 +46,7 @@ export const en: Record<Key, string> = {
   'screen.pages': 'of 1',
   'case.back': 'Back to projects',
   'case.year': 'Year',
+  'case.period': 'Period',
   'case.role': 'Role',
   'case.stack': 'Stack',
   'case.links': 'Links',
