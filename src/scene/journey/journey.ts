@@ -1,6 +1,6 @@
 /**
- * The journey (journey spec): one scroll-driven move back from the Little Prince's planet, through the 8 projects, to
- * the contact. The page scrolls natively over a track of 12.5 screens, snapped on the anchors; the scene stays on
+ * The journey (journey spec): one scroll-driven move back from the Little Prince's planet, through the projects, to
+ * the contact. The page scrolls natively over a track as long as the journey (`SCREENS` in anchors.ts), snapped on the anchors; the scene stays on
  * screen, and at every frame the camera follows the scroll and places the planet, the cards, their cartels, the small
  * worlds and the stars. The HTML stays the one of the list (no JavaScript, "reduce motion"): the journey only places
  * it, so a screen reader reads the projects in order, then the contact.

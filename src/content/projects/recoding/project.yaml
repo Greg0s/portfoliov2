@@ -1,7 +1,0 @@
-order: 5
-year: 2022
-stack: [p5.js, TypeScript]
-links:
-  live: https://greg0s.github.io/recoding/
-  code: https://github.com/Greg0s/recoding
-cover: ./cover.jpg

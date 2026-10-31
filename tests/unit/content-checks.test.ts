@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  checkProjectCount,
   checkProjectFiles,
   checkProjectOrder,
   checkWallPictures,
@@ -19,6 +20,15 @@ describe('checkProjectFiles', () => {
     ]);
     expect(checkProjectFiles([{ slug: 'obaine', files: ['fr.md', 'en.md'] }])).toEqual([
       'Project "obaine" has no project.yaml (src/content/projects/obaine/project.yaml).',
+    ]);
+  });
+});
+
+describe('checkProjectCount', () => {
+  it('accepts as many projects as the journey has anchors, and says where to change it otherwise', () => {
+    expect(checkProjectCount(7, 7)).toEqual([]);
+    expect(checkProjectCount(8, 7)).toEqual([
+      'Found 8 projects, but the journey is built for 7: set PROJECTS in src/scene/journey/anchors.ts.',
     ]);
   });
 });

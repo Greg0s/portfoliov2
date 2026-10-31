@@ -1,9 +1,8 @@
 import { unified } from '@astrojs/markdown-remark';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
-import remarkDirective from 'remark-directive';
 import contentChecks from './src/integrations/content-checks';
-import { remarkChallenge } from './src/lib/markdown/challenge';
+import { rehypeFigures } from './src/lib/markdown/figures';
 import { rehypeSections } from './src/lib/markdown/sections';
 import { buildRedirects } from './src/redirects';
 
@@ -21,7 +20,8 @@ export default defineConfig({
   prefetch: { prefetchAll: false },
   integrations: [contentChecks(), sitemap({ i18n: { defaultLocale: 'fr', locales: { fr: 'fr', en: 'en' } } })],
   markdown: {
-    // The case studies need remark directives (`:::challenge`), which the default Markdown processor does not run.
-    processor: unified({ remarkPlugins: [remarkDirective, remarkChallenge], rehypePlugins: [rehypeSections] }),
+    // The case studies need rehype plugins (their sections and figures), which the default Markdown processor does not
+    // run.
+    processor: unified({ rehypePlugins: [rehypeFigures, rehypeSections] }),
   },
 });

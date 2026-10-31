@@ -1,46 +1,43 @@
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
-import remarkDirective from 'remark-directive';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
 import { VFile } from 'vfile';
 import { describe, expect, it } from 'vitest';
-import { remarkChallenge } from '../../src/lib/markdown/challenge';
+import { rehypeFigures } from '../../src/lib/markdown/figures';
 import { rehypeSections } from '../../src/lib/markdown/sections';
 
 function toHtml(markdown: string, path = 'src/content/projects/lyrix/fr.md'): string {
   return String(
     unified()
       .use(remarkParse)
-      .use(remarkDirective)
-      .use(remarkChallenge)
       .use(remarkRehype)
+      .use(rehypeFigures)
       .use(rehypeSections)
       .use(rehypeStringify)
       .processSync(new VFile({ value: markdown, path })),
   );
 }
 
-const challenge = `:::challenge[Keep the lyrics secret]
-::problem[The browser sees everything.]
-::solution[The server keeps them.]
-::result[Fair games.]
-:::`;
-
-describe('the :::challenge directive', () => {
-  it('becomes a numbered article in three beats, labelled in the file’s language', () => {
-    const html = toHtml(`${challenge}\n\n${challenge}`);
+describe('rehypeFigures', () => {
+  it('turns a paragraph of one image into a figure, its title the caption', () => {
+    const html = toHtml('![The home](./home.webp "The home page.")');
     expect(html).toContain(
-      '<article class="challenge"><p class="challenge-number">01</p><h3>Keep the lyrics secret</h3>',
+      '<figure class="case-figure"><div class="case-figure-media"><img src="./home.webp" alt="The home"',
     );
-    expect(html).toContain('<p class="challenge-number">02</p>');
-    expect(html).toContain('<dl><dt>Problème</dt><dd>The browser sees everything.</dd><dt>Solution</dt>');
-    expect(toHtml(challenge, 'src/content/projects/lyrix/en.md')).toContain('<dt>Problem</dt>');
+    expect(html).toContain('<figcaption>The home page.</figcaption></figure>');
+    expect(html).not.toContain('title=');
   });
 
-  it('fails on a missing beat or title', () => {
-    expect(() => toHtml(':::challenge[Title]\n::problem[A]\n::solution[B]\n:::')).toThrow('has no ::result');
-    expect(() => toHtml(':::challenge\n::problem[A]\n::solution[B]\n::result[C]\n:::')).toThrow('needs a title');
+  it('sets the images of a row side by side, sharing the column', () => {
+    const html = toHtml('![A](./a.webp "Two phones.") ![B](./b.webp)');
+    expect(html).toContain('<figure class="case-figure case-figure-row">');
+    expect(html.match(/<img /g)).toHaveLength(2);
+    expect(html).toContain('364px');
+  });
+
+  it('leaves a paragraph with text alone', () => {
+    expect(toHtml('Some text ![A](./a.webp)')).toContain('<p>Some text <img');
   });
 });
 

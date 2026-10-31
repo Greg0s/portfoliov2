@@ -22,14 +22,15 @@ from the shoot to the edit in Premiere Pro and After Effects.
 
 The same text had to live on an exhibition screen and in the visitors’ hands.
 
-:::challenge[Driving the exhibition screen from a phone]
-::problem[In the exhibition, visitors had to shuffle the cards shown on a big screen themselves, without touching the screen.]
-::solution[A small Node.js server with Socket.io relays every gesture made on the mobile page to the exhibition page, which draws a new series at once.]
-::result[A tap on the phone recomposes the text on the screen, in real time.]
-:::
+**Driving the exhibition screen from a phone.** In the exhibition, visitors had to shuffle the cards shown on a big
+screen themselves, without touching the screen. A small Node.js server with Socket.io relays every gesture made on the
+mobile page to the exhibition page, which draws a new series at once.
 
-:::challenge[Texts that hold together]
-::problem[Combining fragments at random quickly gives lame sentences: each genre had to keep its form, from the sonnet’s lines to the tale’s course.]
-::solution[Fragments are stored by genre and by place in the text; the API draws a combination place by place, and each genre has a page explaining its rule.]
-::result[Each generation keeps the form of its genre, and visitors understand how it came about.]
-:::
+**Texts that hold together.** Combining fragments at random quickly gives lame sentences: each genre had to keep its
+form, from the sonnet’s lines to the tale’s course. Fragments are stored by genre and by place in the text; the API
+draws a combination place by place, and each genre has a page explaining its rule.
+
+## Results
+
+- A tap on the phone recomposes the text on the screen, in real time.
+- Each generation keeps the form of its genre, and visitors understand how it came about.

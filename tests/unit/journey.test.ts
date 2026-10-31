@@ -39,14 +39,15 @@ describe('the steps of a project', () => {
 });
 
 describe('the anchors of the journey', () => {
-  it('are the opening, the 8 projects and the contact, over 12.5 screens', () => {
-    expect(SCREENS).toBe(12.5);
+  it('are the opening, the 7 projects and the contact, over 11.25 screens', () => {
+    expect(PROJECTS).toBe(7);
+    expect(SCREENS).toBe(11.25);
     expect(anchors).toHaveLength(PROJECTS + 2);
     expect(anchors[0]).toBe(0);
     expect(anchors.at(-1)).toBe(1);
     // The opening takes 1 screen, each project 1.25, its anchor in the middle.
     expect(projectAnchor(0) * SCREENS).toBeCloseTo(1.625, 12);
-    expect(projectAnchor(7) * SCREENS).toBeCloseTo(10.375, 12);
+    expect(projectAnchor(6) * SCREENS).toBeCloseTo(9.125, 12);
   });
 
   it('put each card in focus on its anchor', () => {

@@ -19,7 +19,7 @@ test('the journey plays and moves', async ({ page }) => {
   await expect(root).toHaveAttribute('data-anchor', '1', { timeout: 20_000 });
   await expect(page.locator('[data-project="0"]')).toHaveClass(/\blit\b/);
   await page.keyboard.press('End');
-  await expect(root).toHaveAttribute('data-anchor', '9', { timeout: 20_000 });
+  await expect(root).toHaveAttribute('data-anchor', '8', { timeout: 20_000 });
   await expect(page.getByRole('link', { name: 'contact@gregoiretinn.es' })).toBeVisible();
 
   await page.goto('./#lyrix');

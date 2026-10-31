@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { trackErrors } from './helpers';
 
-// The journey's anchors: 0 is the opening, 1 to 8 the projects in order, 9 the contact.
-const CONTACT = 9;
+// The journey's anchors: 0 is the opening, 1 to 7 the projects in order, 8 the contact.
+const LAST = 7;
+const CONTACT = LAST + 1;
 
 /** The anchor the journey rests on, once it has settled there. */
 async function expectAnchor(page: Page, anchor: number): Promise<void> {
@@ -69,18 +70,18 @@ test('the live planet takes over its image after a gesture, and leaves it to the
 
 test('the language switch keeps the project the journey has scrolled to', async ({ page, isMobile }) => {
   test.skip(isMobile, 'the arrow keys and the header are the desktop ones');
-  await openJourney(page, './#recoding');
-  await expectAnchor(page, 5);
-  // The address still says #recoding: the journey moved on without it.
+  await openJourney(page, './#perfmanager');
+  await expectAnchor(page, 4);
+  // The address still says #perfmanager: the journey moved on without it.
   await page.keyboard.press('ArrowDown');
-  await expectAnchor(page, 6);
-  const slug = await page.locator('[data-project="5"]').getAttribute('id');
+  await expectAnchor(page, 5);
+  const slug = await page.locator('[data-project="4"]').getAttribute('id');
   await page
     .getByRole('banner')
     .getByRole('link', { name: /English/ })
     .click();
   await expect(page).toHaveURL(new RegExp(`/en/#${String(slug)}$`));
-  await expectAnchor(page, 6);
+  await expectAnchor(page, 5);
 });
 
 test('?gl=0 keeps the planet as an image', async ({ page }) => {
@@ -99,10 +100,10 @@ test('the wheel goes anchor by anchor to the contact, and back', async ({ page, 
   for (let anchor = 1; anchor <= CONTACT; anchor += 1) {
     await page.mouse.wheel(0, 120);
     await expectAnchor(page, anchor);
-    if (anchor <= 8) await expect(page.locator(`[data-project="${String(anchor - 1)}"]`)).toHaveClass(/\blit\b/);
+    if (anchor <= LAST) await expect(page.locator(`[data-project="${String(anchor - 1)}"]`)).toHaveClass(/\blit\b/);
   }
   await page.mouse.wheel(0, -120);
-  await expectAnchor(page, 8);
+  await expectAnchor(page, LAST);
 });
 
 test('a swipe goes anchor by anchor to the contact, and a short touch stays', async ({ page, isMobile }) => {
@@ -114,23 +115,23 @@ test('a swipe goes anchor by anchor to the contact, and a short touch stays', as
     await expectAnchor(page, anchor);
   }
   await swipe(page, -300);
-  await expectAnchor(page, 8);
+  await expectAnchor(page, LAST);
   await swipe(page, 20);
   await page.waitForTimeout(800);
-  await expectAnchor(page, 8);
+  await expectAnchor(page, LAST);
 });
 
 test('a flick lands one anchor further, its fling held while the page glides there', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the swipe is a phone gesture');
-  await openJourney(page, './#recoding');
-  await expectAnchor(page, 5);
+  await openJourney(page, './#perfmanager');
+  await expectAnchor(page, 4);
   await swipe(page, 400);
   // What is left of the finger's fling would carry the page past the next anchor once the glide is over.
   await expect(page.locator('html')).toHaveCSS('overflow-y', 'hidden');
-  await expectAnchor(page, 6);
+  await expectAnchor(page, 5);
   await expect(page.locator('html')).not.toHaveCSS('overflow-y', 'hidden');
   await page.waitForTimeout(1500);
-  await expectAnchor(page, 6);
+  await expectAnchor(page, 5);
 });
 
 test('the keys go anchor by anchor to the contact, and to either end', async ({ page }) => {
@@ -141,7 +142,7 @@ test('the keys go anchor by anchor to the contact, and to either end', async ({ 
     await expectAnchor(page, anchor);
   }
   await page.keyboard.press('ArrowUp');
-  await expectAnchor(page, 8);
+  await expectAnchor(page, LAST);
   await page.keyboard.press('Home');
   await expectAnchor(page, 0);
   await page.keyboard.press('End');
@@ -198,7 +199,7 @@ test('with reduced motion, the home stays a still list', async ({ page }) => {
 test('?lite=1 keeps the list, for slow machines', async ({ page }) => {
   await page.goto('./?lite=1');
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
-  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(8);
+  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(LAST);
 });
 
 test('a journey kept under 25 frames per second over the projects gives way to the list, on the project shown', async ({
@@ -212,7 +213,7 @@ test('a journey kept under 25 frames per second over the projects gives way to t
     const raf = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (callback) => raf(() => setTimeout(() => raf(callback), 54));
   });
-  await openJourney(page, './?lite=auto#la-fabrique-des-mondes');
+  await openJourney(page, './?lite=auto#lyrix');
   for (let i = 0; i < 6 && (await page.locator('html').getAttribute('data-journey')) === 'on'; i += 1) {
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(1500);
@@ -351,5 +352,5 @@ test('once the device is found too slow, the visit goes on in the light version'
   });
   await page.goto('./');
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
-  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(8);
+  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(LAST);
 });

@@ -1,8 +1,8 @@
 ---
 /**
  * A case study (main spec §4, mockup Etude): its own header (back to the projects, number, languages), the opening
- * media, tag, title and lede, the facts, the body written in Markdown (Context, What I did, Technical challenges), the
- * next project and a footer whose Contact link leads to the office through the night. Where the opening media is
+ * media, tag, title and lede, the facts, the body written in Markdown (Context, What I did, Technical challenges,
+ * Results, with their figures), the next project and a footer whose Contact link leads to the office through the night. Where the opening media is
  * taller than two thirds of the screen (on a computer), the content rises over its bottom, behind a dark fade, so that
  * the tag, title and lede show in the screen's bottom third and the page reads as one to scroll.
  */
@@ -322,7 +322,7 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     padding-top: 64px;
   }
 
-  /* The Markdown body: each `##` is a section (src/lib/markdown/sections.ts), each challenge an article. */
+  /* The Markdown body: each `##` is a section (src/lib/markdown/sections.ts). */
   .case-content :global(.case-section) {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
@@ -360,57 +360,64 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     line-height: 1.65;
   }
 
-  .case-content :global(.case-body > p + .challenge) {
-    margin-top: 24px;
-  }
-
-  .case-content :global(.challenge) {
+  .case-content :global(.case-body > ul) {
     display: flex;
     flex-direction: column;
+    gap: 12px;
+    max-width: 36em;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .case-content :global(.case-body > ul > li) {
+    position: relative;
+    padding-left: 28px;
+    font-size: 18px;
+    line-height: 1.65;
+  }
+
+  .case-content :global(.case-body > ul > li::before) {
+    content: '';
+    position: absolute;
+    top: 0.8em;
+    left: 2px;
+    width: 12px;
+    height: 1px;
+    background: var(--color-muted);
+  }
+
+  /* The figures (src/lib/markdown/figures.ts): an image, or a row of images of the same format, and its caption. */
+  .case-content :global(.case-figure) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0 8px;
+  }
+
+  .case-content :global(.case-figure-media) {
+    display: flex;
     gap: 16px;
-    padding: 28px;
-    border-radius: var(--radius-card);
-    background: rgb(22 22 24 / 70%);
+  }
+
+  .case-content :global(.case-figure img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
     box-shadow: 0 0 0 1px rgb(243 243 241 / 8%);
   }
 
-  .case-content :global(.challenge-number) {
-    font-size: var(--size-label);
-    font-weight: 500;
-    letter-spacing: var(--tracking-label);
+  .case-content :global(.case-figure-row img) {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .case-content :global(.case-figure figcaption) {
+    max-width: 40em;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--color-muted);
-  }
-
-  .case-content :global(.challenge h3) {
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: var(--tracking-project);
-  }
-
-  .case-content :global(.challenge dl) {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 12px 24px;
-    margin: 0;
-  }
-
-  .case-content :global(.challenge dt) {
-    padding-top: 4px;
-    font-size: var(--size-label);
-    font-weight: 500;
-    letter-spacing: var(--tracking-label);
-    text-transform: uppercase;
-    color: var(--color-muted);
-    font-style: normal;
-  }
-
-  .case-content :global(.challenge dd) {
-    margin: 0;
-    max-width: 36em;
-    font-size: 17px;
-    line-height: 1.6;
-    font-style: normal;
   }
 
   .case-footer {
@@ -465,17 +472,8 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
       padding-top: 48px;
     }
 
-    .case-content :global(.challenge) {
-      padding: 24px;
-    }
-
-    .case-content :global(.challenge dl) {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 4px;
-    }
-
-    .case-content :global(.challenge dd + dt) {
-      margin-top: 12px;
+    .case-content :global(.case-figure-media) {
+      gap: 8px;
     }
   }
 </style>

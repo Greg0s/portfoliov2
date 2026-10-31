@@ -1,13 +1,14 @@
 ---
 /**
- * The home (main spec §4, journey spec): the opening, the 8 projects, then the contact in the office. Without
+ * The home (main spec §4, journey spec): the opening, the projects, then the contact in the office. Without
  * JavaScript and with "reduce motion", they follow one another as a list; with the journey (`src/scene/journey/`),
- * they share one scene on screen (`.stage`) while the page scrolls over a track of 12.5 screens.
+ * they share one scene on screen (`.stage`) while the page scrolls over a track as long as the journey (`SCREENS`).
  */
 import Contact from './Contact.astro';
 import Journey from './Journey.astro';
 import Opening from './Opening.astro';
 import { t, type Locale } from '../i18n';
+import { SCREENS } from '../scene/journey/anchors';
 import { applyJourneyMode } from '../scene/journey/mode';
 
 interface Props {
@@ -30,7 +31,7 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
       <span>{label('card.see')}</span>
     </div>
   </div>
-  <div class="track" data-track aria-hidden="true"></div>
+  <div class="track" data-track aria-hidden="true" style={`--screens: ${String(SCREENS)}`}></div>
 </div>
 
 <script>
@@ -91,7 +92,7 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
   :global(html[data-journey='on']) .track {
     position: relative;
     display: block;
-    height: 1250vh;
+    height: calc(var(--screens) * 100vh);
     pointer-events: none;
   }
 

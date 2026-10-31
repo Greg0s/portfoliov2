@@ -1,7 +1,0 @@
-order: 1
-year: 2024
-stack: [Three.js, JavaScript, Vite, HTML, CSS]
-links:
-  live: https://greg0s.github.io/la-fabrique-des-mondes/
-  code: https://github.com/Greg0s/la-fabrique-des-mondes
-cover: ./cover.jpg

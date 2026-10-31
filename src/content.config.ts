@@ -53,6 +53,8 @@ const projectTexts = defineCollection({
     role: z.string().min(1),
     /** The short description of the card's label, also the page's meta description. */
     summary: z.string().min(1).max(200),
+    /** When the project ran, for one still running ("Depuis février 2026"); the facts show the year when absent. */
+    period: z.string().min(1).optional(),
     /** The lede of the case study; the summary when absent. */
     lede: z.string().min(1).optional(),
     coverAlt: z.string().min(1),

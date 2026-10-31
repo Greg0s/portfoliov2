@@ -7,8 +7,15 @@ import { join } from 'node:path';
 import type { AstroIntegration } from 'astro';
 import sharp from 'sharp';
 import { parse } from 'yaml';
-import { checkProjectFiles, checkProjectOrder, checkWallPictures, type WallPicture } from '../lib/content-checks';
+import {
+  checkProjectCount,
+  checkProjectFiles,
+  checkProjectOrder,
+  checkWallPictures,
+  type WallPicture,
+} from '../lib/content-checks';
 import { frames } from '../lib/wall';
+import { PROJECTS } from '../scene/journey/anchors';
 
 const IMAGE = /\.(?:avif|jpe?g|png|webp)$/i;
 
@@ -38,7 +45,12 @@ export async function findContentErrors(root: string): Promise<string[]> {
     }
   }
 
-  return [...checkProjectFiles(projectFolders), ...checkProjectOrder(orders), ...checkWallPictures(pictures, frames)];
+  return [
+    ...checkProjectFiles(projectFolders),
+    ...checkProjectOrder(orders),
+    ...checkProjectCount(orders.length, PROJECTS),
+    ...checkWallPictures(pictures, frames),
+  ];
 }
 
 export default function contentChecks(): AstroIntegration {

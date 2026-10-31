@@ -21,14 +21,15 @@ animations, la page qui aide à demander ses données, et les outils pour tester
 
 Des données très personnelles, un fichier incomplet, et des centaines de profils de voyageurs différents.
 
-:::challenge[Ne rien envoyer, et le prouver]
-::problem[L’export contient l’identité, l’adresse et le téléphone du voyageur : il ne devait jamais quitter son navigateur.]
-::solution[Pas de serveur, pas de compte, pas de traçage, pas de police tierce : tout se calcule dans la page. Un test automatique échoue si une API réseau apparaît dans le code de l’application.]
-::result[La confidentialité n’est pas une promesse mais une contrainte vérifiée à chaque modification.]
-:::
+**Ne rien envoyer, et le prouver.** L’export contient l’identité, l’adresse et le téléphone du voyageur : il ne devait
+jamais quitter son navigateur. Pas de serveur, pas de compte, pas de traçage, pas de police tierce : tout se calcule
+dans la page. Un test automatique échoue si une API réseau apparaît dans le code de l’application.
 
-:::challenge[Raconter avec un fichier incomplet]
-::problem[L’export liste les commandes, mais ni les retards, ni les durées, ni les distances.]
-::solution[Les kilomètres sont estimés à vol d’oiseau entre les gares, majorés de 20 % et présentés comme une estimation ; des exports fictifs générés au hasard, par centaines, vérifient que chaque écran reste juste quel que soit le profil.]
-::result[Des chiffres honnêtes, et un récit qui tient aussi bien pour un trajet par an que pour un abonné.]
-:::
+**Raconter avec un fichier incomplet.** L’export liste les commandes, mais ni les retards, ni les durées, ni les
+distances. Les kilomètres sont estimés à vol d’oiseau entre les gares, majorés de 20 % et présentés comme une
+estimation ; des exports fictifs générés au hasard, par centaines, vérifient que chaque écran reste juste quel que soit le profil.
+
+## Résultats
+
+- La confidentialité n’est pas une promesse mais une contrainte vérifiée à chaque modification.
+- Des chiffres honnêtes, et un récit qui tient aussi bien pour un trajet par an que pour un abonné.
