@@ -20,45 +20,77 @@ const projects = defineCollection({
     generateId: ({ entry }) => entry.split('/')[0] ?? entry,
   }),
   schema: ({ image }) =>
-    z.strictObject({
-      order: z.number().int().min(1),
-      year: z.number().int().min(2000).max(2100),
-      stack: z.array(z.string().min(1)).min(1),
-      links: z
-        .strictObject({
-          live: z.url().optional(),
-          code: z.url().optional(),
-          video: z.url().optional(),
-          /** A gallery of the project elsewhere, such as Behance. */
-          gallery: z.url().optional(),
-        })
-        .default({}),
-      cover: image(),
-      coverFocus: focus,
-      /** The card's muted video loop, added at step 9. */
-      loop: z.string().optional(),
-    }),
+    z
+      .strictObject({
+        order: z.number().int().min(1),
+        year: z.number().int().min(2000).max(2100),
+        stack: z.array(z.string().min(1)).min(1),
+        links: z
+          .strictObject({
+            live: z.url().optional(),
+            code: z.url().optional(),
+            video: z.url().optional(),
+            /** A gallery of the project elsewhere, such as Behance. */
+            gallery: z.url().optional(),
+          })
+          .default({}),
+        cover: image(),
+        coverFocus: focus,
+        /** The card's muted video loop, added at step 9. */
+        loop: z.string().optional(),
+        /** The case study ends on a band that leads to the live site ("Lyrix est en ligne"). */
+        band: z.boolean().default(false),
+      })
+      .refine(({ band, links }) => !band || links.live, {
+        message: 'a band leads to the live site: set links.live',
+        path: ['band'],
+      }),
 });
 
-/** The texts of each project, one file per language: `<slug>/fr.md` and `<slug>/en.md`, ids `<slug>/<locale>`. */
+/**
+ * The texts of each project, one file per language: `<slug>/fr.md` and `<slug>/en.md`, ids `<slug>/<locale>`. The case
+ * study reads at a glance (main spec §4): its results, what was done and its challenges are short items in the
+ * frontmatter, held short by the schema; the body is the context, a short paragraph.
+ */
 const projectTexts = defineCollection({
   loader: glob({
     pattern: '*/{fr,en}.md',
     base: './src/content/projects',
     generateId: ({ entry }) => entry.replace(/\.md$/, ''),
   }),
-  schema: z.strictObject({
-    title: z.string().min(1),
-    kind: z.string().min(1),
-    role: z.string().min(1),
-    /** The short description of the card's label, also the page's meta description. */
-    summary: z.string().min(1).max(200),
-    /** When the project ran, for one still running ("Depuis février 2026"); the facts show the year when absent. */
-    period: z.string().min(1).optional(),
-    /** The lede of the case study; the summary when absent. */
-    lede: z.string().min(1).optional(),
-    coverAlt: z.string().min(1),
-  }),
+  schema: z
+    .strictObject({
+      title: z.string().min(1),
+      kind: z.string().min(1),
+      role: z.string().min(1),
+      /** The short description of the card's label, also the page's meta description. */
+      summary: z.string().min(1).max(200),
+      /** When the project ran, for one still running ("Depuis février 2026"); the facts show the year when absent. */
+      period: z.string().min(1).optional(),
+      /** The lede of the case study; the summary when absent. */
+      lede: z.string().min(1).optional(),
+      coverAlt: z.string().min(1),
+      /** The text of the button to the project's main link ("Jouer à Lyrix"); "Voir le site" and the like when absent. */
+      cta: z.string().min(1).max(28).optional(),
+      /** The results that read as figures, first on the page: the figure ("100+") and what it counts. */
+      stats: z
+        .array(z.strictObject({ value: z.string().min(1).max(10), label: z.string().min(1).max(48) }))
+        .max(4)
+        .default([]),
+      /** The results said in a sentence, after the figures or in their place. */
+      outcomes: z.array(z.string().min(1).max(100)).max(3).default([]),
+      /** What I did (or do), one short item each. */
+      did: z.array(z.string().min(1).max(48)).min(3).max(8),
+      /** The technical challenges: a title and one line. */
+      challenges: z
+        .array(z.strictObject({ title: z.string().min(1).max(36), text: z.string().min(1).max(80) }))
+        .min(1)
+        .max(3),
+    })
+    .refine(({ stats, outcomes }) => stats.length + outcomes.length > 0, {
+      message: 'a case study shows its results: add stats or outcomes',
+      path: ['stats'],
+    }),
 });
 
 const localized = z.strictObject({ fr: z.string().min(1), en: z.string().min(1) });

@@ -6,29 +6,24 @@ period: Since February 2026
 summary: Building and maintaining a complex QHSE management platform used across France.
 lede: Building and maintaining a complex QHSE management platform used nationwide.
 coverAlt: 'Perfmanager, the 2019 management review: the map of production, management and support processes, in green, orange and red.'
+stats:
+  - { value: '100+', label: client companies }
+  - { value: '2,000+', label: users across France }
+  - { value: '< 30 min', label: to answer support }
+  - { value: '50+', label: 'tickets solved, in 1 h 30 on average' }
+did:
+  - New features (Symfony, AngularJS)
+  - The new version, in Nuxt 4
+  - Tablet-first audits
+  - Drizzle + PostgreSQL API
+  - VueForm + Valibot forms
+  - Support for users and consultants
+  - Docker and AI tools
+challenges:
+  - { title: Sharp business logic, text: Mastering the rules of a complete QHSE solution. }
+  - { title: Modernising the legacy, text: 'Moving a long-lived, complex project to Nuxt 4.' }
+  - { title: Support and development, text: Staying responsive on support without slowing the rest. }
 ---
 
-## Context
-
-Published by Performance PME, Perfmanager is a complete application for quality, health, safety and environment (QHSE)
-management. I design features and provide technical support there, while taking an active part in building a new major
-version of the application.
-
-## What I do
-
-- Designing and building new features on the legacy platform (Symfony, MySQL, AngularJS).
-- Front-end and back-end development of the new version (Nuxt 4, Drizzle, PostgreSQL, VueForm, Valibot). For
-  instance, I added new types of audits to the mobile version, with a single data model and a tablet-first interface.
-- Direct technical support and assistance to users and consultants.
-- Working in containerised environments (Docker), with AI-assisted development tools.
-
-## Technical challenges
-
-Understanding the sharp business logic of a QHSE solution, mastering a complex, long-lived project to move it to modern
-technologies, and keeping technical support very responsive alongside continuous development.
-
-## Results
-
-- A platform used by more than 100 companies and more than 2,000 users across France.
-- Support replies in under 30 minutes.
-- More than 50 customer tickets solved, in 1 h 30 on average.
+Published by Performance PME, Perfmanager runs companies’ quality, health, safety and environment (QHSE) management. I
+build features there, provide support and take part in the application’s new version.

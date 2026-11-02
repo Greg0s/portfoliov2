@@ -1,8 +1,6 @@
-import { unified } from '@astrojs/markdown-remark';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 import contentChecks from './src/integrations/content-checks';
-import { rehypeSections } from './src/lib/markdown/sections';
 import { buildRedirects } from './src/redirects';
 
 // The preview lives under /portfoliov2/ on GitHub Pages; going live (main spec §10) sets BASE_PATH to "/".
@@ -18,8 +16,4 @@ export default defineConfig({
   // Only where the code asks for it: a card's case study, from the first touch (src/motion/dive.ts).
   prefetch: { prefetchAll: false },
   integrations: [contentChecks(), sitemap({ i18n: { defaultLocale: 'fr', locales: { fr: 'fr', en: 'en' } } })],
-  markdown: {
-    // The case studies need a rehype plugin (their sections), which the default Markdown processor does not run.
-    processor: unified({ rehypePlugins: [rehypeSections] }),
-  },
 });

@@ -63,19 +63,6 @@ test('the sharp card dives into its case study, and the way back lands on it', a
   expect(errors).toEqual([]);
 });
 
-test('the next project dives from one case study into the next', async ({ page }) => {
-  const errors = trackErrors(page);
-  await countDives(page);
-  await page.goto('projets/what-we-play/');
-  await page.getByRole('navigation', { name: 'Projet suivant' }).getByRole('link').click();
-  await expect(page).toHaveURL(/projets\/perfmanager\/$/);
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  expect(await dives(page)).toBe(1);
-  await expect(page.locator('.dive')).toHaveCount(0);
-  expect(await offMedia(page)).toEqual([]);
-  expect(errors).toEqual([]);
-});
-
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 

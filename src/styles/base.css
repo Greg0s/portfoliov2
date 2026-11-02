@@ -166,6 +166,43 @@ html[data-dive-fade]::view-transition-new(root) {
   animation: none !important;
 }
 
+/* The case studies side by side (motion/slide.ts): the page slides sideways and the other comes in right beside it,
+   both opaque, from where a swipe left them. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-slide]::view-transition-old(root),
+  html[data-slide]::view-transition-new(root) {
+    animation-duration: var(--slide-duration);
+    animation-timing-function: var(--slide-ease);
+    animation-fill-mode: both;
+    mix-blend-mode: normal;
+  }
+
+  html[data-slide]::view-transition-old(root) {
+    animation-name: slide-away;
+  }
+
+  html[data-slide]::view-transition-new(root) {
+    animation-name: slide-in;
+  }
+
+  /* The header stays; its number changes in place over the first half of the slide. */
+  html[data-slide]::view-transition-group(case-header) {
+    animation-duration: calc(var(--slide-duration) / 2);
+  }
+}
+
+@keyframes slide-away {
+  to {
+    transform: translateX(var(--slide-old-to));
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(var(--slide-new-from));
+  }
+}
+
 /* With reduced motion, a 200 ms fade replaces the dive (main spec §5.6): the router's own CSS turns every view
    transition off then, which would leave a cut. */
 @media (prefers-reduced-motion: reduce) {

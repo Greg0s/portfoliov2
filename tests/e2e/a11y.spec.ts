@@ -4,6 +4,18 @@ import { expect, test } from '@playwright/test';
 for (const path of ['./', 'en/', 'projets/lyrix/', 'en/projects/siemens/', 'cette-page-n-existe-pas/']) {
   test(`axe finds no violation on ${path}`, async ({ page }) => {
     await page.goto(path);
+    // Once what comes in has come in: a case study's content rises into place, fading in, as the page opens.
+    await page.evaluate(() =>
+      Promise.race([
+        Promise.allSettled(
+          document
+            .getAnimations()
+            .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+            .map((animation) => animation.finished),
+        ),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]),
+    );
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();

@@ -24,6 +24,14 @@ export async function getProjects(locale: Locale): Promise<Project[]> {
   return joined.sort((a, b) => a.data.order - b.data.order);
 }
 
+/**
+ * The widths a project's cover is served at, up to its own: the case study's opening media, and wherever the next
+ * page's cover is shown or loaded ahead (the next project's band, a swipe), so that the browser fetches it once.
+ */
+export function coverWidths(cover: { width: number }): number[] {
+  return [640, 960, 1280, 1920].filter((width) => width < cover.width).concat(cover.width);
+}
+
 /** A project's number as the case study shows it: `01`. */
 export function projectNumber(order: number): string {
   return String(order).padStart(2, '0');

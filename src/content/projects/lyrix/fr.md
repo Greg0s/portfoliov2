@@ -4,26 +4,26 @@ kind: Jeu multijoueur
 role: Conception et développement
 summary: Retrouver une chanson à partir de ses paroles cachées, seul ou à plusieurs en temps réel.
 coverAlt: Le logo Lyrix, « Retrouve la chanson du jour à partir de ses paroles cachées », au-dessus de barres orange et grises.
+cta: Jouer à Lyrix
+stats:
+  - { value: '1', label: nouvelle chanson chaque jour }
+  - { value: '30', label: jours d’archives toujours jouables }
+outcomes:
+  - Un jeu original, qui séduit déjà de nombreux joueurs.
+did:
+  - Conception du jeu
+  - Direction artistique
+  - Front-end React + TypeScript
+  - API Cloudflare Workers + Hono
+  - Multijoueur en temps réel
+  - Indices de proximité
+  - Application installable (PWA)
+  - Tests unitaires et de bout en bout
+challenges:
+  - { title: Simple et fluide, text: 'Un jeu attractif, qu’on comprend en un coup d’œil.' }
+  - { title: 'À plusieurs, en direct', text: Des salons où chaque découverte apparaît chez tous. }
+  - { title: Tout dans le navigateur, text: Les données des joueurs restent chez eux. }
 ---
 
-## Contexte
-
-Un jeu web gratuit inspiré de Pédantix, mais sur des paroles de chansons plutôt que sur des articles de Wikipédia : on
-propose des mots pour dévoiler peu à peu les paroles, et la manche est gagnée quand le titre est entièrement découvert.
-On y joue seul, ou à plusieurs dans un salon en temps réel.
-
-## Ce que j’ai fait
-
-Tout le projet : le front-end en React et TypeScript, l’API sur Cloudflare Workers avec Hono, les salons
-multijoueurs, le calcul des indices de proximité, l’application installable (PWA), la direction artistique et les
-tests, unitaires comme de bout en bout.
-
-## Défis techniques
-
-Un jeu attractif, simple d’accès et fluide. La possibilité de jouer à plusieurs en temps réel. La gestion des données
-des joueurs entièrement en local, dans le navigateur.
-
-## Résultats
-
-- Un jeu original, qui séduit déjà de nombreux joueurs.
-- Une nouvelle chanson chaque jour, et les chansons des 30 derniers jours toujours jouables.
+Un jeu web gratuit à la Pédantix, sur des paroles de chansons : chaque mot proposé dévoile les paroles, jusqu’à trouver
+le titre. Seul, ou à plusieurs en temps réel.

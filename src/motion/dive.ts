@@ -1,6 +1,6 @@
 /**
- * The dive into a case study (journey spec §6, main spec §7.4): a click on the sharp card, or on the next project at the
- * end of a case study, flies its picture in 0.9 s straight onto the place of the case study's opening media, full width
+ * The dive into a case study (journey spec §6, main spec §7.4): a click on the sharp card flies its picture in 0.9 s
+ * straight onto the place of the case study's opening media, full width
  * and flush with the top, keeping its format, while the rest fades out in 0.3 s; then the client router shows the case
  * study around it, a named view transition handing the picture over to the opening media. In the journey, the card
  * itself flies, out of its 3D turn (see `journey.ts`). "Back to projects" and the browser's Back button play it the
@@ -15,6 +15,7 @@
 import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
 import { prefersReducedMotion } from './reducedMotion';
+import { inRing } from './slide';
 import { holdStill } from '../scene/rest';
 import { currentJourney } from '../scene/journey/registry';
 
@@ -396,13 +397,12 @@ export function initDive(): void {
   document.documentElement.addEventListener('click', (event) => {
     if (event.defaultPrevented || !isPlainClick(event) || prefersReducedMotion()) return;
     const target = event.target instanceof Element ? event.target : null;
-    const link = target?.closest<HTMLAnchorElement>('a.card, a[data-dive]');
+    const link = target?.closest<HTMLAnchorElement>('a.card');
     const image = link?.querySelector<HTMLImageElement>('img');
     const slug = link?.dataset.slug;
     if (!link || !image || !slug) return;
     event.preventDefault();
-    const fromHome = link.classList.contains('card');
-    void dive(link.href, image, fromHome ? (link.closest('[data-project]')?.id ?? null) : null, slug);
+    void dive(link.href, image, link.closest('[data-project]')?.id ?? null, slug);
   });
 
   // A view transition the browser skips (the viewport changed meanwhile, as a phone's address bar does) is no error:
@@ -417,15 +417,17 @@ export function initDive(): void {
     'pointerdown',
     (event) => {
       const target = event.target instanceof Element ? event.target : null;
-      const link = target?.closest<HTMLAnchorElement>('a.card, a[data-dive]');
+      const link = target?.closest<HTMLAnchorElement>('a.card');
       if (link) prefetch(link.href, { ignoreSlowConnection: true });
     },
     { passive: true },
   );
 
-  // Leaving a case study for the home: the picture comes back over it.
-  document.addEventListener('astro:before-preparation', () => {
-    returning = document.querySelector<HTMLElement>('[data-case-slug]')?.dataset.caseSlug ?? null;
+  // Leaving a case study for the home: the picture comes back over it. For another case study, the page slides
+  // sideways instead (slide.ts).
+  document.addEventListener('astro:before-preparation', (event) => {
+    const slug = document.querySelector<HTMLElement>('[data-case-slug]')?.dataset.caseSlug ?? null;
+    returning = inRing(event.to.pathname) ? null : slug;
     // Scrolled past its opening media, the picture would slide in from above the screen: the page fades into it.
     const media = document.querySelector<HTMLElement>('[data-case-slug] .cover img');
     fading = Boolean(returning && media && media.getBoundingClientRect().bottom < innerHeight / 4);
