@@ -156,13 +156,14 @@ html[data-dive='back'] [data-journey-root] *::after {
   object-fit: cover;
 }
 
-/* Leaving a case study scrolled past its opening media, the page fades into the picture (motion/dive.ts). */
+/* Leaving a case study scrolled past its opening media, the page fades away from over the home, where the picture
+   already shrinks back into its card (motion/dive.ts). */
 html[data-dive-fade]::view-transition-old(root) {
   animation: view-fade-out 400ms ease both !important;
 }
 
 html[data-dive-fade]::view-transition-new(root) {
-  animation: view-fade-in 400ms ease both !important;
+  animation: none !important;
 }
 
 /* With reduced motion, a 200 ms fade replaces the dive (main spec §5.6): the router's own CSS turns every view

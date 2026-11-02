@@ -9,7 +9,8 @@
  * replaces it (main spec §5.6). The home's URL carries the project's fragment before leaving, so that coming back, by
  * either way, finds the journey on the same project. During the flight, the case study's header and opening rise
  * over the picture, taken from its prefetched page, so that the page opens with them in place; left scrolled past its
- * opening media, the case study fades into the picture rather than slide it in from above the screen.
+ * opening media, the case study fades away while the picture slides down into the screen, fading in as it already
+ * shrinks.
  */
 import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
@@ -20,6 +21,13 @@ import { currentJourney } from '../scene/journey/registry';
 const DIVE_MS = 900;
 const FADE_MS = 300;
 const EASE = 'cubic-bezier(0.65, 0, 0.35, 1)';
+const EASE_OUT = 'cubic-bezier(0.33, 1, 0.68, 1)';
+/** How the picture comes in on that way back: it slides down into the screen as it fades in, while it shrinks. */
+const SLIDE_IN: Keyframe[] = [
+  { opacity: 0, translate: '0 -10vh' },
+  { opacity: 1, translate: '0 0' },
+];
+const SLIDE_IN_MS = 500;
 /** How long the way back waits for the journey to rest on the project before giving up on the shrink. */
 const WAIT_MS = 4000;
 
@@ -31,8 +39,6 @@ let returning: string | null = null;
 let landing = false;
 /** The case study was left scrolled past its opening media: the page fades into the picture rather than slide it. */
 let fading = false;
-/** How long the case study takes to fade into the picture, on the way back. */
-const FADE_BACK_MS = 400;
 
 function isPlainClick(event: MouseEvent): boolean {
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
@@ -288,8 +294,10 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
   const image = item?.querySelector<HTMLImageElement>('.card img');
   if (!item || !image) return;
   const { root, backdrop, picture } = overlay(image, openingMedia());
-  // The router's view transition hands the case study's opening media over to it, or the page fades into it.
-  if (!faded) picture.style.viewTransitionName = `cover-${slug}`;
+  // The router's view transition hands the case study's opening media over to it. Left scrolled, the page fades away
+  // instead, and the picture only comes in with the flight, sliding down into the screen.
+  if (faded) picture.style.opacity = '0';
+  else picture.style.viewTransitionName = `cover-${slug}`;
   const header = siteHeader();
   header?.style.setProperty('opacity', '0');
   const html = document.documentElement;
@@ -303,8 +311,8 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
       fill: 'backwards',
     });
   };
+  // Faded, the picture does not wait for the page to be gone: it shrinks as the page fades away from over it.
   const start = performance.now();
-  if (faded) await wait(FADE_BACK_MS - 100);
   // The journey starts once the home has loaded, then lands on the project's fragment; the list only needs a frame.
   let landed = false;
   for (;;) {
@@ -325,6 +333,7 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
       const back = journey.undive(slug);
       if (back) {
         root.remove();
+        if (faded) image.parentElement?.animate(SLIDE_IN, { duration: SLIDE_IN_MS, easing: EASE_OUT });
         // The card's cartel and pill, lit while the journey waited under the picture, go at once: transitions come
         // back once a frame has been drawn without them.
         void frame()
@@ -350,6 +359,10 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
     easing: 'linear',
     fill: 'both',
   });
+  if (faded) {
+    picture.style.removeProperty('opacity');
+    picture.animate(SLIDE_IN, { duration: SLIDE_IN_MS, easing: EASE_OUT });
+  }
   await picture.animate([keyframe(openingMedia()), keyframe(boxOf(image.parentElement ?? image))], {
     duration: DIVE_MS,
     easing: EASE,
