@@ -33,6 +33,7 @@ import {
   stepAnchor,
   wheelGestures,
 } from './snap';
+import { arrivalScene } from '../../motion/arrival/scene';
 import { ambientClock } from '../../motion/ambient';
 import { discCursor } from '../../motion/cursor';
 import { drift, swing } from '../../motion/float';
@@ -164,6 +165,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const planetFrame = root.querySelector<HTMLElement>('.planet-frame');
   const glow = root.querySelector<HTMLElement>('.planet-glow');
   const intro = root.querySelector<HTMLElement>('.intro');
+  // The layers an arrival proposal adds to the opening (its words, its drawing) fade out with its text.
+  const introLayers = [...root.querySelectorAll<HTMLElement>('[data-arrival-layer]')];
   const cta = root.querySelector<HTMLAnchorElement>('.cta');
   const contact = root.querySelector<HTMLElement>('.contact');
   const office = contact?.querySelector<HTMLElement>('.office') ?? null;
@@ -841,7 +844,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     });
 
     // The planet recedes to a point of light, drifting toward the vanishing point.
-    const planetState = planetLook(depth, light.sky, arrival);
+    // An arrival proposal (the approach) can hold the planet farther, on its way to its place.
+    const planetState = planetLook(depth + arrivalScene.planetDepth, light.sky, arrival);
     const sP = planetState.scale;
     const mid = tiltOn
       ? { x: pointer.pointer.x * 14 * (1 - sP) * swing0, y: pointer.pointer.y * 8 * (1 - sP) * swing0 }
@@ -879,6 +883,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(intro, 'transform', `translateY(${(-16 * fade).toFixed(1)}px)`);
       set(intro, 'pointer-events', fade < 0.5 ? 'auto' : 'none');
     }
+    introLayers.forEach((layer) => {
+      set(layer, 'opacity', ((1 - fade) * others).toFixed(3));
+      set(layer, 'translate', `0 ${(-16 * fade).toFixed(1)}px`);
+    });
     html.dataset.introFaded = fade > 0.98 ? 'true' : 'false';
     if (cta) {
       const atOpening = depth < 0.004;
@@ -920,10 +928,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
     // The stars.
     if (renderer && stars && swayMatrixOf) {
+      const starsDepth = depth + arrivalScene.starsDepth;
       stars.update({
         time,
-        depth,
-        farScale: farStarsScale(depth),
+        depth: starsDepth,
+        farScale: farStarsScale(starsDepth),
         farShiftX: (tiltOn ? pointer.pointer.x * 18 * swing0 : 0) + sway.dx,
         farShiftY: (tiltOn ? pointer.pointer.y * 11 * swing0 : 0) + sway.dy,
         farOpacity: light.stars * starsK * others,
@@ -1190,7 +1199,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     }
     pointer.update(delta);
     followCamera(elapsed);
-    const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
+    const atRest =
+      !glide && current === target && pointer.settled() && !redraw && !officeView?.busy() && !arrivalScene.moving;
     // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds.
     if (atRest && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
     lastDraw = now;

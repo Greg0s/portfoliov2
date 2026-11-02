@@ -3,6 +3,7 @@
  * on each visit of the home, stop when the client router leaves it, and restart when "reduce motion" changes.
  */
 import { applyJourneyMode, journeyOn, webglAllowed } from './mode';
+import { arrivalVariant } from '../../motion/arrival/mode';
 import { startJobTitle } from '../../motion/jobTitle';
 import { isStill, onReducedMotionChange, prefersReducedMotion } from '../../motion/reducedMotion';
 
@@ -23,7 +24,28 @@ function start(root: HTMLElement): void {
   const still = isStill(location.search);
   const job = root.querySelector<HTMLElement>('[data-jobs]');
   const words = job?.dataset.jobs?.split('|') ?? [];
-  if (job && !still) {
+  // An arrival proposal (`?arrivee=…`) keeps the first job, "Creative developer", and plays its own entrance.
+  const variant = journeyOn() ? arrivalVariant() : null;
+  const opening = root.querySelector<HTMLElement>('.opening');
+  if (variant && opening && !still) {
+    const started = generation;
+    const go = (): void => {
+      if (started !== generation) return;
+      void import('../../motion/arrival/play').then(({ startArrival }) => {
+        if (started === generation && root.isConnected) {
+          stops.push(startArrival(opening, { variant, locale: document.documentElement.lang }));
+        }
+      });
+    };
+    // The recordings start it themselves, frame by frame.
+    if (new URLSearchParams(location.search).get('attendre') === '1') {
+      window.addEventListener('arrival:go', go, { once: true });
+      stops.push(() => {
+        window.removeEventListener('arrival:go', go);
+      });
+    } else go();
+  }
+  if (job && !still && !variant) {
     stops.push(
       startJobTitle(job, words, {
         reduce: prefersReducedMotion(),

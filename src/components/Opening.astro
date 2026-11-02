@@ -6,6 +6,7 @@
  * In the journey, the planet recedes to a point of light (`.planet-glow`) and the text fades out.
  */
 import { config } from '../config';
+import { applyArrivalMode } from '../motion/arrival/mode';
 import { preloadPlanet } from '../scene/preload';
 import { fragments, t, type Locale } from '../i18n';
 import { withBase } from '../lib/url';
@@ -21,6 +22,8 @@ const image = (name: string): string => `url('${withBase(`/images/planet/${name}
 // The planet is the opening's largest paint: the right image is preloaded before the first paint, since its moment
 // and the screen's width are only known in the browser (the others are never requested).
 const preload = `(${preloadPlanet.toString()})(${JSON.stringify(withBase('/images/planet/'))});`;
+// The arrival proposals (`?arrivee=1` to `6`, src/motion/arrival/): decided before the first paint, like the journey.
+const arrival = `(${applyArrivalMode.toString()})();`;
 const images = [
   `--planet-aube-desktop: ${image('planet-aube-desktop')}`,
   `--planet-aube-mobile: ${image('planet-aube-mobile')}`,
@@ -30,7 +33,16 @@ const images = [
 ---
 
 <script is:inline set:html={preload} />
-<section id={fragments.opening[locale]} class="opening" aria-labelledby="opening-name" style={images}>
+<script is:inline set:html={arrival} />
+<section
+  id={fragments.opening[locale]}
+  class="opening"
+  aria-labelledby="opening-name"
+  style={images}
+  data-visit={label('arrival.visit')}
+>
+  <div class="night" aria-hidden="true"></div>
+  <div class="spot" aria-hidden="true" data-arrival-layer></div>
   <div class="planet" aria-hidden="true">
     <img
       class="decor"
@@ -46,8 +58,44 @@ const images = [
     <div class="planet-image" role="img" aria-label={label('opening.planet')}></div>
   </div>
   <div class="planet-glow" aria-hidden="true"></div>
+  <p class="b612" aria-hidden="true">
+    <span class="b612-line"></span>B 612
+  </p>
+
+  <div class="paroles" aria-hidden="true" data-arrival-layer>
+    <p class="parole" data-parole="1">
+      <span class="float">
+        <span class="text">{label('arrival.hello')}</span>
+      </span>
+    </p>
+    <p class="parole" data-parole="2">
+      <span class="float">
+        <span class="text">
+          {label('arrival.welcome')} <span class="who">{config.name}</span>
+        </span>
+      </span>
+    </p>
+    <p class="parole" data-parole="3">
+      <span class="float">
+        <span class="text">{label('arrival.job')}</span>
+      </span>
+    </p>
+  </div>
+  <svg class="trait" aria-hidden="true" data-arrival-layer></svg>
+  <div class="pen" aria-hidden="true"></div>
 
   <div class="intro">
+    <div class="bonjour-slot" aria-hidden="true"></div>
+    <div class="museum" aria-hidden="true">
+      <span class="rule"></span>
+      <p class="m-name">{config.name}</p>
+      <p class="m-job">{label('arrival.job')}</p>
+      <p class="m-work">
+        <em>{label('arrival.work')}</em>, 2023
+      </p>
+      <p class="m-medium">{label('arrival.medium')}</p>
+      <p class="m-text">{label('site.description')}</p>
+    </div>
     <div class="titles">
       <h1 id="opening-name">{config.name}</h1>
       <p class="job">
@@ -327,6 +375,461 @@ const images = [
   @media (prefers-reduced-motion: reduce) {
     .cta-line span {
       animation: none;
+    }
+  }
+
+  /* ---------- The arrival proposals (`?arrivee=1` to `6`, src/motion/arrival/) ---------- */
+
+  .night,
+  .spot,
+  .b612,
+  .paroles,
+  .trait,
+  .pen,
+  .bonjour-slot,
+  .museum {
+    display: none;
+  }
+
+  :global(html[data-arrival]) .tagline {
+    display: none;
+  }
+
+  /* Until the arrival has started, what it will show stays hidden. */
+  :global(html[data-arrival]:not([data-arrival-ready]) .header),
+  :global(html[data-arrival]:not([data-arrival-ready])) .cta > *,
+  :global(html[data-arrival]:not([data-arrival-ready])) .parole,
+  :global(html[data-arrival]:not([data-arrival-ready])) .museum > *,
+  :global(html[data-arrival]:not([data-arrival-ready])) .intro h1,
+  :global(html[data-arrival]:not([data-arrival-ready])) .intro .job,
+  :global(html[data-arrival]:not([data-arrival-ready])) .intro .lede {
+    opacity: 0;
+  }
+
+  /* 1 to 3: the words. */
+  :global(html:is([data-arrival='1'], [data-arrival='2'], [data-arrival='3'])) .paroles {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+  }
+
+  :global(html:is([data-arrival='2'], [data-arrival='3'])[data-arrival-done]) .paroles {
+    display: none;
+  }
+
+  :global(html[data-arrival='1']) .intro {
+    visibility: hidden;
+  }
+
+  .parole {
+    position: absolute;
+    margin: 0;
+    font-family: var(--font-display);
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+
+  .parole .float {
+    display: inline-block;
+  }
+
+  .parole :global(.w) {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .parole :global(.l) {
+    display: inline-block;
+    white-space: pre;
+  }
+
+  .parole[data-parole='1'] {
+    font-size: 76px;
+    font-weight: 500;
+    letter-spacing: var(--tracking-title);
+  }
+
+  .parole[data-parole='2'] {
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: var(--tracking-subtitle);
+    color: #c4c4bf;
+  }
+
+  .parole .who {
+    font-size: 1.15em;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .parole[data-parole='3'] {
+    font-size: 42px;
+    font-style: italic;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    color: var(--color-muted);
+  }
+
+  /* 1: they stay, from top to bottom, not aligned. */
+  :global(html[data-arrival='1']) .parole[data-parole='1'] {
+    left: calc(50% + 70px);
+    top: 21%;
+    rotate: -3deg;
+  }
+
+  :global(html[data-arrival='1']) .parole[data-parole='2'] {
+    left: calc(50% + 150px);
+    top: 41%;
+    width: 470px;
+    rotate: 1.5deg;
+  }
+
+  :global(html[data-arrival='1']) .parole[data-parole='3'] {
+    left: calc(50% + 40px);
+    top: 64%;
+    rotate: -1.5deg;
+  }
+
+  /* 2 and 3: one at a time, each lower than the last. */
+  :global(html:is([data-arrival='2'], [data-arrival='3'])) .parole[data-parole='1'] {
+    left: calc(50% + 130px);
+    top: 30%;
+    font-size: 84px;
+    rotate: -3deg;
+  }
+
+  :global(html:is([data-arrival='2'], [data-arrival='3'])) .parole[data-parole='2'] {
+    left: calc(50% + 60px);
+    top: 44%;
+    width: 520px;
+    font-size: 34px;
+    rotate: 1.5deg;
+  }
+
+  :global(html:is([data-arrival='2'], [data-arrival='3'])) .parole[data-parole='3'] {
+    left: calc(50% + 170px);
+    top: 58%;
+    font-size: 46px;
+    rotate: -2deg;
+  }
+
+  /* 4: the cartel, beside the planet lit by its spotlight. */
+  :global(html[data-arrival='4']) .spot {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+  }
+
+  /* The beam, from high on the left, and the pool of light behind the planet. */
+  .spot::before {
+    content: '';
+    position: absolute;
+    left: calc(var(--planet-x) - var(--planet-size) * 0.45);
+    top: calc(var(--planet-y) - var(--planet-size) * 2.3);
+    width: calc(var(--planet-size) * 0.9);
+    height: calc(var(--planet-size) * 2.6);
+    background: linear-gradient(
+      to bottom,
+      rgb(255 226 200 / 0%) 0%,
+      rgb(255 226 200 / 2.5%) 40%,
+      rgb(255 226 200 / 5.5%) 82%,
+      rgb(255 226 200 / 0%) 100%
+    );
+    clip-path: polygon(46% 0, 54% 0, 96% 100%, 4% 100%);
+    filter: blur(34px);
+    transform-origin: 50% 88%;
+    rotate: -30deg;
+  }
+
+  .spot::after {
+    content: '';
+    position: absolute;
+    left: var(--planet-x);
+    top: var(--planet-y);
+    width: calc(var(--planet-size) * 1.5);
+    height: calc(var(--planet-size) * 1.3);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(255 222 196 / 7%), rgb(255 222 196 / 0%));
+    translate: -50% -46%;
+  }
+
+  /* The room in the dark, until the eyes get used to it. */
+  :global(html[data-arrival='4']) .night {
+    position: absolute;
+    inset: 0;
+    display: block;
+    background: var(--color-bg-deep);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  :global(html[data-arrival='4']:not([data-arrival-ready])) .night {
+    opacity: 1;
+  }
+
+  :global(html[data-arrival='4']:not([data-arrival-ready])) .spot,
+  :global(html[data-arrival='4']:not([data-arrival-ready])) .planet,
+  :global(html[data-arrival='4']:not([data-arrival-ready])) .planet-image {
+    opacity: 0;
+  }
+
+  /* The decor stays dim around the lit work. */
+  :global(html[data-arrival='4']) .planet {
+    opacity: 0.6;
+  }
+
+  :global(html[data-arrival='4']) .intro {
+    left: calc(50% + 40px);
+    top: 46%;
+    width: 330px;
+    translate: none;
+  }
+
+  .museum {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .museum::before {
+    content: '';
+    position: absolute;
+    inset: -64px -80px;
+    z-index: -1;
+    background: radial-gradient(closest-side, rgb(6 6 7 / 78%), rgb(6 6 7 / 0%));
+  }
+
+  :global(html[data-arrival='4']) .titles,
+  :global(html[data-arrival='4']) .lede {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  :global(html[data-arrival='4']) .museum {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rule {
+    display: block;
+    width: 40px;
+    height: 1px;
+    margin-bottom: 14px;
+    background: var(--color-text);
+    opacity: 0.5;
+    transform-origin: 0 50%;
+  }
+
+  .m-name {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: var(--tracking-project);
+  }
+
+  .m-job {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--color-muted);
+  }
+
+  .m-work {
+    margin-top: 14px;
+    font-size: 15px;
+  }
+
+  .m-medium {
+    font-family: var(--font-display);
+    font-size: var(--size-tag);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tag);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .m-text {
+    margin-top: 10px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--color-muted);
+  }
+
+  /* 5: the approach, from the point of light B 612. */
+  :global(html[data-arrival='5']) .b612 {
+    position: absolute;
+    left: 50%;
+    top: var(--vp-y-ratio, 50%);
+    display: block;
+    margin: 0;
+    padding: 0 0 0 34px;
+    translate: 0 -46px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-text);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .b612-line {
+    position: absolute;
+    left: 7px;
+    top: 14px;
+    width: 30px;
+    height: 1px;
+    background: rgb(243 243 241 / 45%);
+    transform-origin: 0 50%;
+    rotate: -48deg;
+  }
+
+  :global(html[data-arrival='5'][data-arrival-done]) .b612 {
+    display: none;
+  }
+
+  :global(html[data-arrival='5'] .home:not([data-anchor])) .planet,
+  :global(html[data-arrival='5'] .home:not([data-anchor])) .planet-frame {
+    visibility: hidden;
+  }
+
+  /* 6: the line that draws the planet, then writes. */
+  :global(html[data-arrival='6']) .trait {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    filter: drop-shadow(0 0 4px rgb(255 255 255 / 40%));
+  }
+
+  .trait :global(.ink) {
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  :global(html[data-arrival='6'][data-arrival-done]) .trait :global(:is(.ring, .bridge)) {
+    display: none;
+  }
+
+  :global(html[data-arrival='6']) .pen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+    width: 7px;
+    height: 7px;
+    margin: -3.5px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+      0 0 10px 3px rgb(255 255 255 / 55%),
+      0 0 30px 8px rgb(255 240 220 / 22%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  :global(html[data-arrival='6'][data-arrival-done]) .pen {
+    display: none;
+  }
+
+  :global(html[data-arrival='6']) .bonjour-slot {
+    display: block;
+    width: 370px;
+    height: 118px;
+    margin-bottom: -6px;
+  }
+
+  :global(html[data-arrival='6']:not([data-arrival-ready])) .planet-image {
+    filter: opacity(0);
+  }
+
+  :global(html[data-arrival='6']:not([data-arrival-ready])) .planet {
+    opacity: 0;
+  }
+
+  @media (width < 768px) {
+    .parole[data-parole='1'] {
+      font-size: 50px;
+    }
+
+    .parole[data-parole='2'] {
+      font-size: 21px;
+    }
+
+    .parole[data-parole='3'] {
+      font-size: 30px;
+    }
+
+    :global(html[data-arrival='1']) .parole[data-parole='1'] {
+      left: 8%;
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 14px);
+    }
+
+    :global(html[data-arrival='1']) .parole[data-parole='2'] {
+      left: 17%;
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 102px);
+      width: 74%;
+    }
+
+    :global(html[data-arrival='1']) .parole[data-parole='3'] {
+      left: 6%;
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 222px);
+    }
+
+    :global(html:is([data-arrival='2'], [data-arrival='3'])) .parole[data-parole='1'] {
+      left: 16%;
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 40px);
+      font-size: 58px;
+    }
+
+    :global(html:is([data-arrival='2'], [data-arrival='3'])) .parole[data-parole='2'] {
+      left: 8%;
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 118px);
+      width: 84%;
+      font-size: 23px;
+    }
+
+    :global(html:is([data-arrival='2'], [data-arrival='3'])) .parole[data-parole='3'] {
+      left: 18%;
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 226px);
+      font-size: 32px;
+    }
+
+    :global(html[data-arrival='4']) .intro {
+      left: var(--gutter);
+      right: var(--gutter);
+      top: calc(var(--planet-y) + var(--planet-size) / 2 + 22px);
+      width: auto;
+    }
+
+    .m-name {
+      font-size: 26px;
+    }
+
+    .m-text {
+      max-width: 30em;
+    }
+
+    :global(html[data-arrival='6']) .bonjour-slot {
+      width: 236px;
+      height: 76px;
+      margin-bottom: -2px;
     }
   }
 
