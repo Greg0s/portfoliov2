@@ -12,8 +12,6 @@ Intégré à une équipe internationale et pluridisciplinaire d’une vingtaine 
 participé au développement de solutions de suivi en direct pour l’impression 3D métal (WAAM et SLM). L’objectif :
 détecter les erreurs, optimiser le processus et préparer sa mise à l’échelle pour de nouvelles méthodes de production.
 
-![Les bâtiments de Siemens à Neuperlach-Süd, à Munich, derrière une avenue bordée d’arbres et de fleurs jaunes.](./campus.webp 'Le site de Siemens à Neuperlach-Süd, à Munich.')
-
 ## Ce que j’ai fait
 
 - Une application complète qui génère des fichiers de configuration complexes (JSON) depuis une interface nodale
@@ -23,8 +21,6 @@ détecter les erreurs, optimiser le processus et préparer sa mise à l’échel
 - L’évolution d’une interface existante de suivi en direct, reliée à une API par WebSockets (Vue.js, Vuex).
 - Des améliorations de l’UX et de l’UI, et des graphiques temporels interactifs synchronisés avec la vidéo sur des
   points précis (Plotly).
-
-![Schéma de l’éditeur nodal : à gauche, des nœuds reliés en graphe ; à droite, le fichier de configuration qu’ils produisent.](./node-graph.webp 'Le principe de l’éditeur nodal : un graphe de nœuds, un fichier de configuration validé.')
 
 ## Défis techniques
 

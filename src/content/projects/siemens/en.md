@@ -12,8 +12,6 @@ In an international, multidisciplinary team of about twenty people working in En
 tools for metal 3D printing (WAAM and SLM). The goal: detect errors, optimise the process and get it ready to scale to
 new production methods.
 
-![The Siemens buildings in Neuperlach-Süd, Munich, behind an avenue lined with trees and yellow flowers.](./campus.webp 'The Siemens site in Neuperlach-Süd, Munich.')
-
 ## What I did
 
 - A complete application that generates complex configuration files (JSON) from a node-based interface (React,
@@ -21,8 +19,6 @@ new production methods.
 - Extending the in-house software to monitor a new process (SLM), with modular views to browse stacks of 2D bitmaps.
 - Evolving an existing live monitoring interface, connected to an API over WebSockets (Vue.js, Vuex).
 - UX and UI improvements, and interactive time-series charts synced with the video at precise points (Plotly).
-
-![A diagram of the node editor: on the left, nodes linked in a graph; on the right, the configuration file they produce.](./node-graph.webp 'How the node editor works: a graph of nodes, a validated configuration file.')
 
 ## Technical challenges
 

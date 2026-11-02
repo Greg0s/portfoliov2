@@ -24,14 +24,10 @@ activement au développement d’une nouvelle version majeure de l’application
 - Le support technique direct et l’assistance aux utilisateurs et aux consultants.
 - Le travail dans des environnements conteneurisés (Docker), avec des outils de développement assistés par l’IA.
 
-![Le suivi d’un projet de prévention dans Perfmanager : le budget et l’avancement en tête, la définition et l’objectif du projet, puis le groupe projet et les données d’entrée.](./project.webp 'Le suivi d’un projet : budget, avancement, équipe et indicateurs.')
-
 ## Défis techniques
 
 Comprendre la logique métier pointue d’une solution QSE, maîtriser un projet complexe et ancien pour le faire évoluer
 vers des technologies modernes, et garantir un support technique très réactif en parallèle du développement continu.
-
-![Une fiche de risque : le site, les thèmes qualité, sécurité et environnement, le processus concerné, la criticité brute et résiduelle, et l’action mise en place.](./risk.webp 'Une fiche de risque, de sa criticité brute à l’action qui la réduit.')
 
 ## Résultats
 

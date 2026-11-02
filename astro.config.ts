@@ -2,7 +2,6 @@ import { unified } from '@astrojs/markdown-remark';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 import contentChecks from './src/integrations/content-checks';
-import { rehypeFigures } from './src/lib/markdown/figures';
 import { rehypeSections } from './src/lib/markdown/sections';
 import { buildRedirects } from './src/redirects';
 
@@ -20,8 +19,7 @@ export default defineConfig({
   prefetch: { prefetchAll: false },
   integrations: [contentChecks(), sitemap({ i18n: { defaultLocale: 'fr', locales: { fr: 'fr', en: 'en' } } })],
   markdown: {
-    // The case studies need rehype plugins (their sections and figures), which the default Markdown processor does not
-    // run.
-    processor: unified({ rehypePlugins: [rehypeFigures, rehypeSections] }),
+    // The case studies need a rehype plugin (their sections), which the default Markdown processor does not run.
+    processor: unified({ rehypePlugins: [rehypeSections] }),
   },
 });

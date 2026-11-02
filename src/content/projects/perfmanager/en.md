@@ -22,14 +22,10 @@ version of the application.
 - Direct technical support and assistance to users and consultants.
 - Working in containerised environments (Docker), with AI-assisted development tools.
 
-![Following a prevention project in Perfmanager: the budget and progress at the top, the project’s definition and goal, then the project group and the input data.](./project.webp 'Following a project: budget, progress, team and indicators.')
-
 ## Technical challenges
 
 Understanding the sharp business logic of a QHSE solution, mastering a complex, long-lived project to move it to modern
 technologies, and keeping technical support very responsive alongside continuous development.
-
-![A risk sheet: the site, the quality, safety and environment themes, the process concerned, the gross and residual criticality, and the action put in place.](./risk.webp 'A risk sheet, from its gross criticality to the action that lowers it.')
 
 ## Results
 
