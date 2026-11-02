@@ -23,10 +23,10 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     </button>
   </div>
   <nav class="links" aria-label={label('nav.label')}>
-    <a class="item" style="--i: 1" href={anchor('projects')} data-cut>
+    <a class="item" style="--i: 1" href={anchor('projects')} data-cut data-section-link="projects">
       {label('nav.projects')}
     </a>
-    <a class="item" style="--i: 2" href={anchor('contact')} data-cut>
+    <a class="item" style="--i: 2" href={anchor('contact')} data-cut data-section-link="contact">
       {label('nav.contact')}
     </a>
   </nav>

@@ -14,15 +14,25 @@ const home = pathFor({ id: 'home' }, locale);
 const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#${fragments[fragment][locale]}`);
 ---
 
-<header class="header">
+<!-- The current section (projects or contact) is marked by motion/section.ts; how depends on `data-indicator`. -->
+<header class="header" data-site-header>
   <a class="label name" href={anchor('opening')} data-cut>
     Grégoire Tinnes
   </a>
+  <p class="where" aria-hidden="true">
+    <span class="where-word" data-where="projects">
+      {label('nav.projects')}
+    </span>
+    <span class="where-word" data-where="contact">
+      {label('nav.contact')}
+    </span>
+  </p>
   <nav class="links" aria-label={label('nav.label')}>
-    <a href={anchor('projects')} data-cut>
+    <span class="mark" aria-hidden="true"></span>
+    <a href={anchor('projects')} data-cut data-section-link="projects">
       {label('nav.projects')}
     </a>
-    <a href={anchor('contact')} data-cut>
+    <a href={anchor('contact')} data-cut data-section-link="contact">
       {label('nav.contact')}
     </a>
     <LanguageSwitch locale={locale} path={path} />
@@ -78,6 +88,202 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     .menu-button {
       display: inline-flex;
       align-items: center;
+    }
+  }
+  /* ——— The current section (proposals, `?entete=1` to `?entete=5`) ——— */
+
+  .links {
+    position: relative;
+  }
+
+  .links > a {
+    position: relative;
+    transition:
+      color 400ms var(--ease-ui),
+      opacity 200ms ease;
+  }
+
+  /* On a phone, the links hide behind "Menu": the section's name sits beside the button instead. */
+  .where {
+    display: none;
+    position: relative;
+    margin: 0 0 0 auto;
+    font-size: var(--size-nav);
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .where-word {
+    position: absolute;
+    color: rgb(243 243 241 / 82%);
+    right: 0;
+    top: 50%;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(calc(-50% + 4px));
+    transition:
+      opacity 400ms var(--ease-ui),
+      transform 400ms var(--ease-ui);
+  }
+
+  [data-section='projects'] [data-where='projects'],
+  [data-section='contact'] [data-where='contact'] {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+
+  .mark {
+    position: absolute;
+    left: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: var(--color-text);
+    transform: translateX(var(--mark-x, 0));
+    transition:
+      opacity 400ms var(--ease-ui),
+      transform 500ms var(--ease-ui),
+      width 500ms var(--ease-ui);
+  }
+
+  [data-section] .mark {
+    opacity: 1;
+  }
+
+  /* 1 — The underline, as on the current language. */
+  [data-indicator='1'] .links > a[aria-current] {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+  }
+
+  [data-indicator='1'] .where-word {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+  }
+
+  /* 2 — The others step back: the current link stays lit, the rest of the header turns grey. */
+  [data-indicator='2'][data-section] .links > a:not([aria-current]) {
+    color: var(--color-muted);
+  }
+
+  [data-indicator='2'] .where {
+    order: 0;
+    margin: 0 auto 0 0;
+  }
+
+  [data-indicator='2'] .where-word {
+    right: auto;
+    left: 0;
+  }
+
+  [data-indicator='2'] .where-word::before {
+    content: '/';
+    margin-right: 10px;
+    opacity: 0.6;
+  }
+
+  /* 3 — A point of light before the current link, sliding from one link to the other. */
+  [data-indicator='3'] .mark {
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin: -2.5px 0 0 -13px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px 1px rgb(243 243 241 / 55%);
+  }
+
+  [data-indicator='3'] .where-word::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin: 0 9px 2px 0;
+    border-radius: 50%;
+    background: var(--color-text);
+    box-shadow: 0 0 8px 1px rgb(243 243 241 / 55%);
+    vertical-align: middle;
+  }
+
+  /* 4 — A thin line under the current link, gliding and stretching to the other one. */
+  [data-indicator='4'] .mark {
+    top: calc(50% + 14px);
+    width: var(--mark-width, 0);
+    height: 1px;
+    transform: translateX(var(--mark-x, 0));
+  }
+
+  [data-indicator='4'] .where-word::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -7px;
+    height: 1px;
+    background: var(--color-text);
+  }
+
+  /* 5 — The museum's count: through the projects, their number beside "Projects", as on a case study. */
+  [data-indicator='5'][data-section] .links > a:not([aria-current]) {
+    color: var(--color-muted);
+  }
+
+  [data-indicator='5'] .links > [data-section-link='projects']::after,
+  [data-indicator='5'] [data-where='projects']::after {
+    content: var(--project-count, '');
+    margin-left: 10px;
+    color: var(--color-muted);
+    font-size: var(--size-label);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-tag);
+  }
+
+  [data-indicator='5']:not([data-section='projects']) .links > [data-section-link='projects']::after {
+    content: '';
+    margin: 0;
+  }
+
+  /* The menu marks its current link the same way. */
+  :global([data-indicator='1'] ~ .menu .links a[aria-current]),
+  :global([data-indicator='4'] ~ .menu .links a[aria-current]) {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 10px;
+  }
+
+  :global([data-indicator='2'][data-section] ~ .menu .links a:not([aria-current])),
+  :global([data-indicator='5'][data-section] ~ .menu .links a:not([aria-current])) {
+    color: var(--color-muted);
+  }
+
+  :global([data-indicator='3'] ~ .menu .links a[aria-current]::before) {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin: 0 16px 6px 0;
+    border-radius: 50%;
+    background: var(--color-text);
+    box-shadow: 0 0 10px 1px rgb(243 243 241 / 55%);
+    vertical-align: middle;
+  }
+
+  @media (width < 768px) {
+    .where {
+      display: block;
+      align-self: stretch;
+      min-width: 1px;
+    }
+
+    .header {
+      gap: 12px 20px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mark,
+    .where-word {
+      transition-property: opacity;
     }
   }
 </style>
