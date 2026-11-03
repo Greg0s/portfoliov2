@@ -47,6 +47,8 @@ import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
 import { withBase } from '../../lib/url';
 import { frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
+import { lowerResolution } from '../renderer';
+import { blurFilter } from './blur';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
 const LIGHT = {
@@ -415,7 +417,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       redraw = true;
       const verdict = planetSampler.add(now - previousDraw);
       if (verdict === 'fast') planetSampler = null;
-      else if (verdict === 'slow') {
+      else if (verdict === 'lagging' && lowerResolution(window.devicePixelRatio || 1, scene.view.mobile)) {
+        // Lagging: first a little less resolution on a dense screen, measured afresh.
+        livePlanet.resize(planetSize, scene.view.mobile);
+        planetSampler.reset();
+      } else if (verdict === 'slow') {
         // Only the planet gives way, to its image: the journey has its own measure, and turns to the list only when
         // its own frames stay too slow (main spec §6.3).
         planetSlow = true;
@@ -819,7 +825,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         set(parts.place, 'transform', cssTransform(place.x, place.y, look.depth, view, sway));
         cardPerspective(parts, place.x, place.y, look.depth, lift, view);
         set(parts.link, 'opacity', opacity.toFixed(3));
-        set(parts.link, 'filter', shown && look.blur > 0.05 ? `blur(${look.blur.toFixed(2)}px)` : 'none');
+        set(parts.link, 'filter', shown ? blurFilter(look.blur) : 'none');
         set(parts.link, 'pointer-events', opacity > 0.3 && diving < 0 ? 'auto' : 'none');
         set(
           parts.link,
@@ -855,7 +861,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       if (!shown) return;
       set(parts.place, 'transform', cssTransform(world.x, world.y, look.depth, view, sway));
       set(parts.body, 'opacity', (look.opacity * (0.55 + 0.45 * light.stars) * starsK * others).toFixed(3));
-      set(parts.body, 'filter', look.blur > 0.05 ? `blur(${look.blur.toFixed(2)}px)` : 'none');
+      set(parts.body, 'filter', blurFilter(look.blur));
       const s = options.still ? 0 : swing(time, world.floatDuration, world.floatDelay);
       set(parts.body, 'translate', `${(4 * s).toFixed(2)}px ${(-3 * s).toFixed(2)}px`);
     });
@@ -881,7 +887,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       );
       set(planet, 'opacity', (planetState.opacity * others).toFixed(3));
       if (planetFrame) {
-        set(planetFrame, 'filter', planetState.blur > 0.05 ? `blur(${planetState.blur.toFixed(2)}px)` : 'none');
+        set(planetFrame, 'filter', blurFilter(planetState.blur));
       }
     }
     if (glow) {
@@ -968,12 +974,16 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   window.addEventListener('touchend', onTouchEnd, { passive: true });
   // ---------- The live office ----------
 
-  // It is prepared from the first project on (at once on `#contact`), and drawn while the contact shows. On a phone,
-  // which links its programs one by one, that takes seconds: begun at the middle of the journey, it was not ready for a
-  // visitor going through the projects at a swipe each. Its first seconds on screen are measured: kept too slow, it gives
-  // way to its layers, which also stand in without WebGL, and for the arrival when it is still not ready after a short
-  // loading pause.
+  // It is prepared from the first project on (from the opening on a computer, at once on `#contact`), and drawn while the
+  // contact shows. On a phone, which links its programs one by one, that takes seconds: begun at the middle of the
+  // journey, it was not ready for a visitor going through the projects at a swipe each. Its first seconds on screen are
+  // measured: lagging, it first draws at a little less resolution on a dense screen; kept too slow, it gives way to its
+  // layers, which also stand in without WebGL, and for the arrival when it is still not ready after a short loading
+  // pause.
   const OFFICE_START = anchors[1] ?? 0.1;
+  /** On a computer, how long after the ambient motions start the office starts getting ready at the opening, in ms. */
+  const OFFICE_EARLY_DELAY = 2500;
+  let ambientAt = 0;
   // Not ready by the middle of the journey, its layers get ready too.
   const OFFICE_WARM = anchors[5] ?? 0.5;
   // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
@@ -1095,7 +1105,17 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       // While the planet measures its first seconds on screen, the office's links would count against it.
       const planetMeasured =
         planetSampler !== null && html.dataset.planet !== undefined && html.dataset.planet !== 'image';
-      if (!officeFailed && (u >= OFFICE_WARM - 0.01 || (u >= OFFICE_START - 0.01 && !planetMeasured))) loadOffice();
+      // On a computer, it starts at the opening already, a little after the opening's arrival has played (the page's own
+      // load comes first), once the planet is ready:
+      // the visitor going fast through the projects then never meets its preparation.
+      if (ambientAt === 0 && ambient.started()) ambientAt = now;
+      const early =
+        !scene.view.mobile &&
+        ambientAt > 0 &&
+        now - ambientAt > OFFICE_EARLY_DELAY &&
+        !(planetLoading && !livePlanet && !planetSlow && options.webgl);
+      const from = early ? 0 : OFFICE_START - 0.01;
+      if (!officeFailed && (u >= OFFICE_WARM - 0.01 || (u >= from && !planetMeasured))) loadOffice();
       if (u >= OFFICE_WARM - 0.01 && officeLoading && !officeSlow && officeMode !== 'live') loadStandIn();
       if (arrival <= 0) return;
       if (!html.dataset.officeArrival) arrivedWith(standIn ? 'layers' : 'image');
@@ -1119,7 +1139,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       redraw = true;
       const verdict = officeSampler.add(now - previousDraw);
       if (verdict === 'fast') officeSampler = null;
-      else if (verdict === 'slow') {
+      else if (verdict === 'lagging' && lowerResolution(window.devicePixelRatio || 1, scene.view.mobile)) {
+        // Lagging: first a little less resolution on a dense screen, measured afresh.
+        officeView.resize();
+        officeSampler.reset();
+      } else if (verdict === 'slow') {
         // Too slow: the layers take over, from the same point of the arrival.
         officeSlow = true;
         markSlow('office');

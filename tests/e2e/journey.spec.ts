@@ -317,7 +317,7 @@ test('?mesure=1 plays the journey and gives its frame rates', async ({ page, isM
   await expectAnchor(page, CONTACT);
 });
 
-test('nothing of the office loads before the first project', async ({ page }) => {
+test('nothing of the office loads while the opening plays its arrival', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
   await openJourney(page);

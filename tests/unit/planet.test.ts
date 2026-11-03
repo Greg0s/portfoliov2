@@ -158,3 +158,15 @@ describe('the quality', () => {
     expect(feed(frameSampler(JOURNEY_MIN_FPS), 2, 1000 / 15)[0]).toBe('lagging');
   });
 });
+
+describe('the resolution of the live scenes', () => {
+  it('is lowered once, on a dense screen only, never under 1', async () => {
+    const { lowerResolution, scenePixelRatio } = await import('../../src/scene/renderer');
+    expect(scenePixelRatio(2, false)).toBe(2);
+    expect(lowerResolution(2, false)).toBe(true);
+    expect(scenePixelRatio(2, false)).toBe(1.5);
+    expect(scenePixelRatio(1.25, true)).toBe(1);
+    expect(scenePixelRatio(1, false)).toBe(1);
+    expect(lowerResolution(2, false)).toBe(false);
+  });
+});
