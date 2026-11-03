@@ -22,18 +22,20 @@ interface Slide {
   offset: number;
   /** The case study left, in the ring's order: its dot hands over to the one that comes in. */
   from: number;
+  /** How far the swipe carried the dots' light toward the case study that comes in, from 0 to 1 (dots.ts). */
+  dots: number;
 }
 
 let ready = false;
-/** A swipe's offset, for the navigation it starts. */
-let handed: number | null = null;
+/** A swipe's offset and dots, for the navigation it starts. */
+let handed: { offset: number; dots: number } | null = null;
 /** The slide of the navigation under way, from its preparation to its swap. */
 let slide: Slide | null = null;
 let sliding = false;
 
-/** The swipe's offset, for the navigation it is about to start. */
-export function handOver(offset: number): void {
-  handed = offset;
+/** The swipe's offset and how far it carried the dots' light, for the navigation it is about to start. */
+export function handOver(offset: number, dots = 0): void {
+  handed = { offset, dots };
 }
 
 /** Whether a slide is playing: a swipe waits for it. */
@@ -83,11 +85,11 @@ export function initSlide(): void {
   ready = true;
 
   document.addEventListener('astro:before-preparation', (event) => {
-    const offset = handed ?? 0;
+    const { offset, dots } = handed ?? { offset: 0, dots: 0 };
     handed = null;
     const paths = ring();
     const side = sideOf(paths, event.from.pathname, event.to.pathname);
-    slide = side && !prefersReducedMotion() ? { side, offset, from: paths.indexOf(event.from.pathname) } : null;
+    slide = side && !prefersReducedMotion() ? { side, offset, from: paths.indexOf(event.from.pathname), dots } : null;
     // Set before the old page is captured: its cover leaves with it, its header stays (CaseStudy.astro).
     if (slide) apply(slide);
     else clear();
@@ -109,7 +111,11 @@ export function initSlide(): void {
     // page is captured, and the page shows in place, without its opening rise.
     apply(slide);
     document.documentElement.dataset.slid = '';
-    moveDots(slide.from, Number.parseFloat(slide.offset === 0 ? FROM_REST.duration : FROM_SWIPE.duration));
+    moveDots(
+      slide.from,
+      Number.parseFloat(slide.offset === 0 ? FROM_REST.duration : FROM_SWIPE.duration),
+      slide.offset === 0 ? 0 : slide.dots,
+    );
     slide = null;
   });
 }

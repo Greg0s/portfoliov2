@@ -8,6 +8,7 @@
 import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
 import { prefersReducedMotion } from './reducedMotion';
+import { dragDots, draggedDots, dropDots, settleDots } from './dots';
 import { handOver, isSliding } from './slide';
 import type { Side } from '../lib/ring';
 
@@ -79,6 +80,7 @@ function place(x: number): void {
 function springBack(): void {
   const from = offset;
   place(0);
+  settleDots(SPRING_MS);
   if (from === 0) return;
   const frames = [{ transform: `translateX(${String(from)}px)` }, { transform: 'none' }];
   for (const element of moving()) element.animate(frames, { duration: SPRING_MS, easing: SPRING_EASE });
@@ -141,7 +143,7 @@ async function leave(side: Side): Promise<void> {
   remember(STORE.swiped, '1');
   try {
     await Promise.race([warm(side), wait(COVER_WAIT_MS)]);
-    handOver(prefersReducedMotion() ? 0 : offset);
+    handOver(prefersReducedMotion() ? 0 : offset, draggedDots());
     await navigate(href);
     // Still here (the navigation was dropped): the page comes back into place.
     if (moving().some((element) => element.style.transform)) springBack();
@@ -242,7 +244,11 @@ export function initSwipe(): void {
       }
       gesture.samples.push({ x: event.clientX, t: event.timeStamp });
       if (gesture.samples.length > 12) gesture.samples.shift();
-      if (!prefersReducedMotion()) place(Math.max(-width(), Math.min(width(), dx)));
+      if (prefersReducedMotion()) return;
+      const x = Math.max(-width(), Math.min(width(), dx));
+      place(x);
+      // The dots' light goes toward the neighbour's as far as the page went toward it (dots.ts).
+      dragDots(x < 0 ? 1 : -1, Math.abs(x) / width());
     },
     { passive: true },
   );
@@ -261,6 +267,7 @@ export function initSwipe(): void {
   document.addEventListener('astro:page-load', () => {
     gesture = null;
     offset = 0;
+    dropDots();
     nudge();
   });
 }
