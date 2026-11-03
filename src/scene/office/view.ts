@@ -13,7 +13,7 @@ import { MOMENTS } from './moments';
 import { createScreen, type Screen } from './screen';
 import { createCartels, type WallPicture } from './wall';
 import { quadMatrix } from '../../lib/quad';
-import { draw, frames } from '../../lib/wall';
+import { draw } from '../../lib/wall';
 import { blackout } from '../../motion/blackout';
 import { rng } from './common';
 import type { Moment } from '../time';
@@ -271,7 +271,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
     : null;
   if (desktop) screen.append(desktop.element);
   el('div', 'office-glare', screen);
-  const cartels = createCartels(front, rest, framing, frame, new Set(frames.filter((f) => f.cartel).map((f) => f.id)));
+  const cartels = createCartels(front, rest, framing, frame);
   const skyFront = el('div', 'office-layer', front);
   const planet = el('div', 'office-planet', skyFront);
   Object.assign(planet.style, { left: px(frame.planet[0]), top: px(frame.planet[1]) });

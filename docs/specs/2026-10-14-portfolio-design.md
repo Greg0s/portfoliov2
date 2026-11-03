@@ -72,7 +72,7 @@ La rigueur d'un musée d'art moderne (MoMA, MAM Paris), le calme photographique 
 | Tags des projets | Libre Franklin          | 600, 12 px, capitales, interlettrage 0,06em ; le type des images du mur en 11 px     |
 
 - Polices auto-hébergées via Fontsource (fichiers variables, licence OFL), deux fichiers préchargés au plus.
-- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; métier 27 px (23 px sur mobile) ; « On s'écrit ? » 56 px (30 px sur mobile) ; email du contact 24 px (18 px) ; titres de projet 28 px ; texte courant 15 à 18 px.
+- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; métier 27 px (23 px sur mobile) ; « On s'écrit ? » 40 px (30 px sur mobile) ; email du contact 20 px (18 px) ; titres de projet 28 px ; texte courant 15 à 18 px.
 - Deux familles seulement, sans empattement : Libre Franklin et Manrope. Seule exception, l'écran de l'ordinateur du bureau imite Windows : il utilise la police du système (`"Segoe UI", system-ui`), sans fichier téléchargé.
 
 ### 5.2 Couleurs : « Noir musée »
@@ -121,7 +121,7 @@ Le détail est dans les specs du parcours (sections 4 à 9) et du bureau (sectio
 - **Le bureau** (la fin du parcours) :
   - **l'arrivée**, en 3,5 s environ : le saut à la vitesse de la lumière en marche arrière (traînées d'étoiles, éclat anamorphique), le ciel du moment qui se lève, la ville qui monte par le bas, le cadre de la fenêtre qui surgit, puis la pièce qui se déploie en reculant pendant que la ville recule vers l'horizon ; une étoile filante d'accueil, une fois par visite ;
   - **la pièce**, vue des yeux d'une personne assise : à gauche, les images du mur ; au centre, une grande baie sur la ville ; à droite, au premier plan, l'écran, le clavier, la souris ; sur le bureau, la lampe allumée, la plante, le petit cadre photo, la plante grasse, la rose sous son globe et le pot à crayons. Sur mobile, un cadrage vertical : le ciel en haut, l'écran à droite, le clavier en bas ;
-  - **le contact**, toujours visible : à gauche sur le mur sur ordinateur, sur un halo sombre centré sur le texte ; centré dans le ciel sous la planète sur mobile ;
+  - **le contact**, toujours visible : centré dans le ciel de la fenêtre sous la planète, sur un léger halo sombre, sur ordinateur comme sur mobile (3 novembre 2026) ;
   - **l'écran** : le bureau de Windows 11 avec la seule Corbeille et la barre des tâches de Grégoire ; au survol d'un lien, Firefox s'ouvre en grand sur la page du lien (Thunderbird pour l'email) et la page défile doucement si la souris reste ; la Corbeille, une fois vidée, relance le tirage des images du mur. Sur mobile, l'écran n'est qu'un décor et les liens s'ouvrent directement ;
   - **les images du mur** : six cadres sur le mur (ordinateur seulement) et un petit cadre sur le bureau, chacun d'un type (affiche de film, image de film, peinture, photo, pochette d'album) et avec ses propres images, tirées au hasard à chaque visite, recadrées à son format sans jamais changer d'orientation ; au survol, un cartel (titre, auteur, année) sous l'image.
 - **Mobile** : le même parcours au doigt ; les projets passent près du centre (5 à 8 % de décalage), la carte nette sur environ 78 % de la largeur, son cartel en dessous.

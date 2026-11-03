@@ -1,8 +1,9 @@
 ---
 /**
  * The contact, at the end of the journey, in the office (office spec §6): "Shall we talk?", the email with its
- * actions, LinkedIn, GitHub, the CV and Instagram. On desktop the text sits on the left, over the
- * wall darkened by a halo; on mobile it is centred in the sky, under the planet.
+ * actions, LinkedIn, GitHub, the CV and Instagram. It is centred in the sky of the window, under the planet, where the
+ * sky is darkest, with a light halo to keep it readable (back to the mockup's first layout, Grégoire's choice of
+ * 3 November 2026).
  */
 import { existsSync } from 'node:fs';
 import EmailActions from './EmailActions.astro';
@@ -69,20 +70,21 @@ const links = [
   .text {
     position: absolute;
     z-index: 1;
-    left: 112px;
-    top: 43%;
+    left: 49%;
+    top: 152px;
     isolation: isolate;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    max-width: 560px;
-    translate: 0 -50%;
+    align-items: center;
+    width: 440px;
+    text-align: center;
+    translate: -50% 0;
   }
 
   .text::before {
     content: '';
     position: absolute;
-    inset: -120px -160px;
+    inset: -80px -110px;
     z-index: -1;
     pointer-events: none;
     background: radial-gradient(closest-side, rgb(18 21 56 / 62%), rgb(0 0 0 / 0%));
@@ -114,7 +116,8 @@ const links = [
   .links {
     display: flex;
     flex-wrap: wrap;
-    gap: 0 28px;
+    justify-content: center;
+    gap: 0 24px;
     margin: 4px 0 0;
     padding: 0;
     list-style: none;
@@ -126,6 +129,13 @@ const links = [
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+  }
+
+  /* Narrower desktops bring the screen closer to the text: the links draw in. */
+  @media (768px <= width < 1360px) {
+    .links {
+      gap: 0 16px;
+    }
   }
 
   @media (width < 768px) {
@@ -146,10 +156,7 @@ const links = [
     .text {
       left: 50%;
       top: 222px;
-      align-items: center;
       width: 276px;
-      text-align: center;
-      translate: -50% 0;
     }
 
     .text::before {
@@ -165,7 +172,6 @@ const links = [
     }
 
     .links {
-      justify-content: center;
       gap: 0 14px;
       font-size: 14px;
     }
