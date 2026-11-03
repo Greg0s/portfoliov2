@@ -1212,7 +1212,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   function startHold(now: number, reason: Hold['reason']): void {
     hold = { reason, start: now, next: null };
     root.dataset.loading = reason;
-    if (coarse.matches) html.style.overflow = 'hidden';
+    // At rest, a finger's native scroll waits too. The arrival's wait may begin under a glide, which goes on scrolling.
+    if (reason === 'lag' && coarse.matches) html.style.overflow = 'hidden';
     performance.mark(`journey:hold-${reason}`);
   }
 
@@ -1221,7 +1222,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const { reason, start, next } = hold;
     hold = null;
     delete root.dataset.loading;
-    if (coarse.matches) html.style.removeProperty('overflow');
+    if (reason === 'lag' && coarse.matches) html.style.removeProperty('overflow');
     performance.measure(`journey:hold-${reason}`, { start, end: now });
     // What came before the pause no longer tells the device's pace.
     journeySampler?.reset();
