@@ -4,7 +4,6 @@ kind: Multiplayer game
 role: Concept and development
 summary: Find a song from its hidden lyrics, alone or with others in real time.
 coverAlt: The Lyrix logo, “Retrouve la chanson du jour à partir de ses paroles cachées”, above orange and grey bars.
-cta: Play Lyrix
 stats:
   - { value: '1', label: new song every day }
   - { value: '30', label: days of archives still playable }

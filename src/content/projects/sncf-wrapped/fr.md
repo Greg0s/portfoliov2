@@ -4,7 +4,6 @@ kind: Récit de données
 role: Conception, design et développement
 summary: Votre année en train racontée écran par écran, sans qu’aucune donnée ne quitte votre navigateur.
 coverAlt: L’accueil de SNCF Wrapped, « Le palmarès de vos années de voyage », en blanc sur fond sombre.
-cta: Essayer SNCF Wrapped
 stats:
   - { value: '0', label: donnée envoyée hors du navigateur }
 outcomes:

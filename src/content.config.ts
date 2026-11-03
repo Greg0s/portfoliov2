@@ -70,8 +70,6 @@ const projectTexts = defineCollection({
       /** The lede of the case study; the summary when absent. */
       lede: z.string().min(1).optional(),
       coverAlt: z.string().min(1),
-      /** The text of the button to the project's main link ("Jouer à Lyrix"); "Voir le site" and the like when absent. */
-      cta: z.string().min(1).max(28).optional(),
       /** The results that read as figures, first on the page: the figure ("100+") and what it counts. */
       stats: z
         .array(z.strictObject({ value: z.string().min(1).max(10), label: z.string().min(1).max(48) }))

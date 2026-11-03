@@ -47,7 +47,7 @@ export const fr = {
   'case.period': 'Période',
   'case.role': 'Rôle',
   'case.stack': 'Stack',
-  'case.link.live': 'Voir le site',
+  'case.link.live': 'Ouvrir le projet',
   'case.link.code': 'Code',
   'case.link.video': 'Vidéo',
   'case.link.gallery': 'Galerie',

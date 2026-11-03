@@ -152,6 +152,9 @@ const wait = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
+/** How long the case study's content takes to ease away around the picture on the way back. */
+const EASE_AWAY_MS = 320;
+
 /** When the content starts rising, into the flight. */
 const RISE_DELAY_MS = 100;
 
@@ -407,6 +410,29 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
  * the project). On touch screens, the root stops scrolling for two frames; the router swapping the root's
  * attributes, it is done again after the swap.
  */
+/** The case study's content, header and footer fade away, sinking a little; its opening media stays. */
+function easeAway(): Promise<void> {
+  const parts = document.querySelectorAll<HTMLElement>(
+    '[data-case-slug] .sheet, [data-case-slug] .next, .case-header, .case-footer, .peeks',
+  );
+  const fades = Array.from(parts, (part) =>
+    part
+      .animate(
+        [
+          { opacity: 1, translate: '0 0' },
+          { opacity: 0, translate: '0 14px' },
+        ],
+        {
+          duration: EASE_AWAY_MS,
+          easing: 'cubic-bezier(0.33, 0, 0.2, 1)',
+          fill: 'forwards',
+        },
+      )
+      .finished.catch(() => undefined),
+  );
+  return Promise.all(fades).then(() => undefined);
+}
+
 function stopFling(): void {
   if (!matchMedia('(pointer: coarse)').matches) return;
   const html = document.documentElement;
@@ -461,6 +487,14 @@ export function initDive(): void {
     const media = document.querySelector<HTMLElement>('[data-case-slug] .cover img');
     fading = Boolean(returning && media && media.getBoundingClientRect().bottom < innerHeight / 4);
     if (fading) media?.style.setProperty('view-transition-name', 'none');
+    // From its opening media, everything around the picture eases away, sinking a little, while the home loads: the
+    // router's quick fade then only has the picture and the dark to hand over.
+    if (returning && !fading && !prefersReducedMotion()) {
+      const load = event.loader;
+      event.loader = async () => {
+        await Promise.all([load(), easeAway()]);
+      };
+    }
     stopFling();
   });
   // The overlay already shows the page as it opens: it changes at once, without the router's fade.

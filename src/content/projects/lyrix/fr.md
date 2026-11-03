@@ -4,7 +4,6 @@ kind: Jeu multijoueur
 role: Conception et développement
 summary: Retrouver une chanson à partir de ses paroles cachées, seul ou à plusieurs en temps réel.
 coverAlt: Le logo Lyrix, « Retrouve la chanson du jour à partir de ses paroles cachées », au-dessus de barres orange et grises.
-cta: Jouer à Lyrix
 stats:
   - { value: '1', label: nouvelle chanson chaque jour }
   - { value: '30', label: jours d’archives toujours jouables }

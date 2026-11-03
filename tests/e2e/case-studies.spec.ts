@@ -46,7 +46,7 @@ test('the last case study leads back to the first', async ({ page }) => {
 test('a case study leads to its live site, from its facts and, for some, from a band at the end', async ({ page }) => {
   await page.goto('projets/lyrix/');
   const facts = page.getByRole('complementary');
-  await expect(facts.getByRole('link', { name: /Jouer à Lyrix/ })).toHaveAttribute(
+  await expect(facts.getByRole('link', { name: /Ouvrir le projet/ })).toHaveAttribute(
     'href',
     'https://lyrix.mintymoon.app/',
   );
@@ -55,7 +55,7 @@ test('a case study leads to its live site, from its facts and, for some, from a 
 
   // Perfmanager has a site, but no band.
   await page.goto('projets/perfmanager/');
-  await expect(page.getByRole('complementary').getByRole('link', { name: /Voir le site/ })).toBeVisible();
+  await expect(page.getByRole('complementary').getByRole('link', { name: /Ouvrir le projet/ })).toBeVisible();
   await expect(page.getByText('Perfmanager est en ligne.')).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 2, name: 'Ce que je fais' })).toBeVisible();
 

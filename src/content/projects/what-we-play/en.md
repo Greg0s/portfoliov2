@@ -4,7 +4,6 @@ kind: Web · CSS 3D
 role: Concept, design and development
 summary: Find an online game to play together, in a colourful, lively interface.
 coverAlt: The What we play? logo in a speech bubble, next to an old Mac with a TV face and four coloured pawns.
-cta: Find a game
 stats:
   - { value: '30+', label: hand-picked games }
 outcomes:

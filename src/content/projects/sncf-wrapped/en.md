@@ -4,7 +4,6 @@ kind: Data storytelling
 role: Concept, design and development
 summary: Your year on the train told screen by screen, without any data leaving your browser.
 coverAlt: The SNCF Wrapped home, “Le palmarès de vos années de voyage”, in white on a dark background.
-cta: Try SNCF Wrapped
 stats:
   - { value: '0', label: data sent out of the browser }
 outcomes:

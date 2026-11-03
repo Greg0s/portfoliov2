@@ -184,8 +184,12 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
           {band && links.live && (
             <div class="band">
               <p>{label('case.online').replace('{title}', title)}</p>
-              <a class="band-button" href={links.live} target="_blank" rel="noopener">
-                {project.text.data.cta ?? label('case.link.live')} <span aria-hidden="true">↗</span>
+              <a class="band-button pill-button" href={links.live} target="_blank" rel="noopener">
+                {label('case.link.live')}{' '}
+                <span class="arrow-swap" aria-hidden="true">
+                  <span>↗</span>
+                  <span>↗</span>
+                </span>
                 <span class="visually-hidden">{label('case.newTab')}</span>
               </a>
             </div>
@@ -463,6 +467,48 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     .cover::before {
       animation: case-fade 700ms linear var(--case-delay, 250ms) both;
     }
+
+    /*
+     * Under the title, the content follows in turn, each block rising a little as it fades in: the facts, then each
+     * section, a beat apart. On a direct visit it starts with the rise; after a dive, as soon as the page shows.
+     */
+    .case-content :global(.facts),
+    .case-main > section,
+    .case-content .band {
+      animation: case-follow 850ms cubic-bezier(0.22, 1, 0.36, 1)
+        calc(var(--follow-delay, calc(var(--case-delay, 250ms) + 380ms)) + var(--follow-step, 0) * 90ms) both;
+    }
+
+    .case-main > section:nth-child(1) {
+      --follow-step: 1;
+    }
+
+    .case-main > section:nth-child(2) {
+      --follow-step: 2;
+    }
+
+    .case-main > section:nth-child(3) {
+      --follow-step: 3;
+    }
+
+    .case-main > section:nth-child(4) {
+      --follow-step: 4;
+    }
+
+    .case-content .band {
+      --follow-step: 5;
+    }
+
+    :global(html[data-dive-landed]) .case-content {
+      --follow-delay: 60ms;
+    }
+  }
+
+  @keyframes case-follow {
+    from {
+      opacity: 0;
+      translate: 0 28px;
+    }
   }
 
   @keyframes case-rise {
@@ -488,7 +534,10 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
    */
   :global(html[data-slid]) .case-header,
   :global(html[data-slid]) .sheet,
-  :global(html[data-slid]) .cover::before {
+  :global(html[data-slid]) .cover::before,
+  :global(html[data-slid]) .case-content :global(.facts),
+  :global(html[data-slid]) .case-main > section,
+  :global(html[data-slid]) .case-content .band {
     animation: none;
   }
 
@@ -539,7 +588,15 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     font-weight: 600;
     letter-spacing: var(--tracking-tag);
     text-transform: uppercase;
-    color: var(--color-muted);
+    color: rgb(243 243 241 / 88%);
+    /* Over any cover, light or busy, where the fade under the title has hardly begun: a small dark frosted chip. */
+    align-self: flex-start;
+    width: fit-content;
+    padding: 5px 11px 4px;
+    margin-left: -11px;
+    border-radius: 999px;
+    background: rgb(6 6 7 / 55%);
+    backdrop-filter: blur(10px) saturate(1.2);
   }
 
   h1 {
@@ -735,12 +792,6 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     font-size: 16px;
     font-weight: 600;
     white-space: nowrap;
-    transition: background 200ms ease;
-  }
-
-  .band-button:hover {
-    opacity: 1;
-    background: #fff;
   }
 
   .case-footer {

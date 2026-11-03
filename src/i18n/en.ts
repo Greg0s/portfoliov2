@@ -49,7 +49,7 @@ export const en: Record<Key, string> = {
   'case.period': 'Period',
   'case.role': 'Role',
   'case.stack': 'Stack',
-  'case.link.live': 'Visit the site',
+  'case.link.live': 'Open the project',
   'case.link.code': 'Code',
   'case.link.video': 'Video',
   'case.link.gallery': 'Gallery',
