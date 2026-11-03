@@ -20,6 +20,7 @@ export const en: Record<Key, string> = {
   'opening.planet': 'The Little Prince’s planet, with the fox and the rose: my 3D creation',
   'projects.label': 'Projects',
   'card.see': 'See the project',
+  'journey.loading': 'Loading',
   'contact.label': 'Contact',
   'contact.copy': 'Copy the address',
   'contact.copied': 'Address copied',

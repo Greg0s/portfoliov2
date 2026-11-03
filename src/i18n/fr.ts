@@ -18,6 +18,7 @@ export const fr = {
   'opening.planet': 'La planète du Petit Prince, avec le renard et la rose : ma création 3D',
   'projects.label': 'Projets',
   'card.see': 'Voir le projet',
+  'journey.loading': 'Chargement',
   'contact.label': 'Contact',
   'contact.copy': 'Copier l’adresse',
   'contact.copied': 'Adresse copiée',

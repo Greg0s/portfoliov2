@@ -244,7 +244,7 @@ test('?lite=1 keeps the list, for slow machines', async ({ page }) => {
   await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(8);
 });
 
-test('a journey kept under 25 frames per second over the projects gives way to the list, on the project shown', async ({
+test('a journey kept under 20 frames per second over the projects gives way to the list, on the project shown', async ({
   page,
 }) => {
   test.slow();
@@ -256,7 +256,7 @@ test('a journey kept under 25 frames per second over the projects gives way to t
     window.requestAnimationFrame = (callback) => raf(() => setTimeout(() => raf(callback), 54));
   });
   await openJourney(page, './?lite=auto#la-fabrique-des-mondes');
-  for (let i = 0; i < 6 && (await page.locator('html').getAttribute('data-journey')) === 'on'; i += 1) {
+  for (let i = 0; i < 12 && (await page.locator('html').getAttribute('data-journey')) === 'on'; i += 1) {
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(1500);
   }
@@ -317,7 +317,7 @@ test('?mesure=1 plays the journey and gives its frame rates', async ({ page, isM
   await expectAnchor(page, CONTACT);
 });
 
-test('nothing of the office loads before the first project', async ({ page }) => {
+test('nothing of the office loads while the opening plays its arrival', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
   await openJourney(page);
@@ -385,6 +385,23 @@ test('?office=live arrives at the seat in the live office, and logs no error', a
   await expect(page.locator('.office-canvas')).toHaveCount(1);
   await expect(page.locator('.office-layers')).toHaveCount(0);
   await expect(page.locator('.office-screen')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('the arrival waits a few seconds at most for the live office, showing that it loads', async ({ page }) => {
+  test.slow();
+  const errors = trackErrors(page);
+  // Forced live, the office takes far longer than that to get ready without a GPU: the wait runs to its end.
+  await openJourney(page, './?office=live&pause=1');
+  const home = page.locator('[data-journey-root]');
+  await page.keyboard.press('End');
+  await expect(home).toHaveAttribute('data-loading', 'arrival', { timeout: 20_000 });
+  await expect(page.locator('.loading')).toHaveCSS('opacity', '1');
+  const held = Date.now();
+  await expect(home).not.toHaveAttribute('data-loading', { timeout: 10_000 });
+  expect(Date.now() - held).toBeLessThan(4500);
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('html')).toHaveAttribute('data-office-arrival', /.+/);
   expect(errors).toEqual([]);
 });
 
