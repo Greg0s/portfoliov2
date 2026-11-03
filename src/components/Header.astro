@@ -243,21 +243,33 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     margin: 0;
   }
 
-  /* 6 — A soft glow on the current link, as if lit (Grégoire's request, 3 November 2026). */
-  [data-indicator='6'] .links > a[aria-current],
-  [data-indicator='6'] .name[aria-current],
-  [data-indicator='6'] .where-word {
-    color: var(--color-text);
-    text-shadow:
-      0 0 8px rgb(255 255 255 / 32%),
-      0 0 18px rgb(255 240 225 / 14%);
+  /*
+   * 6 — On a computer, a soft glow on the current link, as if lit, and the other links a little dimmer (Grégoire's
+   * request, 3 November 2026). A phone shows no current section.
+   */
+  @media (width >= 768px) {
+    [data-indicator='6'][data-section] .links > a,
+    [data-indicator='6'][data-section] .name {
+      color: rgb(243 243 241 / 68%);
+      transition:
+        color 600ms var(--ease-ui),
+        text-shadow 600ms var(--ease-ui),
+        opacity 200ms ease;
+    }
+
+    [data-indicator='6'][data-section] .links > a[aria-current],
+    [data-indicator='6'][data-section] .name[aria-current] {
+      color: var(--color-text);
+      text-shadow:
+        0 0 8px rgb(255 255 255 / 32%),
+        0 0 18px rgb(255 240 225 / 14%);
+    }
   }
 
-  [data-indicator='6'] .links > a,
-  [data-indicator='6'] .name {
-    transition:
-      text-shadow 600ms var(--ease-ui),
-      opacity 200ms ease;
+  @media (width < 768px) {
+    [data-indicator='6'] .where {
+      display: none;
+    }
   }
 
   /* The menu marks its current link the same way. */
@@ -275,12 +287,6 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     [data-indicator='5']:is([data-section='projects'], [data-section='contact']) ~ .menu .links a:not([aria-current])
   ) {
     color: var(--color-muted);
-  }
-
-  :global([data-indicator='6'] ~ .menu .links a[aria-current]) {
-    text-shadow:
-      0 0 14px rgb(255 255 255 / 30%),
-      0 0 32px rgb(255 240 225 / 14%);
   }
 
   :global([data-indicator='3'] ~ .menu .links a[aria-current]::before) {
