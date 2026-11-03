@@ -1,6 +1,6 @@
 /**
- * The header says, discreetly, which part of the home the visitor is in: the projects or the contact (nothing on the
- * opening). The section is read from the journey when it plays (the anchor nearest the scroll), otherwise from the
+ * The header says, discreetly, which part of the home the visitor is in: the opening (the name), the projects or the
+ * contact. The section is read from the journey when it plays (the anchor nearest the scroll), otherwise from the
  * sections' place on screen (the list, "reduce motion", no WebGL). The header and the menu mark their link with
  * `aria-current="location"`, and the header carries `data-section` and, through the projects, the project's number.
  *
@@ -9,7 +9,7 @@
 import { fragments } from '../i18n/routes';
 import { currentJourney } from '../scene/journey/registry';
 
-export type Section = 'projects' | 'contact';
+export type Section = 'opening' | 'projects' | 'contact';
 
 const VARIANTS = ['1', '2', '3', '4', '5', '6'];
 const DEFAULT_VARIANT = '6';
@@ -26,9 +26,10 @@ const openingIds = new Set<string>(Object.values(fragments.opening));
 const contactIds = new Set<string>(Object.values(fragments.contact));
 const projectsIds = new Set<string>(Object.values(fragments.projects));
 
-/** The section of a journey fragment: none for the opening, the contact for the office, the projects otherwise. */
+/** The section of a journey fragment: the opening, the contact for the office, the projects otherwise. */
 export function sectionOf(fragment: string | null): Section | null {
-  if (!fragment || openingIds.has(fragment)) return null;
+  if (!fragment) return null;
+  if (openingIds.has(fragment)) return 'opening';
   if (contactIds.has(fragment)) return 'contact';
   return 'projects';
 }
@@ -68,7 +69,8 @@ function locate(): Place {
     });
     return { section: 'projects', index, total };
   }
-  return { section: null, index: 0, total };
+  const opening = [...openingIds].some((id) => document.getElementById(id));
+  return { section: opening ? 'opening' : null, index: 0, total };
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0');

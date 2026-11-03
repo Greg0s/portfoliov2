@@ -16,7 +16,7 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
 
 <!-- The current section (projects or contact) is marked by motion/section.ts; how depends on `data-indicator`. -->
 <header class="header" data-site-header>
-  <a class="label name" href={anchor('opening')} data-cut>
+  <a class="label name" href={anchor('opening')} data-cut data-section-link="opening">
     Grégoire Tinnes
   </a>
   <p class="where" aria-hidden="true">
@@ -145,7 +145,7 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
       width 500ms var(--ease-ui);
   }
 
-  [data-section] .mark {
+  :is([data-section='projects'], [data-section='contact']) .mark {
     opacity: 1;
   }
 
@@ -163,7 +163,7 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
   }
 
   /* 2 — The others step back: the current link stays lit, the rest of the header turns grey. */
-  [data-indicator='2'][data-section] .links > a:not([aria-current]) {
+  [data-indicator='2']:is([data-section='projects'], [data-section='contact']) .links > a:not([aria-current]) {
     color: var(--color-muted);
   }
 
@@ -224,7 +224,7 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
   }
 
   /* 5 — The museum's count: through the projects, their number beside "Projects", as on a case study. */
-  [data-indicator='5'][data-section] .links > a:not([aria-current]) {
+  [data-indicator='5']:is([data-section='projects'], [data-section='contact']) .links > a:not([aria-current]) {
     color: var(--color-muted);
   }
 
@@ -245,6 +245,7 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
 
   /* 6 — A soft glow on the current link, as if lit (Grégoire's request, 3 November 2026). */
   [data-indicator='6'] .links > a[aria-current],
+  [data-indicator='6'] .name[aria-current],
   [data-indicator='6'] .where-word {
     color: var(--color-text);
     text-shadow:
@@ -252,7 +253,8 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
       0 0 18px rgb(255 240 225 / 14%);
   }
 
-  [data-indicator='6'] .links > a {
+  [data-indicator='6'] .links > a,
+  [data-indicator='6'] .name {
     transition:
       text-shadow 600ms var(--ease-ui),
       opacity 200ms ease;
@@ -266,8 +268,12 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     text-underline-offset: 10px;
   }
 
-  :global([data-indicator='2'][data-section] ~ .menu .links a:not([aria-current])),
-  :global([data-indicator='5'][data-section] ~ .menu .links a:not([aria-current])) {
+  :global(
+    [data-indicator='2']:is([data-section='projects'], [data-section='contact']) ~ .menu .links a:not([aria-current])
+  ),
+  :global(
+    [data-indicator='5']:is([data-section='projects'], [data-section='contact']) ~ .menu .links a:not([aria-current])
+  ) {
     color: var(--color-muted);
   }
 
