@@ -164,6 +164,13 @@ const images = [
     color: var(--color-muted);
   }
 
+  /* Optical alignment: the T of "Tinnes", just above, makes the job look as if it started further left. */
+  @media (width >= 768px) {
+    .job {
+      padding-left: 0.08em;
+    }
+  }
+
   /* The arrival's letters (src/motion/arrival.ts), until the text is put back. */
   .titles :global(.arrival-word) {
     white-space: nowrap;
