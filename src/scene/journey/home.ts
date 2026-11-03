@@ -1,10 +1,10 @@
 /**
- * The home's scripts: the weightless job title, always, and the journey when it plays (see `mode.ts`). They start
- * on each visit of the home, stop when the client router leaves it, and restart when "reduce motion" changes.
+ * The home's scripts: the journey when it plays (see `mode.ts`; the arrival on its opening plays from the page
+ * itself, see `src/motion/arrival.ts`). They start on each visit of the home, stop when the client router leaves it,
+ * and restart when "reduce motion" changes.
  */
 import { applyJourneyMode, journeyOn, webglAllowed } from './mode';
-import { startJobTitle } from '../../motion/jobTitle';
-import { isStill, onReducedMotionChange, prefersReducedMotion } from '../../motion/reducedMotion';
+import { isStill, onReducedMotionChange } from '../../motion/reducedMotion';
 
 let stops: (() => void)[] = [];
 /** Counts the starts, so that a journey still loading when the home stops never starts. */
@@ -21,16 +21,6 @@ function stop(): void {
 function start(root: HTMLElement): void {
   applyJourneyMode();
   const still = isStill(location.search);
-  const job = root.querySelector<HTMLElement>('[data-jobs]');
-  const words = job?.dataset.jobs?.split('|') ?? [];
-  if (job && !still) {
-    stops.push(
-      startJobTitle(job, words, {
-        reduce: prefersReducedMotion(),
-        paused: () => document.documentElement.dataset.introFaded === 'true',
-      }),
-    );
-  }
   if (!journeyOn()) return;
   // The journey's code loads with the page, but only runs here.
   const started = generation;

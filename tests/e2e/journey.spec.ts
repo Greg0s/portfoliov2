@@ -41,6 +41,50 @@ test('the journey starts on the opening and logs no error', async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+test('a visit starts in the dark, then the planet, the name, the job, the header and the call show', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto('./');
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-arrival', /^(waiting|playing)$/);
+  await expect(page.locator('.night')).toBeVisible();
+  // Once played, the opening is back to its own text and styles.
+  await expect(html).not.toHaveAttribute('data-arrival', /.*/, { timeout: 10_000 });
+  await expect(page.locator('.night')).toBeHidden();
+  const name = page.getByRole('heading', { level: 1, name: 'Grégoire Tinnes' });
+  await expect(name).toBeVisible();
+  expect(await name.evaluate((element) => element.innerHTML)).toBe('Grégoire Tinnes');
+  await expect(page.locator('.opening .job')).toHaveText('Développeur créatif');
+  const opacity = (selector: string): Promise<string> =>
+    page
+      .locator(selector)
+      .first()
+      .evaluate((element) => getComputedStyle(element).opacity);
+  expect(await opacity('.header')).toBe('1');
+  expect(await opacity('.opening .planet-image')).toBe('1');
+  expect(await opacity('.opening .cta-text')).toBe('0.8');
+  expect(errors).toEqual([]);
+});
+
+test('a gesture plays the rest of the arrival faster', async ({ page }) => {
+  await page.goto('./');
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-arrival', 'playing');
+  await page.mouse.click(20, 450);
+  // Six times faster: what is left of its 4.6 s plays in less than 0.8 s.
+  await expect(html).not.toHaveAttribute('data-arrival', /.*/, { timeout: 1500 });
+});
+
+test('the arrival leaves out a visit that starts elsewhere than the opening, and ?still=1', async ({ page }) => {
+  for (const path of ['./#contact', './?still=1', './#la-fabrique-des-mondes']) {
+    await page.goto(path);
+    await expect(page.locator('html')).toHaveAttribute('data-journey', 'on');
+    await expect(page.locator('html')).not.toHaveAttribute('data-arrival', /.*/);
+    await expect(page.locator('.night')).toBeHidden();
+  }
+});
+
 test('before its scripts run, the home shows the opening alone', async ({ page }) => {
   await page.route(/\/_astro\/.*\.js$/, (route) => route.abort());
   await page.goto('./');
@@ -186,8 +230,7 @@ test('with reduced motion, the home stays a still list', async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
   await expect(page.locator('.scene-canvas')).toHaveCount(0);
-  // Only the job title changes, in a fade (main spec §5.5): it is left out of the pictures.
-  const shot = async (): Promise<Buffer> => page.screenshot({ mask: [page.locator('[data-jobs]')] });
+  const shot = async (): Promise<Buffer> => page.screenshot();
   await page.waitForTimeout(3000);
   const before = await shot();
   await page.waitForTimeout(1000);
