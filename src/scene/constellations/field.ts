@@ -1,8 +1,8 @@
 /**
- * The sky's WebGL field (constellation proposals): the projects' stars or planets, the faint stars that complete the
- * constellations, their lines, and the decor that keeps the sky alive (dust at every depth, small worlds, the
- * planisphere, the suns and their orbits), drawn by the journey's renderer in the journey's camera. Built once per
- * proposal; each frame only moves uniforms and a handful of objects.
+ * The sky's WebGL field (constellation proposals): the projects' planets (the planetarium), the faint stars that
+ * complete the constellations, their lines, the constellations' names in space, and the decor that keeps the sky alive
+ * (dust at every depth, small worlds, lights out of focus, the planisphere), drawn by the journey's renderer in the
+ * journey's camera. Built once per proposal; each frame moves uniforms, and the lines' ends where the cards move.
  */
 import {
   BufferAttribute,
@@ -15,17 +15,34 @@ import {
   Matrix4,
   Mesh,
   NormalBlending,
+  PlaneGeometry,
   ShaderMaterial,
   SRGBColorSpace,
   Vector3,
   type IUniform,
 } from 'three';
 import { GROUP_OF, type Group, type PointRef, type SkyDesign } from './designs';
-import { planetFragment, planetVertex, ribbonFragment, ribbonVertex, spriteFragment, spriteVertex } from './shaders';
+import {
+  labelFragment,
+  labelVertex,
+  planetFragment,
+  planetVertex,
+  ribbonFragment,
+  ribbonVertex,
+  spriteFragment,
+  spriteVertex,
+} from './shaders';
 import { swayMatrix } from '../journey/camera3d';
 import { seeded, type View } from '../journey/layout';
 import type { Sway } from '../journey/camera';
 import type { Renderer } from '../renderer';
+
+/** A point of the sky, in px from the vanishing point at the focus plane of this screen, with its depth. */
+export interface FieldPoint {
+  x: number;
+  y: number;
+  dz: number;
+}
 
 export interface FieldFrame {
   time: number;
@@ -34,12 +51,13 @@ export interface FieldFrame {
   /** The sky's depth in front of the focus plane. */
   relBase: number;
   presence: number;
-  /** Each body, in px from the vanishing point at the focus plane of this screen. */
-  bodies: { x: number; y: number; dz: number; glow: number; dim: number }[];
+  bodies: (FieldPoint & { glow: number; dim: number })[];
+  minors: FieldPoint[];
   draws: Record<Group, number>;
   lineAlpha: Record<Group, number>;
+  /** The constellations' names in space (the planetarium), 0 to 1. */
+  nameAlpha: Record<Group, number>;
   focusDz: number;
-  activeBody: number;
   sx: number;
   sy: number;
 }
@@ -51,10 +69,12 @@ export interface Field {
   dispose(): void;
 }
 
+/** The two constellations' lights (the focus), or one light for both. */
 const TINT: Record<Group, [number, number, number]> = {
   perso: [1, 0.77, 0.64],
   pro: [0.68, 0.78, 1],
 };
+const NEUTRAL: [number, number, number] = [0.93, 0.9, 0.86];
 const WHITE: [number, number, number] = [1, 1, 1];
 const mix3 = (a: readonly number[], b: readonly number[], k: number): [number, number, number] => [
   (a[0] ?? 0) + ((b[0] ?? 0) - (a[0] ?? 0)) * k,
@@ -78,7 +98,7 @@ interface Sprite {
   body: number;
 }
 
-/** Ribbon channels: the two constellations, the orbits (one per body), the planisphere. */
+/** Ribbon channels: the two constellations, the planisphere. */
 const CHANNELS = 10;
 const GRID = 8;
 
@@ -196,23 +216,49 @@ function material(vertexShader: string, fragmentShader: string, uniforms: Record
  * puts it on screen once the camera rests on the sky.
  */
 const local = (x: number, y: number, dz: number): Vector3 => new Vector3(x * (1 - dz), -y * (1 - dz), dz * 1000);
-/** A point of the field, in its local space, as it is in space (the orbits). */
-const spatial = (x: number, y: number, dz: number): Vector3 => new Vector3(x, -y, dz * 1000);
+
+/** A constellation's name, drawn once on a canvas: small capitals, widely spaced, in the site's display face. */
+function nameCanvas(text: string): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  const scale = 4;
+  const size = 10.5 * scale;
+  const spacing = 0.42 * size;
+  const family = getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim() || 'sans-serif';
+  const font = `italic 300 ${String(size)}px ${family}`;
+  const context = canvas.getContext('2d');
+  if (!context) return canvas;
+  context.font = font;
+  const letters = Array.from(new Intl.Segmenter().segment(text.toUpperCase()), (part) => part.segment);
+  const widths = letters.map((letter) => context.measureText(letter).width);
+  const width = widths.reduce((sum, w) => sum + w + spacing, 0) - spacing;
+  canvas.width = Math.ceil(width + 2 * scale * 4);
+  canvas.height = Math.ceil(size * 1.6);
+  context.font = font;
+  context.fillStyle = '#fff';
+  context.textBaseline = 'middle';
+  let x = scale * 4;
+  letters.forEach((letter, i) => {
+    context.fillText(letter, x, canvas.height / 2);
+    x += (widths[i] ?? 0) + spacing;
+  });
+  return canvas;
+}
 
 export function createField(
   design: SkyDesign,
   renderer: Renderer,
   initial: View,
-  sources: { cards: number[]; images: (HTMLImageElement | null)[] },
+  sources: { cards: number[]; images: (HTMLImageElement | null)[]; names: Record<Group, string> },
 ): Field {
   const root = new ThreeGroup();
   root.matrixAutoUpdate = false;
   renderer.scene.add(root);
   const rand = seeded(97 + design.variant);
   const look = design.look;
-  const bodyCount = design.bodies.length;
   const groupIndex = (group: Group): number => (group === 'perso' ? 0 : 1);
   const bodyIndex = new Map(design.bodies.map((body, i) => [body.slug, i]));
+  const tintOf = (group: Group): readonly number[] => (design.tinted ? TINT[group] : NEUTRAL);
+  const cards = design.cards !== undefined;
 
   const common = {
     uPerspective: { value: initial.perspective },
@@ -220,12 +266,13 @@ export function createField(
     uPx: { value: initial.width / 1440 },
   };
 
-  // ---------- Sprites: decor, faint stars, stars of the projects ----------
+  // ---------- Sprites: decor, faint stars ----------
 
   const sprites: Sprite[] = [];
-  const dust = look === 'focus' ? 70 : look === 'chart' || look === 'figures' ? 150 : 170;
+  const dust = look === 'focus' ? 70 : look === 'chart' ? 150 : 170;
   for (let i = 0; i < dust; i += 1) {
     const big = rand() < 0.1;
+    const tint = rand() < 0.5 ? tintOf('perso') : tintOf('pro');
     sprites.push({
       x: (rand() * 2 - 1) * 980,
       y: (rand() * 2 - 1) * 620,
@@ -233,7 +280,7 @@ export function createField(
       size: big ? 1.3 + rand() * 0.6 : 0.6 + rand() * 0.6,
       kind: KIND.star,
       alpha: big ? 0.55 + rand() * 0.3 : 0.22 + rand() * 0.4,
-      color: mix3(WHITE, rand() < 0.5 ? TINT.perso : TINT.pro, rand() * 0.35),
+      color: mix3(WHITE, tint, rand() * 0.35),
       seed: rand(),
       group: 2,
       body: -1,
@@ -241,7 +288,7 @@ export function createField(
   }
   if (look === 'focus') {
     // Lights out of focus at every depth, as in a night photograph.
-    for (let i = 0; i < 64; i += 1) {
+    for (let i = 0; i < 46; i += 1) {
       const tint = rand();
       sprites.push({
         x: (rand() * 2 - 1) * 1050,
@@ -249,7 +296,7 @@ export function createField(
         z: -1.0 + rand() * 1.5,
         size: 1.2 + rand() * 2.2,
         kind: KIND.bokeh,
-        alpha: 0.2 + rand() * 0.3,
+        alpha: 0.16 + rand() * 0.26,
         color: tint < 0.4 ? mix3(WHITE, TINT.perso, 0.6) : tint < 0.8 ? mix3(WHITE, TINT.pro, 0.6) : WHITE,
         seed: rand(),
         group: 2,
@@ -257,33 +304,20 @@ export function createField(
       });
     }
   }
-  if (look === 'planets' || look === 'systems') {
-    // Small worlds, as along the journey: away from the projects and from the preview.
+  if (look === 'planets') {
+    // Small worlds, as along the journey: away from the projects, the Little Prince's planet and the preview.
     const kinds = [KIND.orb, KIND.ring, KIND.moon, KIND.five, KIND.orb, KIND.ring, KIND.five, KIND.moon];
-    const spots: [number, number, number][] =
-      look === 'planets'
-        ? [
-            [-160, -330, -0.3],
-            [200, 330, 0.25],
-            [-700, -300, -0.5],
-            [690, -150, -0.6],
-            [-220, 330, -0.15],
-            [130, -320, 0.3],
-            [-760, 120, 0.3],
-            [760, 320, -0.35],
-            [-60, 390, -0.7],
-            [470, -390, 0.1],
-          ]
-        : [
-            [-90, -320, -0.3],
-            [120, 340, 0.2],
-            [-730, -300, -0.5],
-            [700, -320, -0.4],
-            [-30, 280, -0.6],
-            [40, -230, 0.25],
-            [-720, 330, 0.3],
-            [720, 330, -0.2],
-          ];
+    const spots: [number, number, number][] = [
+      [-160, -290, -0.3],
+      [200, 330, 0.25],
+      [-700, -280, -0.5],
+      [690, -150, -0.6],
+      [-220, 330, -0.15],
+      [150, -290, 0.3],
+      [-760, 120, 0.3],
+      [760, 320, -0.35],
+      [-60, 390, -0.7],
+    ];
     spots.forEach(([x, y, z], i) => {
       sprites.push({
         x,
@@ -299,6 +333,7 @@ export function createField(
       });
     });
   }
+  const minorsFrom = sprites.length;
   design.minors.forEach((minor) => {
     sprites.push({
       x: minor.x * (1 - minor.dz),
@@ -306,30 +341,13 @@ export function createField(
       z: minor.dz,
       size: minor.size,
       kind: KIND.star,
-      alpha: look === 'chart' || look === 'figures' ? 0.95 : 0.85,
-      color: look === 'planets' ? mix3(WHITE, TINT[minor.group], 0.5) : WHITE,
+      alpha: look === 'chart' ? 0.95 : 0.85,
+      color: mix3(WHITE, tintOf(minor.group), 0.5),
       seed: rand(),
       group: groupIndex(minor.group),
       body: -1,
     });
   });
-  if (look === 'chart' || look === 'figures' || look === 'focus') {
-    design.bodies.forEach((body, i) => {
-      const group = GROUP_OF[body.slug] ?? 'perso';
-      sprites.push({
-        x: body.x * (1 - body.dz),
-        y: body.y * (1 - body.dz),
-        z: body.dz,
-        size: look === 'focus' ? body.r : body.r * 0.42,
-        kind: look === 'focus' ? KIND.bokeh : KIND.bright,
-        alpha: 1,
-        color: look === 'focus' ? mix3(WHITE, TINT[group], 0.55) : WHITE,
-        seed: rand(),
-        group: groupIndex(group),
-        body: i,
-      });
-    });
-  }
   const spriteUniforms = {
     ...common,
     uTime: { value: 0 },
@@ -340,22 +358,22 @@ export function createField(
     uFocusRel: { value: 0 },
     uBokeh: { value: look === 'focus' ? 1 : 0 },
   };
-  const spriteMesh = new Mesh(spriteGeometry(sprites), material(spriteVertex, spriteFragment, spriteUniforms));
+  const spriteGeo = spriteGeometry(sprites);
+  const spriteMesh = new Mesh(spriteGeo, material(spriteVertex, spriteFragment, spriteUniforms));
   spriteMesh.frustumCulled = false;
   spriteMesh.renderOrder = 1;
   root.add(spriteMesh);
 
-  // ---------- Ribbons: the constellations' lines, the orbits, the planisphere ----------
+  // ---------- Ribbons: the constellations' lines, the planisphere ----------
 
+  /** How far a line stops short of its end: out of a planet, a star's glow; under a card, nothing to spare. */
   const gapOf = (ref: PointRef): number => {
     if (typeof ref === 'number') return look === 'planets' ? 9 : 8;
     const body = design.bodies[bodyIndex.get(ref) ?? -1];
-    if (!body) return 8;
-    if (look === 'planets') return body.r * 1.35 + 10;
-    if (look === 'focus') return 16;
-    return 13;
+    if (!body || cards) return 0;
+    return body.r * 1.35 + 10;
   };
-  const pointOf = (ref: PointRef): Vector3 | null => {
+  const restPoint = (ref: PointRef): Vector3 | null => {
     if (typeof ref === 'number') {
       const minor = design.minors[ref];
       return minor ? local(minor.x, minor.y, minor.dz) : null;
@@ -365,8 +383,9 @@ export function createField(
   };
 
   const lines: Segment[] = [];
+  const lineEnds: { from: PointRef; to: PointRef; ga: number; gb: number }[] = [];
   (['perso', 'pro'] as const).forEach((group) => {
-    const pieces: { a: Vector3; b: Vector3; length: number }[] = [];
+    const pieces: { a: Vector3; b: Vector3; length: number; from: PointRef; to: PointRef }[] = [];
     design.paths
       .filter((path) => path.group === group)
       .forEach((path) => {
@@ -374,20 +393,10 @@ export function createField(
           const from = path.points[i];
           const to = path.points[i + 1];
           if (from === undefined || to === undefined) continue;
-          const a = pointOf(from);
-          const b = pointOf(to);
+          const a = restPoint(from);
+          const b = restPoint(to);
           if (!a || !b) continue;
-          const direction = b.clone().sub(a);
-          const length = direction.length();
-          direction.normalize();
-          const ga = gapOf(from);
-          const gb = gapOf(to);
-          if (length <= ga + gb + 4) continue;
-          pieces.push({
-            a: a.clone().addScaledVector(direction, ga),
-            b: b.clone().addScaledVector(direction, -gb),
-            length,
-          });
+          pieces.push({ a, b, length: a.distanceTo(b), from, to });
         }
       });
     const total = pieces.reduce((sum, piece) => sum + piece.length, 0) || 1;
@@ -399,15 +408,14 @@ export function createField(
         channel: groupIndex(group),
         t0: at / total,
         t1: (at + piece.length) / total,
-        dash: look === 'figures' || look === 'chart' ? 0 : 0,
+        dash: 0,
       });
+      lineEnds.push({ from: piece.from, to: piece.to, ga: gapOf(piece.from), gb: gapOf(piece.to) });
       at += piece.length;
     });
   });
 
-  const channelColor = (look === 'chart' || look === 'figures' ? [WHITE, WHITE] : [TINT.perso, TINT.pro]).map(
-    (tint) => new Vector3(...mix3(WHITE, tint, 0.55)),
-  );
+  const channelColor = [tintOf('perso'), tintOf('pro')].map((tint) => new Vector3(...mix3(WHITE, tint, 0.55)));
   const ribbonUniforms = (width: number): Record<string, IUniform> => ({
     ...common,
     uWidth: { value: width },
@@ -420,53 +428,17 @@ export function createField(
     uFocusRel: { value: 0 },
     uBokeh: { value: look === 'focus' ? 1 : 0 },
   });
-  const lineUniforms = ribbonUniforms(look === 'chart' || look === 'figures' ? 1.1 : 1.3);
-  const lineMesh = new Mesh(ribbonGeometry(lines), material(ribbonVertex, ribbonFragment, lineUniforms));
+  const lineUniforms = ribbonUniforms(look === 'chart' ? 1.1 : 1.3);
+  const lineGeo = ribbonGeometry(lines);
+  const lineMesh = new Mesh(lineGeo, material(ribbonVertex, ribbonFragment, lineUniforms));
   lineMesh.frustumCulled = false;
   lineMesh.renderOrder = 2;
   if (lines.length > 0) root.add(lineMesh);
 
-  // The orbits (proposal 4), and the planisphere behind the chart (proposal 2).
+  // The planisphere behind the chart (proposal 2).
   const guides: Segment[] = [];
-  if (look === 'systems') {
-    const orbitColors: Vector3[] = [];
-    design.orbits?.forEach((orbit) => {
-      const body = bodyIndex.get(orbit.slug) ?? 0;
-      const group = GROUP_OF[orbit.slug] ?? 'perso';
-      const system = design.systems?.find((candidate) => candidate.group === group);
-      if (!system) return;
-      orbitColors[body] = new Vector3(...mix3(WHITE, TINT[group], 0.6));
-      const lean = ((90 - system.tilt) * Math.PI) / 180;
-      const roll = (system.roll * Math.PI) / 180;
-      const pointAt = (angle: number): Vector3 => {
-        const ox = orbit.radius * Math.cos(angle);
-        const oy = orbit.radius * Math.sin(angle) * Math.sin(lean);
-        const oz = orbit.radius * Math.sin(angle) * Math.cos(lean);
-        return spatial(
-          system.x + ox * Math.cos(roll) - oy * Math.sin(roll),
-          system.y + ox * Math.sin(roll) + oy * Math.cos(roll),
-          oz / 1000,
-        );
-      };
-      const steps = 120;
-      for (let i = 0; i < steps; i += 1) {
-        guides.push({
-          a: pointAt((i / steps) * 2 * Math.PI),
-          b: pointAt(((i + 1) / steps) * 2 * Math.PI),
-          channel: 2 + body,
-          t0: 0,
-          t1: 0,
-          dash: 0,
-        });
-      }
-    });
-    orbitColors.forEach((color, body) => {
-      const value = (lineUniforms.uChannelColor?.value as Vector3[] | undefined) ?? [];
-      value[2 + body] = color;
-    });
-  }
   if (look === 'chart') {
-    // A planisphere, tilted away behind the stars: its circles, its hours and its outer scale.
+    // Tilted away behind the cards: its circles, its hours and its outer scale.
     const tilt = (24 * Math.PI) / 180;
     const center = { x: 20, y: 60, z: -0.55 };
     const at = (radius: number, angle: number): Vector3 => {
@@ -509,15 +481,44 @@ export function createField(
     }
   }
   const guideUniforms = ribbonUniforms(1);
-  const guideColors = guideUniforms.uChannelColor?.value as Vector3[] | undefined;
-  const lineColors = lineUniforms.uChannelColor?.value as Vector3[] | undefined;
-  if (guideColors && lineColors) lineColors.forEach((color, i) => (guideColors[i] = color));
   const guideMesh = new Mesh(ribbonGeometry(guides), material(ribbonVertex, ribbonFragment, guideUniforms));
   guideMesh.frustumCulled = false;
   guideMesh.renderOrder = 0;
   if (guides.length > 0) root.add(guideMesh);
 
-  // ---------- Planets: the projects' pictures on spheres (proposals 1 and 4), and the suns ----------
+  // ---------- The constellations' names, in space (the planetarium) ----------
+
+  const nameMeshes: { mesh: Mesh; group: Group; uniforms: { uMap: IUniform; uAlpha: { value: number } } }[] = [];
+  const nameTextures: CanvasTexture[] = [];
+  if (design.namesIn === 'space') {
+    const write = (): void => {
+      design.names?.forEach((name) => {
+        const canvas = nameCanvas(sources.names[name.group]);
+        const texture = new CanvasTexture(canvas);
+        texture.colorSpace = SRGBColorSpace;
+        texture.minFilter = LinearMipmapLinearFilter;
+        texture.magFilter = LinearFilter;
+        texture.anisotropy = 8;
+        nameTextures.push(texture);
+        const uniforms = { ...common, uMap: { value: texture }, uAlpha: { value: 0 } };
+        const mesh = new Mesh(
+          new PlaneGeometry(canvas.width / 4, canvas.height / 4),
+          material(labelVertex, labelFragment, uniforms),
+        );
+        mesh.frustumCulled = false;
+        mesh.renderOrder = 2;
+        mesh.position.copy(local(name.x, name.y, name.dz));
+        // Laid in the sky: turned in depth, along the constellation.
+        mesh.rotation.set(0, (name.turn * Math.PI) / 180, (-name.angle * Math.PI) / 180);
+        root.add(mesh);
+        nameMeshes.push({ mesh, group: name.group, uniforms });
+      });
+    };
+    // The face must be there before it is drawn.
+    void document.fonts.ready.then(write);
+  }
+
+  // ---------- Planets: the projects' pictures on spheres (the planetarium) ----------
 
   const atlas = document.createElement('canvas');
   atlas.width = 1024;
@@ -544,32 +545,31 @@ export function createField(
     seed: number;
   }
   const planets: Planet[] = [];
-  const hasPlanets = look === 'planets' || look === 'systems';
+  const hasPlanets = look === 'planets';
   if (hasPlanets) {
     design.bodies.forEach((body, i) => {
       const group = GROUP_OF[body.slug] ?? 'perso';
       const seed = rand();
-      const ringed = look === 'planets';
       const normal = new Vector3(0.12 + 0.2 * (seed - 0.5), 1, 0.4 + 0.25 * seed).normalize();
       const uniforms: Record<string, IUniform> = {
         ...common,
         uRadius: { value: body.r },
-        uExtent: { value: ringed ? 2.25 : 1.9 },
+        uExtent: { value: 2.25 },
         uAlpha: { value: 1 },
         uAtlas: { value: texture },
         uCell: { value: [(i % 2) * 0.5, 1 - (Math.floor(i / 2) + 1) / 3, 0.5, 1 / 3] },
         uSpin: { value: 0 },
         uAxis: { value: (seed - 0.5) * 0.5 },
         uLight: { value: new Vector3(-0.45, 0.62, 0.64).normalize() },
-        uTint: { value: new Vector3(...TINT[group]) },
+        uTint: { value: new Vector3(...tintOf(group)) },
         uGlow: { value: 0 },
         uDim: { value: 0 },
-        uRing: { value: ringed ? 1 : 0 },
+        uRing: { value: 1 },
         uRingNormal: { value: normal },
         uRingSize: { value: [1.42, 2.05] },
         uRingAlpha: { value: 0.62 },
         uReady: { value: 0 },
-        uAmbient: { value: look === 'systems' ? 0.34 : 0.14 },
+        uAmbient: { value: 0.14 },
       };
       const mesh = new Mesh(quad(), material(planetVertex, planetFragment, uniforms));
       mesh.frustumCulled = false;
@@ -595,41 +595,60 @@ export function createField(
     });
   }
 
-  const suns: { mesh: Mesh; group: Group; uniforms: typeof spriteUniforms }[] = [];
-  design.systems?.forEach((system) => {
-    const uniforms = { ...spriteUniforms, uBodyGlow: { value: new Array<number>(8).fill(0) } };
-    const geometry = spriteGeometry([
-      {
-        x: 0,
-        y: 0,
-        z: 0,
-        size: 11,
-        kind: KIND.sun,
-        alpha: 1,
-        color: TINT[system.group],
-        seed: 0.5,
-        group: 2,
-        body: -1,
-      },
-    ]);
-    const mesh = new Mesh(geometry, material(spriteVertex, spriteFragment, uniforms));
-    mesh.frustumCulled = false;
-    mesh.renderOrder = 3;
-    mesh.position.copy(local(system.x, system.y, 0));
-    root.add(mesh);
-    suns.push({ mesh, group: system.group, uniforms });
-  });
-
   // ---------- Each frame ----------
 
   const scaleMatrix = new Matrix4();
   const shift = new Matrix4();
   let lastTime = -1;
+  const a = new Vector3();
+  const b = new Vector3();
+  const direction = new Vector3();
 
   function resize(view: View): void {
     common.uPerspective.value = view.perspective;
     common.uViewport.value = [view.width, view.height];
     common.uPx.value = view.width / 1440;
+  }
+
+  /** A point where it is this frame, in the field's local space. */
+  function pointNow(ref: PointRef, frame: FieldFrame, into: Vector3): boolean {
+    const point = typeof ref === 'number' ? frame.minors[ref] : frame.bodies[bodyIndex.get(ref) ?? -1];
+    if (!point) return false;
+    into.set(point.x / frame.sx, -point.y / frame.sy, point.dz * 1000);
+    return true;
+  }
+
+  /** The lines follow the cards and the stars that move (the chart's threads, the focus's cards). */
+  function moveLines(frame: FieldFrame): void {
+    const start = lineGeo.getAttribute('aStart') as BufferAttribute;
+    const end = lineGeo.getAttribute('aEnd') as BufferAttribute;
+    lineEnds.forEach((ends, i) => {
+      if (!pointNow(ends.from, frame, a) || !pointNow(ends.to, frame, b)) return;
+      direction.copy(b).sub(a);
+      const length = direction.length();
+      direction.normalize();
+      if (length > ends.ga + ends.gb + 4) {
+        a.addScaledVector(direction, ends.ga);
+        b.addScaledVector(direction, -ends.gb);
+      } else {
+        b.copy(a);
+      }
+      for (let v = 0; v < 4; v += 1) {
+        start.setXYZ(i * 4 + v, a.x, a.y, a.z);
+        end.setXYZ(i * 4 + v, b.x, b.y, b.z);
+      }
+    });
+    start.needsUpdate = true;
+    end.needsUpdate = true;
+    if (design.minors.length > 0) {
+      const position = spriteGeo.getAttribute('position') as BufferAttribute;
+      frame.minors.forEach((minor, i) => {
+        for (let v = 0; v < 4; v += 1) {
+          position.setXYZ((minorsFrom + i) * 4 + v, minor.x / frame.sx, -minor.y / frame.sy, minor.dz * 1000);
+        }
+      });
+      position.needsUpdate = true;
+    }
   }
 
   return {
@@ -642,6 +661,7 @@ export function createField(
         .multiply(scaleMatrix.makeScale(frame.sx, frame.sy, frame.sx));
       root.matrixWorldNeedsUpdate = true;
       const presence = frame.presence;
+      if (cards) moveLines(frame);
 
       spriteUniforms.uTime.value = frame.time;
       spriteUniforms.uAlpha.value = presence;
@@ -649,8 +669,7 @@ export function createField(
         0.55 + 0.45 * Math.max(frame.draws.perso, frame.lineAlpha.perso),
         0.55 + 0.45 * Math.max(frame.draws.pro, frame.lineAlpha.pro),
       ];
-      const focusRel = frame.focusDz;
-      spriteUniforms.uFocusRel.value = frame.relBase + focusRel;
+      spriteUniforms.uFocusRel.value = frame.relBase + frame.focusDz;
       frame.bodies.forEach((body, i) => {
         if (i >= 8) return;
         spriteUniforms.uBodyGlow.value[i] = body.glow;
@@ -664,17 +683,16 @@ export function createField(
         draw[1] = frame.draws.pro;
         alpha[0] = frame.lineAlpha.perso;
         alpha[1] = frame.lineAlpha.pro;
-        // The orbits: faint, the shown project's brighter.
-        for (let i = 0; i < bodyCount && i < 6; i += 1) {
-          const body = frame.bodies[i];
-          alpha[2 + i] = 0.13 + 0.32 * (body?.glow ?? 0) - 0.08 * (body?.dim ?? 0);
-        }
         alpha[GRID] = 0.085;
         if (uniforms.uAlpha) uniforms.uAlpha.value = presence;
-        if (uniforms.uFocusRel) uniforms.uFocusRel.value = frame.relBase + focusRel;
+        if (uniforms.uFocusRel) uniforms.uFocusRel.value = frame.relBase + frame.focusDz;
       };
       setLines(lineUniforms);
       setLines(guideUniforms);
+
+      nameMeshes.forEach(({ group, uniforms }) => {
+        uniforms.uAlpha.value = 0.5 * frame.nameAlpha[group] * presence;
+      });
 
       planets.forEach((planet, i) => {
         const body = frame.bodies[i];
@@ -689,24 +707,6 @@ export function createField(
         set('uGlow', body.glow);
         set('uDim', body.dim);
         set('uAlpha', presence);
-        if (look === 'systems') {
-          // Lit by its sun.
-          const group = GROUP_OF[design.bodies[i]?.slug ?? ''] ?? 'perso';
-          const system = design.systems?.find((candidate) => candidate.group === group);
-          if (system) {
-            const light = new Vector3(
-              system.x * frame.sx - body.x,
-              -(system.y * frame.sy - body.y),
-              -body.dz * 1000 * frame.sx,
-            ).normalize();
-            light.z += 0.25;
-            (u.uLight?.value as Vector3 | undefined)?.copy(light.normalize());
-          }
-        }
-      });
-      suns.forEach((sun) => {
-        sun.uniforms.uAlpha.value = presence;
-        sun.uniforms.uTime.value = frame.time;
       });
       const moving = lastTime !== frame.time;
       lastTime = frame.time;
@@ -722,6 +722,9 @@ export function createField(
         material.dispose();
       });
       texture.dispose();
+      nameTextures.forEach((nameTexture) => {
+        nameTexture.dispose();
+      });
     },
   };
 }

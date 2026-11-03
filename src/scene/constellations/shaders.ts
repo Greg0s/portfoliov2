@@ -2,10 +2,11 @@
  * The sky's shaders. Everything is drawn in quads that face the camera, in the journey's camera (world units are CSS
  * px at the focus plane, the camera `perspective` px in front of it), and fades with its depth as the cards do:
  *
- * - sprites: the stars, the out-of-focus lights, the suns and the small worlds, in one geometry;
+ * - sprites: the stars, the out-of-focus lights and the small worlds, in one geometry;
  * - planets: a sphere drawn in its quad (no mesh to antialias), wearing the project's picture, with a ring;
- * - ribbons: the constellations' lines and the orbits, as thin quads drawn on screen, which draw themselves along their
- *   path.
+ * - ribbons: the constellations' lines and the planisphere, as thin quads drawn on screen, which draw themselves along
+ *   their path;
+ * - labels: the constellations' names, laid in space (the planetarium).
  */
 
 /** The depth fade, from the depth in front of the focus plane (as `depthFade` in sky.ts). */
@@ -397,5 +398,35 @@ export const ribbonFragment = /* glsl */ `
     a *= vAlpha;
     if (a < 0.002) discard;
     gl_FragColor = vec4(vColor * a, a);
+  }
+`;
+
+export const labelVertex = /* glsl */ `
+  uniform float uPerspective;
+
+  varying vec2 vUv;
+  varying float vFade;
+
+  ${fade}
+
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vFade = depthFade(1.0 + mv.z / uPerspective);
+    vUv = uv;
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+
+export const labelFragment = /* glsl */ `
+  uniform sampler2D uMap;
+  uniform float uAlpha;
+
+  varying vec2 vUv;
+  varying float vFade;
+
+  void main() {
+    float a = texture2D(uMap, vUv).a * uAlpha * vFade;
+    if (a < 0.002) discard;
+    gl_FragColor = vec4(vec3(a), a);
   }
 `;

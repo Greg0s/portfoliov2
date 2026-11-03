@@ -1,11 +1,11 @@
 /*
- * The sky of constellations (proposals, `?constellations=`): the labels, the constellations' names and the legend over
- * the WebGL sky; the previews are the projects' own cards and cartels, placed by the journey.
+ * The sky of constellations (proposals, `?constellations=`): the labels, the constellations' names on the chart and the
+ * legend over the WebGL sky; the cards are the projects' own, with their cartels, placed by the journey.
  */
 
 .home[data-sky] {
-  /* The two constellations' lights: the planet's warm spot for the personal projects, the office's night blue for the
-     professional ones. */
+  /* The two constellations' lights, on the focus: the planet's warm spot for the personal projects, the office's night
+     blue for the professional ones. */
   --sky-perso: #ffc3a1;
   --sky-pro: #aac4ff;
 }
@@ -24,8 +24,7 @@
 }
 
 .sky-label,
-.sky-name,
-.sky-sun {
+.sky-name {
   position: absolute;
   left: 0;
   top: 0;
@@ -51,28 +50,10 @@
   color: var(--color-text);
 }
 
-.sky-label .letter {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-style: italic;
-  font-weight: 300;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-/* On the chart and the figures, the name sits right of its star, as on an atlas. */
+/* Under the cards (the chart and the focus), a little smaller. */
 .sky[data-look='chart'] .sky-label,
-.sky[data-look='figures'] .sky-label {
-  translate: 0 -50%;
-  font-size: 10.5px;
-}
-
 .sky[data-look='focus'] .sky-label {
   font-size: 10.5px;
-}
-
-.sky[data-look='systems'] .sky-label {
-  font-size: 10px;
 }
 
 .sky-name {
@@ -83,44 +64,6 @@
   letter-spacing: 0.42em;
   text-transform: uppercase;
   color: var(--color-muted);
-}
-
-.sky-name .figure {
-  display: block;
-  font-size: 22px;
-  letter-spacing: 0.06em;
-  text-transform: none;
-  color: var(--color-text);
-  text-align: center;
-}
-
-.sky-name .kind {
-  display: block;
-  margin-top: 6px;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-align: center;
-}
-
-.sky-sun {
-  translate: -50% 0;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-text);
-}
-
-.sky-sun[data-group='perso'] {
-  color: var(--sky-perso);
-}
-
-.sky-sun[data-group='pro'] {
-  color: var(--sky-pro);
 }
 
 /* The legend, at the bottom: a click draws a constellation. */
@@ -174,24 +117,7 @@
   box-shadow: 0 0 10px 1px color-mix(in srgb, var(--sky-pro) 55%, transparent);
 }
 
-/* The planetarium's swatch: a planet and its ring. */
-.sky-legend[data-look='planets'] .swatch {
-  width: 8px;
-  height: 8px;
-  background: var(--color-muted);
-  box-shadow: none;
-}
-
-.sky-legend[data-look='planets'] .swatch::after {
-  content: '';
-  position: absolute;
-  inset: 2px -5px;
-  border: 1.2px solid currentcolor;
-  border-radius: 50%;
-  rotate: -14deg;
-}
-
-/* The previews: the projects' cards, placed by the journey; their cartels under them. */
+/* The projects' cards, placed by the journey; their cartels under them. */
 .home[data-sky] .project .cartel {
   transform: none;
   transition: none;
@@ -211,6 +137,17 @@
 .home[data-sky] .project .cartel[data-align='left'] {
   align-items: flex-start;
   text-align: left;
+}
+
+/* Under a card (the chart and the focus): a dark box with soft edges behind the whole text, corners included, which
+   stops short of the card above it. */
+.home[data-sky] .project .cartel[data-align='left']::before {
+  inset: -12px -64px -56px;
+  background: rgb(6 6 7 / 86%);
+  mask-image:
+    linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 48px), transparent),
+    linear-gradient(to right, transparent, #000 64px, #000 calc(100% - 64px), transparent);
+  mask-composite: intersect;
 }
 
 .home[data-sky] .project .cartel .summary {

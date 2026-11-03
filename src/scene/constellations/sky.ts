@@ -1,12 +1,17 @@
 /**
- * The sky of constellations (proposals, `?constellations=1` to 5, desktop): the projects share one sky, on one anchor of
+ * The sky of constellations (proposals, `?constellations=1` to 3, desktop): the projects share one sky, on one anchor of
  * the journey, as two constellations. This controller knows where each project is on screen, which one the mouse or the
- * keyboard points at, how its preview shows (the project's own card, which dives into the case study on a click), and
- * what each constellation draws; it writes the labels and the legend, and drives the WebGL field (`field.ts`, loaded
- * with Three.js) that draws the stars, the planets and the lines.
+ * keyboard points at and how it shows, and what each constellation draws; it writes the labels and the legend, and
+ * drives the WebGL field (`field.ts`, loaded with Three.js) that draws the stars, the planets and the lines.
+ *
+ * A project shows in one of two ways. On the planetarium (1), it is a planet, and its own card opens as a preview in
+ * the middle. On the chart (2) and the focus (3), it is its own card from the start: the card grows and comes toward
+ * the middle, on the chart pushing the other cards aside along their threads (`web.ts`), on the focus taking the focus.
+ * Either way, the card is the project's: a click dives into its case study as on the journey.
  */
 import './sky.css';
 import { designFor, GROUP_OF, SKY_DEPTH, type BodySpec, type Group, type SkyDesign } from './designs';
+import { stepWeb, webEdges, type WebEdge, type WebNode } from './web';
 import { projectCss, smoothstep, type Sway } from '../journey/camera';
 import type { CardPlace, View } from '../journey/layout';
 import type { Pointer } from '../../motion/tilt';
@@ -36,7 +41,12 @@ export interface SkyInput {
 
 export interface CardShow {
   alpha: number;
+  /** The card's scale, on top of the perspective's. */
   scale: number;
+  /** Its depth in front of the focus plane, in perspective units. */
+  depth: number;
+  /** Its blur, in px, before the perspective scales it. */
+  blur: number;
   /** How far the card stands out toward the mouse over it, in px. */
   lift: number;
 }
@@ -53,10 +63,14 @@ export interface CartelShow {
 export interface SkyLook {
   /** The project shown (its card's index), or -1. */
   active: number;
-  /** The preview's place for each card, at the camera's depth. */
+  /** Each card's place, from the vanishing point, before the perspective (as the journey places its cards). */
   places: CardPlace[];
   cards: CardShow[];
   cartels: CartelShow[];
+  /** The cartels' depth, in front of every card. */
+  cartelDepth: number;
+  /** How much a shown preview dims the Little Prince's planet behind it (0 to 1). */
+  planetDim: number;
   /** Whether the "See the project" disc shows. */
   cursor: boolean;
   /** Whether something still moves on its own: the next frame must be drawn. */
@@ -65,7 +79,7 @@ export interface SkyLook {
 
 export interface Sky {
   design: SkyDesign;
-  /** The preview's size and default place for each card, for the journey's layout. */
+  /** The cards' size and default place, for the journey's layout. */
   layout(view: View, cards: readonly CardPlace[]): CardPlace[];
   /** Adds the WebGL field to the renderer's scene, once Three.js has loaded. */
   attach(renderer: Renderer): void;
@@ -74,7 +88,7 @@ export interface Sky {
   hit(): number;
   /** The card that has the keyboard's focus, or -1. */
   focusCard(index: number): void;
-  /** Back from a case study: its preview shows until the mouse points elsewhere. */
+  /** Back from a case study: the project shows until the mouse points elsewhere. */
   hold(index: number): void;
   /** How far the card stands out toward the mouse, in px, for the dive to start from there. */
   lift(index: number): number;
@@ -84,14 +98,20 @@ export interface Sky {
 const HOVER_LIFT = 18;
 /** On arrival, both constellations draw themselves for this long. */
 const INTRO_MS = 3400;
-/** After the mouse leaves a star or its preview, the preview stays this long, so that the mouse can reach it. */
+/** After the mouse leaves a project or its card, it still shows this long, so that the mouse can reach it. */
 const GRACE_MS = 520;
 /** How far the sky tilts toward the mouse, in degrees, on top of the camera's own tilt: the depth shows. */
 const SKY_TILT_X = 2.4;
 const SKY_TILT_Y = 4.5;
+/** The room a card's name, then its cartel, takes under it (the chart), in design px. */
+const LABEL_ROOM = 24;
+const CARTEL_ROOM = 175;
+/** Where a card that shows heads for, from the vanishing point, on a 1440 × 900 screen: a little above the middle. */
+const MIDDLE = { x: 0, y: -40 };
 
 const ease = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
+const lerp = (a: number, b: number, k: number): number => a + (b - a) * k;
 
 /** Moves `value` toward `target`, with a time constant of `tau` ms. */
 function approach(value: number, target: number, delta: number, tau: number): number {
@@ -112,6 +132,11 @@ export function depthFade(rel: number): number {
   return near * (1 - smoothstep(0.6, 2.2, -rel));
 }
 
+/** A card's blur out of the focus (proposal 3), in px, for its distance from the focused depth. */
+function focusBlur(distance: number): number {
+  return 11 * smoothstep(0.04, 0.42, distance);
+}
+
 interface BodyState {
   spec: BodySpec;
   card: number;
@@ -125,6 +150,9 @@ interface BodyState {
   sy: number;
   scale: number;
   fade: number;
+  /** Its card's size on screen (the chart and the focus). */
+  width: number;
+  height: number;
   /** How much it stands out (0 to 1), and how much it is dimmed by another one standing out. */
   glow: number;
   dim: number;
@@ -136,11 +164,6 @@ const LABELS: Record<Group, { fr: string; en: string }> = {
   pro: { fr: 'Projets pro', en: 'Professional projects' },
 };
 
-const FIGURE_NAMES: Record<Group, { fr: string; en: string }> = {
-  perso: { fr: 'Le Renard', en: 'The Fox' },
-  pro: { fr: 'La Rose', en: 'The Rose' },
-};
-
 const LONG_NAMES: Record<Group, { fr: string; en: string }> = {
   perso: { fr: 'Projets personnels', en: 'Personal projects' },
   pro: { fr: 'Projets professionnels', en: 'Professional projects' },
@@ -148,6 +171,7 @@ const LONG_NAMES: Record<Group, { fr: string; en: string }> = {
 
 export function createSky(variant: number, stage: HTMLElement, slugs: readonly string[]): Sky {
   const design = designFor(variant);
+  const cardsSpec = design.cards;
   const lang = document.documentElement.lang.startsWith('en') ? 'en' : 'fr';
   const titles = slugs.map(
     (slug) => document.getElementById(slug)?.querySelector('.cartel h3')?.textContent.trim() ?? slug,
@@ -170,12 +194,6 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
     label.className = 'sky-label';
     label.dataset.group = group;
     label.dataset.slug = spec.slug;
-    if (spec.letter) {
-      const letter = document.createElement('span');
-      letter.className = 'letter';
-      letter.textContent = spec.letter;
-      label.append(letter);
-    }
     const name = document.createElement('span');
     name.className = 'name';
     name.textContent = titles[card] ?? spec.slug;
@@ -193,6 +211,8 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
         sy: -1000,
         scale: 1,
         fade: 0,
+        width: 0,
+        height: 0,
         glow: 0,
         dim: 0,
         label,
@@ -201,32 +221,14 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
   });
   const bodyOfCard = new Map(bodies.map((body) => [body.card, body]));
 
-  // The constellations' names, as on a chart, or the systems' suns.
-  const names = (design.names ?? []).map((place) => {
+  // The constellations' names, written on the chart (in space, the field writes them).
+  const names = (design.namesIn === 'chart' ? (design.names ?? []) : []).map((place) => {
     const element = document.createElement('div');
     element.className = 'sky-name';
     element.dataset.group = place.group;
-    if (design.look === 'figures') {
-      const figure = document.createElement('span');
-      figure.className = 'figure';
-      figure.textContent = FIGURE_NAMES[place.group][lang];
-      const kind = document.createElement('span');
-      kind.className = 'kind';
-      kind.textContent = LABELS[place.group][lang];
-      element.append(figure, kind);
-    } else {
-      element.textContent = LONG_NAMES[place.group][lang];
-    }
+    element.textContent = LONG_NAMES[place.group][lang];
     overlay.append(element);
     return { place, element };
-  });
-  const suns = (design.systems ?? []).map((system) => {
-    const element = document.createElement('div');
-    element.className = 'sky-sun';
-    element.dataset.group = system.group;
-    element.textContent = LABELS[system.group][lang];
-    overlay.append(element);
-    return { system, element, sx: 0, sy: 0 };
   });
 
   // The legend: a click draws a constellation, and keeps it until another click.
@@ -239,7 +241,7 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
     legend.className = 'sky-legend';
     legend.dataset.look = design.look;
     legend.setAttribute('role', 'group');
-    legend.setAttribute('aria-label', lang === 'en' ? 'Constellations' : 'Constellations');
+    legend.setAttribute('aria-label', 'Constellations');
     (['perso', 'pro'] as const).forEach((group) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -270,6 +272,59 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
     stage.insertBefore(legend, journeySection);
   }
 
+  // ---------- The chart's threads (proposal 2) ----------
+
+  const web: WebNode[] = [];
+  let edges: WebEdge[] = [];
+  if (cardsSpec?.linked) {
+    for (const body of bodies) {
+      web.push({
+        hx: body.spec.x,
+        hy: body.spec.y,
+        x: body.spec.x,
+        y: body.spec.y,
+        vx: 0,
+        vy: 0,
+        hw: 0,
+        hh: 0,
+        below: 0,
+        tx: 0,
+        ty: 0,
+        mass: 1,
+      });
+    }
+    for (const minor of design.minors) {
+      web.push({
+        hx: minor.x,
+        hy: minor.y,
+        x: minor.x,
+        y: minor.y,
+        vx: 0,
+        vy: 0,
+        hw: 0,
+        hh: 0,
+        below: 0,
+        tx: minor.x,
+        ty: minor.y,
+        mass: 1,
+      });
+    }
+    const nodeOf = (ref: string | number): number =>
+      typeof ref === 'number' ? bodies.length + ref : bodies.findIndex((body) => body.spec.slug === ref);
+    const pairs: [number, number][] = [];
+    for (const path of design.paths) {
+      for (let i = 0; i + 1 < path.points.length; i += 1) {
+        const from = path.points[i];
+        const to = path.points[i + 1];
+        if (from === undefined || to === undefined) continue;
+        pairs.push([nodeOf(from), nodeOf(to)]);
+      }
+    }
+    edges = webEdges(web, pairs);
+  }
+  /** Where each faint star is (the chart's move with their threads), as the field wants it. */
+  const minorPlaces = design.minors.map((minor) => ({ x: 0, y: 0, dz: minor.dz }));
+
   // ---------- State ----------
 
   let view: View | null = null;
@@ -286,22 +341,20 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
   let heldAt = { x: 0, y: 0 };
   let grace = -1;
   let graceUntil = 0;
-  let lastActive = -1;
   let lastNow = 0;
-  /** The time the sky's own motions run on (the systems' orbits), slowed down while a project shows. */
-  let orbitTime = 0;
-  let orbitSpeed = 1;
   /** When the camera first rested on the sky: both constellations draw themselves once. */
   let introAt = -1;
   /** Coming back from a case study: the constellations don't draw again as on arrival. */
   let introSkipped = false;
-  const shows = slugs.map(() => ({ alpha: 0, lift: 0, bloom: 0 }));
+  /** Per card: how much its preview shows (alpha), how far it has grown out (shown), its lift. */
+  const shows = slugs.map(() => ({ alpha: 0, shown: 0, lift: 0 }));
   const draws: Record<Group, number> = { perso: 0, pro: 0 };
   const lineAlpha: Record<Group, number> = { perso: 0, pro: 0 };
+  const nameAlpha: Record<Group, number> = { perso: 0, pro: 0 };
   /** The depth the focus rests on (proposal 3), relative to the sky's. */
   let focusDz = 0;
-  /** The preview's place, kept still while its card dives. */
-  const frozen = new Map<number, CardPlace>();
+  /** The card's place and look, kept still while it dives. */
+  const frozen = new Map<number, { place: CardPlace; show: CardShow }>();
   const places: CardPlace[] = slugs.map((_, index) => ({
     index,
     z: SKY_DEPTH,
@@ -316,63 +369,9 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
     floatDelay: 0,
   }));
 
-  function previewCenter(body: BodyState | undefined, current: View): { x: number; y: number; from: number } {
-    const { width, height } = previewSize;
-    const margin = 36;
-    const maxX = current.width / 2 - width / 2 - margin;
-    const top = -current.height / 2 + 96 + height / 2;
-    // Low enough for its cartel to clear the legend.
-    const bottom = current.height / 2 - height / 2 - 220 * syScale;
-    if (!body) return { x: 0, y: -40 * syScale, from: 0 };
-    const bx = body.sx - current.vpX;
-    const by = body.sy - current.vpY;
-    const side = bx < 0 ? 1 : -1;
-    switch (design.preview) {
-      case 'center':
-        return { x: 0, y: -40 * syScale, from: 0 };
-      case 'opposite':
-        return { x: side * 370 * sxScale, y: -30 * syScale, from: 0 };
-      case 'beside': {
-        const gap = 64 * sxScale + body.spec.r * 2 * body.scale;
-        const x = Math.max(-maxX, Math.min(maxX, bx + side * (gap + width / 2)));
-        return { x, y: Math.max(top, Math.min(bottom, by - 24 * syScale)), from: 0 };
-      }
-      case 'bloom': {
-        const gap = 40 * sxScale;
-        const x = Math.max(-maxX, Math.min(maxX, bx + side * (gap + width / 2)));
-        return { x, y: Math.max(top, Math.min(bottom, by - 20 * syScale)), from: 1 };
-      }
-    }
-  }
-
-  /** Where each body is, from the vanishing point, before the camera's projection. */
-  function placeBodies(): void {
-    const systems = design.systems ?? [];
-    const orbits = design.orbits ?? [];
-    for (const body of bodies) {
-      const orbit = orbits.find(({ slug }) => slug === body.spec.slug);
-      const system = systems.find(({ group }) => group === body.group);
-      if (orbit && system) {
-        const angle = 2 * Math.PI * (orbit.phase + orbitTime / orbit.period);
-        const lean = ((90 - system.tilt) * Math.PI) / 180;
-        const roll = (system.roll * Math.PI) / 180;
-        const ox = orbit.radius * Math.cos(angle);
-        const oy = orbit.radius * Math.sin(angle) * Math.sin(lean);
-        const oz = orbit.radius * Math.sin(angle) * Math.cos(lean);
-        const rx = ox * Math.cos(roll) - oy * Math.sin(roll);
-        const ry = ox * Math.sin(roll) + oy * Math.cos(roll);
-        body.x = (system.x + rx) * sxScale;
-        body.y = (system.y + ry) * syScale;
-        body.dz = oz / 1000;
-      } else {
-        // Placed so that, the camera on the sky, it shows where the design puts it on screen.
-        const back = 1 - body.spec.dz;
-        body.x = body.spec.x * sxScale * back;
-        body.y = body.spec.y * syScale * back;
-        body.dz = body.spec.dz;
-      }
-    }
-  }
+  /** The width of a card at rest and once shown, in design px (1440 px wide screen). */
+  const restWidth = ((cardsSpec?.rest ?? 0) / 100) * 1440;
+  const shownWidth = ((cardsSpec?.shown ?? 0) / 100) * 1440;
 
   function skySway(input: SkyInput): Sway {
     const k = input.tilt;
@@ -383,24 +382,64 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
     };
   }
 
-  function hitTest(x: number, y: number): number {
-    let best = -1;
-    let bestDistance = Infinity;
-    for (const body of bodies) {
-      if (body.fade < 0.3) continue;
-      let radius =
-        design.look === 'planets' || design.look === 'systems'
-          ? body.spec.r * body.scale * sxScale + 14
-          : Math.max(38, body.spec.r * 3 * body.scale);
-      // A star already under the mouse keeps it a little further, as the sky sways.
-      if (body.card === starHover) radius *= 1.35;
-      const distance = Math.hypot(x - body.sx, y - body.sy);
-      if (distance < radius && distance < bestDistance) {
-        best = body.card;
-        bestDistance = distance;
+  /** Where a card is (design px), its depth and its width (design px), at `shown` (0 to 1). */
+  function cardPose(body: BodyState, shown: number): { x: number; y: number; d: number; width: number } {
+    const spec = body.spec;
+    const pull = cardsSpec?.pull ?? 0;
+    const k = ease(shown);
+    const width = lerp(restWidth / (1 - spec.dz), shownWidth, k);
+    const d = lerp(spec.dz, cardsSpec?.front ?? 0, k);
+    const node = web[bodies.indexOf(body)];
+    if (node) return { x: node.x, y: node.y, d, width };
+    return {
+      x: lerp(spec.x, spec.x + (MIDDLE.x - spec.x) * pull, k),
+      y: lerp(spec.y, spec.y + (MIDDLE.y - spec.y) * pull, k),
+      d,
+      width,
+    };
+  }
+
+  /** The project under the mouse: a planet, or a card (its box now, and where it rests for the one shown). */
+  function hitTest(x: number, y: number, current: View, sway: Sway, relBase: number): number {
+    if (!cardsSpec) {
+      let best = -1;
+      let bestDistance = Infinity;
+      for (const body of bodies) {
+        if (body.fade < 0.3) continue;
+        let radius = body.spec.r * body.scale * sxScale + 14;
+        // A planet already under the mouse keeps it a little further, as the sky sways.
+        if (body.card === starHover) radius *= 1.35;
+        const distance = Math.hypot(x - body.sx, y - body.sy);
+        if (distance < radius && distance < bestDistance) {
+          best = body.card;
+          bestDistance = distance;
+        }
       }
+      return best;
     }
-    return best;
+    const inside = (cx: number, cy: number, w: number, h: number, margin: number): boolean =>
+      Math.abs(x - cx) <= w / 2 + margin && Math.abs(y - cy) <= h / 2 + margin;
+    // The nearest card first: it is drawn over the others.
+    const order = [...bodies].sort((a, b) => b.dz - a.dz);
+    for (const body of order) {
+      if (body.fade < 0.3) continue;
+      if (inside(body.sx, body.sy, body.width, body.height, 4)) return body.card;
+    }
+    // The card shown also keeps the place it came from, so that it doesn't run away from the mouse.
+    const kept = bodyOfCard.get(starHover);
+    if (kept) {
+      const home = cardPose(kept, 0);
+      const projected = projectCss(
+        kept.spec.x * sxScale * (1 - home.d),
+        kept.spec.y * syScale * (1 - home.d),
+        relBase + home.d,
+        current,
+        sway,
+      );
+      const w = (restWidth * sxScale * projected.scale * (1 - home.d)) / (1 - kept.spec.dz);
+      if (inside(projected.x, projected.y, w, (w * 9) / 16, 10)) return kept.card;
+    }
+    return -1;
   }
 
   const sky: Sky = {
@@ -409,7 +448,7 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
       view = next;
       sxScale = next.width / 1440;
       syScale = next.height / 900;
-      const width = (design.previewWidth / 100) * next.width;
+      const width = ((cardsSpec?.shown ?? design.previewWidth) / 100) * next.width;
       previewSize = { width, height: (width * 9) / 16 };
       field?.resize(next);
       return cards.map((card, index) => {
@@ -432,6 +471,7 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
         field = createField(design, renderer, view, {
           cards: bodies.map((body) => body.card),
           images: bodies.map((body) => images[body.card] ?? null),
+          names: { perso: LABELS.perso[lang], pro: LABELS.pro[lang] },
         });
       });
     },
@@ -451,30 +491,36 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
         introAt = -1;
         introSkipped = false;
       }
+      const diving = input.diving;
+      let busy = false;
 
-      // The orbits slow down to a stop while a project shows (proposal 4).
-      orbitSpeed = approach(orbitSpeed, lastActive >= 0 ? 0 : 1, delta, 420);
-      if (!input.still && input.time > 0) orbitTime += delta * orbitSpeed;
-      placeBodies();
-
-      // Where each body is on screen.
-      for (const body of bodies) {
-        const rel = relBase + body.dz;
+      // Where each project is, and on screen.
+      const place = (body: BodyState): void => {
+        let x = body.spec.x;
+        let y = body.spec.y;
+        let d = body.spec.dz;
+        let width = 0;
+        if (cardsSpec) {
+          const pose = cardPose(body, shows[body.card]?.shown ?? 0);
+          ({ x, y, d, width } = pose);
+        }
+        // Placed so that, the camera on the sky, it shows where the design puts it on screen.
+        body.x = x * sxScale * (1 - d);
+        body.y = y * syScale * (1 - d);
+        body.dz = d;
+        const rel = relBase + d;
         const projected = projectCss(body.x, body.y, rel, current, sway);
         body.sx = projected.x;
         body.sy = projected.y;
         body.scale = projected.scale;
-        body.fade = depthFade(rel);
-      }
-      for (const sun of suns) {
-        const projected = projectCss(sun.system.x * sxScale, sun.system.y * syScale, relBase, current, sway);
-        sun.sx = projected.x;
-        sun.sy = projected.y;
-      }
+        body.fade = depthFade(relBase + body.spec.dz);
+        body.width = width * sxScale * projected.scale * (1 - d);
+        body.height = (body.width * 9) / 16;
+      };
+      bodies.forEach(place);
 
-      // Which project shows: under the mouse, its preview under the mouse, the keyboard's, the one coming back.
-      const diving = input.diving;
-      starHover = near > 0.6 && diving < 0 ? hitTest(pointer.clientX, pointer.clientY) : -1;
+      // Which project shows: under the mouse, its card under the mouse, the keyboard's, the one coming back.
+      starHover = near > 0.6 && diving < 0 ? hitTest(pointer.clientX, pointer.clientY, current, sway, relBase) : -1;
       if (
         held >= 0 &&
         heldAt.x >= 0 &&
@@ -495,90 +541,159 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
       else if (keyboard >= 0) active = keyboard;
       else if (held >= 0) active = held;
       if (near < 0.5 && diving < 0) active = -1;
-      lastActive = active;
       const activeBody = bodyOfCard.get(active);
       const activeGroup = activeBody?.group ?? null;
 
-      // The previews: one at a time, fading in as it rises a little, or growing out of its star.
-      let busy = false;
-      const cards: CardShow[] = shows.map((show, index) => {
+      // How far each project shows.
+      shows.forEach((show, index) => {
         const target = index === active ? 1 : 0;
-        const before = show.alpha;
+        const before = show.alpha + show.shown;
         show.alpha = toward(show.alpha, target, delta, target ? 260 : 170);
-        show.bloom = toward(show.bloom, target, delta, target ? 420 : 170);
-        show.lift = approach(show.lift, index === input.overCard && index === active ? HOVER_LIFT : 0, delta, 120);
-        if (show.alpha !== before || (show.lift > 0.05 && show.lift < HOVER_LIFT - 0.05)) busy = true;
-        const k = ease(show.alpha);
-        return { alpha: k, scale: 0.94 + 0.06 * easeOut(show.alpha), lift: show.lift };
+        show.shown = toward(show.shown, target, delta, cardsSpec ? (target ? 480 : 380) : target ? 420 : 170);
+        show.lift = approach(show.lift, index === pointed && index === active ? HOVER_LIFT : 0, delta, 120);
+        if (show.alpha + show.shown !== before || (show.lift > 0.05 && show.lift < HOVER_LIFT - 0.05)) busy = true;
       });
 
-      // The previews' places, and their cartels.
+      // The chart's threads: the card shown grows toward the middle, the others make room.
+      if (cardsSpec?.linked && web.length > 0) {
+        bodies.forEach((body, i) => {
+          const node = web[i];
+          if (!node) return;
+          const shown = ease(shows[body.card]?.shown ?? 0);
+          const width = lerp(restWidth / (1 - body.spec.dz), shownWidth, shown);
+          node.hw = width / 2;
+          node.hh = (width * 9) / 32;
+          // Room for its name under it, or for its cartel once it shows.
+          node.below = LABEL_ROOM + (CARTEL_ROOM - LABEL_ROOM) * shown;
+          node.tx = lerp(node.hx, node.hx + (MIDDLE.x - node.hx) * cardsSpec.pull, shown);
+          node.ty = lerp(node.hy, node.hy + (MIDDLE.y - node.hy) * cardsSpec.pull, shown);
+          node.mass = body.card === active ? 6 : 1;
+        });
+        if (input.still) {
+          web.forEach((node) => {
+            node.x = node.tx;
+            node.y = node.ty;
+          });
+        } else if (stepWeb(web, edges, delta / 1000)) busy = true;
+        bodies.forEach(place);
+      }
+      design.minors.forEach((minor, i) => {
+        const node = web[bodies.length + i];
+        const where = minorPlaces[i];
+        if (!where) return;
+        where.x = (node ? node.x : minor.x) * sxScale * (1 - minor.dz);
+        where.y = (node ? node.y : minor.y) * syScale * (1 - minor.dz);
+      });
+
+      // The focus rests on the project shown, come forward (proposal 3), else on the sky.
+      if (design.look === 'focus') {
+        const want = active >= 0 ? (cardsSpec?.front ?? 0) : 0;
+        const before = focusDz;
+        focusDz = approach(focusDz, want, delta, 300);
+        if (before !== focusDz) busy = true;
+      }
+
+      // The cards: the previews (planetarium), or the projects' own cards (chart, focus).
+      const cards: CardShow[] = [];
       const cartels: CartelShow[] = [];
+      let cartelDepth = 0.1;
       slugs.forEach((_, index) => {
-        const place = places[index];
-        const show = cards[index];
-        if (!place || !show) return;
+        const cardPlace = places[index];
+        const show = shows[index];
+        if (!cardPlace || !show) return;
         const body = bodyOfCard.get(index);
-        if (index === diving) {
-          const kept = frozen.get(index);
-          if (kept) Object.assign(place, kept);
-        } else {
-          frozen.delete(index);
-          if (show.alpha > 0) {
-            const { x, y, from } = previewCenter(body, current);
-            if (from > 0 && body) {
-              // It grows out of its star.
-              const k = easeOut(shows[index]?.bloom ?? 1);
-              const bx = body.sx - current.vpX;
-              const by = body.sy - current.vpY;
-              place.x = bx + (x - bx) * k;
-              place.y = by + (y - by) * k;
-              show.scale = 0.18 + 0.82 * k;
-            } else {
-              place.x = x;
-              place.y = y;
-            }
-          }
+        const kept = frozen.get(index);
+        if (index === diving && kept) {
+          Object.assign(cardPlace, kept.place);
+          cards.push({ ...kept.show });
+          cartels.push({ x: 0, y: 0, width: 0, align: 'left', alpha: 0 });
+          return;
         }
-        const left = current.vpX + place.x - (place.width * show.scale) / 2;
-        const below = current.vpY + place.y + (place.height * show.scale) / 2 + 22;
-        const centered = design.preview === 'center' || design.preview === 'opposite';
+        frozen.delete(index);
+        if (!cardsSpec) {
+          // A preview in the middle, fading in as it rises a little.
+          const k = ease(show.alpha);
+          cardPlace.x = 0;
+          cardPlace.y = -40 * syScale;
+          cards.push({ alpha: k, scale: 0.94 + 0.06 * easeOut(show.alpha), depth: 0, blur: 0, lift: show.lift });
+          cartels.push({
+            x: current.vpX - cardPlace.width / 2,
+            y: current.vpY + cardPlace.y + cardPlace.height / 2 + 22,
+            width: cardPlace.width,
+            align: 'center',
+            alpha: index === diving ? 0 : Math.max(0, (show.alpha - 0.35) / 0.65),
+          });
+          return;
+        }
+        if (!body) {
+          // A project in neither constellation stays out of the sky.
+          cards.push({ alpha: 0, scale: 0.4, depth: 0, blur: 0, lift: 0 });
+          cartels.push({ x: 0, y: 0, width: 0, align: 'left', alpha: 0 });
+          return;
+        }
+        const shown = ease(show.shown);
+        const pose = cardPose(body, show.shown);
+        cardPlace.x = body.x;
+        cardPlace.y = body.y;
+        const depth = relBase + body.dz;
+        // Its own scale, so that the perspective shows it at its width.
+        const scale = ((pose.width * sxScale) / previewSize.width) * (1 - body.dz);
+        // Out of focus: on arrival, as the journey's cards; on the focus, away from the focused depth.
+        let blur = 12 * smoothstep(0.1, 0.8, Math.abs(relBase));
+        if (design.look === 'focus') {
+          const wide = active >= 0 ? 1.25 : 1;
+          blur = Math.max(blur, focusBlur(Math.abs(body.dz - focusDz) * wide) * (1 - shown));
+          // The project shown takes the whole focus: the others, near or far, blur away.
+          if (active >= 0 && index !== active) blur = Math.max(blur, 6 * ease(shows[active]?.shown ?? 0));
+        }
+        const aside = active >= 0 && index !== active ? 1 : 0;
+        const dimmed = design.look === 'focus' ? 0.3 : 0.12;
+        cards.push({
+          alpha: body.fade * (1 - dimmed * aside * ease(shows[active]?.shown ?? 0)),
+          scale,
+          depth,
+          blur,
+          lift: show.lift,
+        });
+        cartelDepth = Math.max(cartelDepth, depth + 0.05);
         cartels.push({
-          x: centered ? current.vpX + place.x - place.width / 2 : left,
-          y: below,
-          width: centered ? place.width : Math.min(place.width, 380 * sxScale),
-          align: centered ? 'center' : 'left',
-          alpha: index === diving ? 0 : Math.max(0, (show.alpha - 0.35) / 0.65),
+          x: body.sx - body.width / 2,
+          y: body.sy + body.height / 2 + 20,
+          width: Math.min(body.width, 420 * sxScale),
+          align: 'left',
+          alpha: Math.max(0, (shown - 0.5) / 0.5),
         });
       });
       if (diving >= 0 && !frozen.has(diving)) {
-        const place = places[diving];
-        if (place) frozen.set(diving, { ...place });
+        const cardPlace = places[diving];
+        const show = cards[diving];
+        if (cardPlace && show) frozen.set(diving, { place: { ...cardPlace }, show: { ...show } });
       }
 
       // The constellations: drawn once on arrival, then when one of their projects shows or the legend asks.
       const intro = introAt >= 0 ? now - introAt : -1;
       const introDraw = intro >= 0 && intro < INTRO_MS;
-      const always = design.look === 'chart' || design.look === 'figures';
-      const shown = legendHover ?? legendGroup;
+      const always = design.look === 'chart';
+      const legendShown = legendHover ?? legendGroup;
       (['perso', 'pro'] as const).forEach((group) => {
-        const wanted = introDraw || activeGroup === group || shown === group || (always && intro >= 0) ? 1 : 0;
-        const before = draws[group];
+        const wanted = introDraw || activeGroup === group || legendShown === group || (always && intro >= 0) ? 1 : 0;
+        const before = draws[group] + lineAlpha[group] + nameAlpha[group];
         draws[group] = wanted ? toward(draws[group], 1, delta, 1300) : toward(draws[group], 0, delta, 520);
         let alpha: number;
         if (always) {
-          const lit = activeGroup ?? shown;
-          alpha = lit === null ? 0.34 : lit === group ? 0.85 : 0.1;
+          const lit = activeGroup ?? legendShown;
+          alpha = lit === null ? 0.34 : lit === group ? 0.8 : 0.16;
         } else {
           alpha = wanted ? 0.62 : 0.4;
         }
-        const before2 = lineAlpha[group];
         lineAlpha[group] = approach(lineAlpha[group], alpha, delta, 160);
-        if (draws[group] !== before || lineAlpha[group] !== before2) busy = true;
+        // In space, a constellation's name shows while one of its projects does.
+        nameAlpha[group] = approach(nameAlpha[group], activeGroup === group ? 1 : 0, delta, activeGroup ? 260 : 200);
+        if (draws[group] + lineAlpha[group] + nameAlpha[group] !== before) busy = true;
       });
 
-      // How much each body stands out.
-      const lit = activeGroup ?? shown;
+      // How much each project stands out.
+      const lit = activeGroup ?? legendShown;
       for (const body of bodies) {
         const glowTarget = body.card === active ? 1 : 0;
         const dimTarget =
@@ -598,50 +713,34 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
         if (g !== body.glow || d !== body.dim) busy = true;
       }
 
-      // The focus rests on the project shown (proposal 3), else between the two constellations.
-      if (design.look === 'focus') {
-        const want = activeBody ? activeBody.dz : lit ? meanDepth(lit) : 0.02;
-        const before = focusDz;
-        focusDz = approach(focusDz, want, delta, 260);
-        if (before !== focusDz) busy = true;
-      }
-
-      // The overlay.
+      // The overlay: the names of the projects, and the constellations' on the chart.
       const presence = near * input.others * Math.min(1, input.stars / 0.7);
       overlay.style.opacity = presence.toFixed(3);
       overlay.style.visibility = presence > 0.004 ? 'visible' : 'hidden';
       for (const body of bodies) {
         const label = body.label;
-        let alpha = body.fade * (1 - 0.75 * body.dim);
-        let x = body.sx;
+        let alpha = body.fade;
+        const x = body.sx;
         let y = body.sy;
-        if (design.look === 'planets' || design.look === 'systems') {
-          y += body.spec.r * body.scale * sxScale + 12;
-          if (design.look === 'systems') alpha *= 0.55 + 0.45 * body.glow;
-        } else if (design.look === 'focus') {
-          // The name of a light out of focus stays, fainter.
-          const blur = Math.abs(body.dz - focusDz);
-          alpha *= Math.max(body.glow, 1 - 0.55 * smoothstep(0.02, 0.2, blur));
-          y += 16 + 26 * smoothstep(0.02, 0.4, blur);
+        if (cardsSpec) {
+          // Under its card, until the card shows its cartel.
+          y += body.height / 2 + 10;
+          alpha *= 1 - smoothstep(0, 0.4, shows[body.card]?.shown ?? 0);
+          alpha *= 1 - 0.55 * body.dim;
+          if (design.look === 'focus') alpha *= 1 - 0.45 * smoothstep(0.04, 0.42, Math.abs(body.dz - focusDz));
         } else {
-          x += body.spec.r * 1.6 * body.scale + 8;
-          y -= 1;
+          y += body.spec.r * body.scale * sxScale + 12;
+          alpha *= 1 - 0.75 * body.dim;
         }
         label.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
         label.style.opacity = alpha.toFixed(3);
         label.classList.toggle('on', body.card === active);
       }
-      for (const { place, element } of names) {
-        const projected = projectCss(place.x * sxScale, place.y * syScale, relBase, current, sway);
-        element.style.transform = `translate(${projected.x.toFixed(1)}px, ${projected.y.toFixed(1)}px) translate(-50%, -50%) rotate(${String(place.angle)}deg)`;
-        const alpha = lit === null ? 0.7 : lit === place.group ? 1 : 0.28;
+      for (const { place: name, element } of names) {
+        const projected = projectCss(name.x * sxScale, name.y * syScale, relBase, current, sway);
+        element.style.transform = `translate(${projected.x.toFixed(1)}px, ${projected.y.toFixed(1)}px) translate(-50%, -50%) rotate(${String(name.angle)}deg)`;
+        const alpha = lit === null ? 0.7 : lit === name.group ? 1 : 0.28;
         element.style.opacity = alpha.toFixed(3);
-      }
-      for (const sun of suns) {
-        // Under its system, below the widest orbit.
-        sun.element.style.transform = `translate(${sun.sx.toFixed(1)}px, ${(sun.sy + 150 * syScale).toFixed(1)}px)`;
-        const alpha = lit === null ? 0.75 : lit === sun.system.group ? 1 : 0.3;
-        sun.element.style.opacity = alpha.toFixed(3);
       }
       if (legend) {
         legend.style.opacity = (near * input.others).toFixed(3);
@@ -659,29 +758,25 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
           sway,
           relBase,
           presence: input.others * input.stars,
-          bodies: bodies.map((body) => ({
-            x: body.x,
-            y: body.y,
-            dz: body.dz,
-            glow: body.glow,
-            dim: body.dim,
-          })),
+          bodies: bodies.map((body) => ({ x: body.x, y: body.y, dz: body.dz, glow: body.glow, dim: body.dim })),
+          minors: minorPlaces,
           draws,
           lineAlpha,
+          nameAlpha,
           focusDz,
-          activeBody: activeBody ? bodies.indexOf(activeBody) : -1,
           sx: sxScale,
           sy: syScale,
         };
         if (field.update(frame)) busy = true;
       }
-      if (design.look === 'systems' && orbitSpeed > 0.001 && input.time > 0) busy = true;
 
       return {
         active,
         places,
         cards,
         cartels,
+        cartelDepth,
+        planetDim: ease(shows[active]?.alpha ?? 0) * (cardsSpec ? 0 : 1),
         cursor: diving < 0 && near > 0.6 && (starHover >= 0 || input.overCard >= 0),
         busy,
       };
@@ -697,11 +792,17 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
       held = index;
       heldAt = { x: -1, y: -1 };
       introSkipped = true;
-      // The preview is there already, as the card comes back into it.
+      // The project shows already, as its card comes back into its place.
       const show = shows[index];
       if (show) {
         show.alpha = 1;
-        show.bloom = 1;
+        show.shown = 1;
+      }
+      const body = bodyOfCard.get(index);
+      const node = body ? web[bodies.indexOf(body)] : undefined;
+      if (node && cardsSpec) {
+        node.x = node.hx + (MIDDLE.x - node.hx) * cardsSpec.pull;
+        node.y = node.hy + (MIDDLE.y - node.hy) * cardsSpec.pull;
       }
     },
 
@@ -716,12 +817,7 @@ export function createSky(variant: number, stage: HTMLElement, slugs: readonly s
     },
   };
 
-  function meanDepth(group: Group): number {
-    const members = bodies.filter((body) => body.group === group);
-    return members.reduce((sum, body) => sum + body.dz, 0) / Math.max(1, members.length);
-  }
-
-  // The mouse that comes back from a case study starts where it is: the held preview stays until it moves.
+  // The mouse that comes back from a case study starts where it is: the project held stays until it moves.
   const onMove = (event: PointerEvent): void => {
     if (held >= 0 && heldAt.x < 0) heldAt = { x: event.clientX, y: event.clientY };
   };

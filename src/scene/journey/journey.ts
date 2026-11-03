@@ -184,7 +184,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   /** Each project's card, by its fragment. */
   const cardOf = new Map(cards.map(({ item }, i) => [item.id, i]));
 
-  // The constellation proposals (`?constellations=1` to 5, desktop only): the projects share one sky, on one anchor.
+  // The constellation proposals (`?constellations=1` to 3, desktop only): the projects share one sky, on one anchor.
   const skyAsked = skyVariant(location.search);
   let sky: Sky | null = null;
   /** The journey's course: project by project, or one stop on the sky of constellations. */
@@ -360,8 +360,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   // It loads once the ambient motions start, while the camera is near the opening, and is let go from the middle of
   // the journey on, so that its GPU memory is free before the office.
-  const PLANET_KEEP = course.anchors[3] ?? 0.3;
-  const PLANET_FREE = course.anchors[4] ?? 0.4;
+  // On the planetarium's sky (constellations, proposal 1), it stays in the middle of the sky, sharp, until the end.
+  const planetKeep = (): number =>
+    sky?.design.planet ? (course.anchors[1] ?? 0.3) + 0.02 : (course.anchors[3] ?? 0.3);
+  const planetFree = (): number => (sky?.design.planet ? course.endStart + 0.04 : (course.anchors[4] ?? 0.4));
   /** The planet's blur, in px, past which it is only a blurred light: the image shows instead. */
   const PLANET_SHARP = 3;
   let livePlanet: LivePlanet | null = null;
@@ -420,12 +422,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   /** Draws the live planet when it shows, loads it near the opening and lets it go past the middle. */
   function drawPlanet(now: number, u: number, blur: number, moment: 'aube' | 'crepuscule'): void {
     if (!options.webgl || planetSlow) return;
-    if (u > PLANET_FREE) {
+    if (u > planetFree()) {
       if (planetLoading) freePlanet();
       return;
     }
     if (!livePlanet || !handoff) {
-      if (ambient.started() && u <= PLANET_KEEP) loadPlanet();
+      if (ambient.started() && u <= planetKeep()) loadPlanet();
       return;
     }
     const previousDraw = lastPlanetDraw;
@@ -688,6 +690,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     if (contact && element && contact.contains(element)) glideTo(positions.length - 1);
   };
 
+  // On the sky, a project's preview leaves with the focus, also when the focus goes nowhere (a click on the sky).
+  const onBlur = (event: FocusEvent): void => {
+    if (!sky || event.relatedTarget) return;
+    sky.focusCard(-1);
+    redraw = true;
+  };
+
   // A blurred card comes into focus first; the sharp one opens.
   const onClick = (event: MouseEvent): void => {
     const element = event.target instanceof Element ? event.target : null;
@@ -778,8 +787,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   /** How near the camera is to the sky (1 when it rests there). */
   const skyNear = (depth: number): number => 1 - smoothstep(0.05, 0.45, Math.abs(1.5 - depth));
 
-  /** A preview on the sky: flat, at the camera's depth. */
-  const FLAT = { depth: 0, scale: 1, opacity: 1, blur: 0 };
+  /** How much the preview shown dims the Little Prince's planet behind it (the planetarium). */
+  let skyLookDim = 0;
 
   /** Draws the sky and the projects' previews; returns whether the "See the project" disc shows. */
   function drawSky(input: {
@@ -811,8 +820,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       still: options.still,
     });
     focus = diving >= 0 ? diving : look.active;
+    skyLookDim = look.planetDim;
     if (look.busy) redraw = true;
-    const back = (view.perspective - CARTEL_Z) / view.perspective;
+    // The cartels stand in front of every card.
+    const cartelZ = look.cartelDepth * view.perspective;
+    const back = 1 - look.cartelDepth;
     cards.forEach((parts, i) => {
       const place = look.places[i];
       const show = look.cards[i];
@@ -821,22 +833,25 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       const lit = focus === i && diving < 0 && show.alpha > 0.5;
       set(parts.float, 'transform', 'none');
       if (i === diving && dive) {
-        const flight = diveLook(place, FLAT, view, k);
+        // From where it shows: its depth, and its own scale, which unwinds as it flies.
+        const start = { depth: show.depth, scale: 1 / (1 - show.depth), opacity: 1, blur: 0 };
+        const flight = diveLook(place, start, view, k);
+        const scale = show.scale + (1 - show.scale) * k;
         set(parts.place, 'transform', cssTransform(flight.x, flight.y, flight.depth, view, sway));
         cardPerspective(parts, flight.x, flight.y, flight.depth, 0, view);
         set(parts.link, 'opacity', '1');
         set(parts.link, 'filter', 'none');
         set(parts.link, 'pointer-events', 'none');
-        set(parts.link, 'transform', `translateZ(${(dive.lift * (1 - k)).toFixed(2)}px)`);
+        set(parts.link, 'transform', `scale(${scale.toFixed(4)}) translateZ(${(dive.lift * (1 - k)).toFixed(2)}px)`);
         set(parts.link, 'transition', 'box-shadow 450ms ease');
         set(parts.link, 'box-shadow', '0 0 0 0 rgb(255 255 255 / 0%), 0 40px 80px -24px rgb(0 0 0 / 0%)');
         set(parts.link, 'border-radius', `${(dive.radius * (1 - k)).toFixed(2)}px`);
       } else {
         const opacity = show.alpha * others;
-        set(parts.place, 'transform', cssTransform(place.x, place.y, 0, view, sway));
-        cardPerspective(parts, place.x, place.y, 0, 0, view);
+        set(parts.place, 'transform', cssTransform(place.x, place.y, show.depth, view, sway));
+        cardPerspective(parts, place.x, place.y, show.depth, 0, view);
         set(parts.link, 'opacity', opacity.toFixed(3));
-        set(parts.link, 'filter', 'none');
+        set(parts.link, 'filter', show.blur > 0.05 ? `blur(${show.blur.toFixed(2)}px)` : 'none');
         set(parts.link, 'pointer-events', opacity > 0.5 && diving < 0 ? 'auto' : 'none');
         set(parts.link, 'transform', `scale(${show.scale.toFixed(4)}) translateZ(${show.lift.toFixed(2)}px)`);
         set(parts.link, 'transition', 'box-shadow 450ms ease');
@@ -847,7 +862,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       if (parts.cartel && cartel) {
         const x = view.vpX + (cartel.x - view.vpX) * back;
         const y = view.vpY + (cartel.y - view.vpY) * back;
-        set(parts.cartel, 'translate', `${x.toFixed(1)}px ${y.toFixed(1)}px ${String(CARTEL_Z)}px`);
+        set(parts.cartel, 'translate', `${x.toFixed(1)}px ${y.toFixed(1)}px ${cartelZ.toFixed(1)}px`);
         set(parts.cartel, 'scale', back.toFixed(4));
         set(parts.cartel, '--cartel-width', `${cartel.width.toFixed(1)}px`);
         set(parts.cartel, 'opacity', (cartel.alpha * others).toFixed(3));
@@ -1009,12 +1024,24 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
     // The planet recedes to a point of light, drifting toward the vanishing point.
     const planetState = planetLook(depth, light.sky, arrival);
-    const sP = planetState.scale;
+    // On the planetarium's sky, the planet comes to the middle of the screen, sharp, as the camera nears the sky.
+    const centerK = sky?.design.planet ? skyNear(depth) : 0;
+    const planetDim = sky?.design.planet ? skyLookDim : 0;
+    let sP = planetState.scale;
     const mid = tiltOn
       ? { x: pointer.pointer.x * 14 * (1 - sP) * swing0, y: pointer.pointer.y * 8 * (1 - sP) * swing0 }
       : { x: 0, y: 0 };
-    const dx = planetRest.x * (sP - 1) + mid.x + sway.dx;
-    const dy = planetRest.y * (sP - 1) + mid.y + sway.dy;
+    let dx = planetRest.x * (sP - 1) + mid.x + sway.dx;
+    let dy = planetRest.y * (sP - 1) + mid.y + sway.dy;
+    if (centerK > 0 && sky?.design.planet && planetSize > 0) {
+      const target = (sky.design.planet * view.width) / 1440 / planetSize;
+      sP += (target - sP) * centerK;
+      dx += (view.width / 2 - view.vpX - planetRest.x + sway.dx - dx) * centerK;
+      dy += (view.height / 2 - view.vpY - planetRest.y + sway.dy - dy) * centerK;
+      planetState.blur *= 1 - centerK;
+      planetState.glowOpacity *= 1 - centerK;
+      planetState.opacity += (1 - 0.6 * planetDim - planetState.opacity) * centerK;
+    }
     const group = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) rotate(${sway.roll.toFixed(3)}deg)`;
     if (decorGroup) set(decorGroup, 'transform', `${group} scale(${sP.toFixed(4)})`);
     // On the sky, the planet's decor (its stars and lights, shrunk around it) leaves the middle to the previews.
@@ -1312,6 +1339,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   window.addEventListener('resize', onResize);
   window.addEventListener('hashchange', onHash);
   root.addEventListener('focusin', onFocus);
+  root.addEventListener('focusout', onBlur);
   root.addEventListener('click', onClick, true);
   root.addEventListener('pointerover', onOver);
   window.addEventListener('click', onSkyClick, true);
@@ -1432,6 +1460,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     window.removeEventListener('resize', onResize);
     window.removeEventListener('hashchange', onHash);
     root.removeEventListener('focusin', onFocus);
+    root.removeEventListener('focusout', onBlur);
     root.removeEventListener('click', onClick, true);
     root.removeEventListener('pointerover', onOver);
     setJourney(null);
