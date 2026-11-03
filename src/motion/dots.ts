@@ -1,16 +1,10 @@
 /**
  * The case studies' dots, on a touch screen (CaseStudy.astro): over a slide (slide.ts), the light leaves the dot of the
- * case study left like a drop of liquid. Its front edge springs toward the dot that comes in, a little past it and back,
- * stretching it thin; its back edge follows later, and the drop gathers into the new dot. Meanwhile the old dot narrows
- * and the new one widens, so that the row ends as the page drew it.
+ * case study left like a drop of liquid, gliding in one smooth move to the dot that comes in. Both its edges travel
+ * together, the back one only a breath behind, so that it lengthens a little with its speed and rounds up again as it
+ * settles. Meanwhile the old dot narrows and the new one widens, so that the row ends as the page drew it.
  */
 
-/** The front edge's ease: quick, past the dot and back. */
-const springOut = (t: number): number => {
-  const c = 1.9;
-  const u = t - 1;
-  return 1 + (c + 1) * u * u * u + c * u * u;
-};
 const easeInOut = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 const clamp01 = (t: number): number => Math.min(1, Math.max(0, t));
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -57,17 +51,15 @@ export function moveDots(from: number, duration: number): void {
     current.style.width = `${String(lerp(narrow, wide, grow))}px`;
     const a = { start: left.offsetLeft, end: left.offsetLeft + left.offsetWidth };
     const b = { start: current.offsetLeft, end: current.offsetLeft + current.offsetWidth };
-    // Front edge first, springing; back edge later, gathering.
-    const front = springOut(clamp01(t / 0.62));
-    const back = easeInOut(clamp01((t - 0.18) / 0.82));
+    // One move: the front edge a breath ahead, the back one a breath behind, both easing in and out.
+    const front = easeInOut(clamp01(t / 0.9));
+    const back = easeInOut(clamp01((t - 0.1) / 0.9));
     const edges = forward
       ? { start: lerp(a.start, b.start, back), end: lerp(a.end, b.end, front) }
       : { start: lerp(a.start, b.start, front), end: lerp(a.end, b.end, back) };
     const length = Math.max(height, edges.end - edges.start);
-    // Stretched, it thins, as a drop does.
-    const thin = 1 - 0.3 * clamp01((length - wide) / (Math.abs(b.start - a.start) + 1));
     drop.style.width = `${String(length)}px`;
-    drop.style.transform = `translate(${String(edges.start)}px, -50%) scaleY(${String(thin)})`;
+    drop.style.transform = `translate(${String(edges.start)}px, -50%)`;
     if (t < 1) {
       requestAnimationFrame(frame);
       return;
