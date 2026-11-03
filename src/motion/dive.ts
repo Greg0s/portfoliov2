@@ -15,6 +15,7 @@
 import { prefetch } from 'astro:prefetch';
 import { navigate } from 'astro:transitions/client';
 import { prefersReducedMotion } from './reducedMotion';
+import { coverTop } from '../lib/cover';
 import { inRing } from './slide';
 import { holdStill } from '../scene/rest';
 import { currentJourney } from '../scene/journey/registry';
@@ -67,8 +68,7 @@ interface Box {
 const openingMedia = (): Box => {
   const html = document.documentElement;
   const width = html.clientWidth;
-  const top = Number.parseFloat(getComputedStyle(html).getPropertyValue('--cover-top')) || 0;
-  return { left: 0, top, width, height: (width * 9) / 16, radius: '0px' };
+  return { left: 0, top: coverTop(), width, height: (width * 9) / 16, radius: '0px' };
 };
 const boxOf = (element: Element): Box => {
   const rect = element.getBoundingClientRect();
@@ -155,10 +155,22 @@ const wait = (ms: number): Promise<void> =>
 /** When the content starts rising, into the flight. */
 const RISE_DELAY_MS = 100;
 
+/**
+ * The stylesheets being adopted, until they load: the router, finding one already in the page, does not wait for it, so
+ * the dive does, or the case study would show unstyled for a moment on a slow connection.
+ */
+const adopting = new Map<string, Promise<void>>();
+/** Once the router has the page, a stylesheet is its to load: the dive adopts none any more. */
+let handedOver = false;
+
 /** A stylesheet of the case study's page, loaded into this one before its opening shows. */
 function adoptStylesheet(link: HTMLLinkElement): Promise<void> {
   const href = link.getAttribute('href');
-  if (!href || document.head.querySelector(`link[rel=stylesheet][href="${href}"]`)) return Promise.resolve();
+  if (!href) return Promise.resolve();
+  if (handedOver) return Promise.resolve();
+  const pending = adopting.get(href);
+  if (pending) return pending;
+  if (document.head.querySelector(`link[rel=stylesheet][href="${href}"]`)) return Promise.resolve();
   // The same element as the case study's: the router keeps it when the page changes.
   const adopted = document.importNode(link, true);
   const loaded = new Promise<void>((resolve, reject) => {
@@ -168,7 +180,9 @@ function adoptStylesheet(link: HTMLLinkElement): Promise<void> {
     adopted.addEventListener('error', reject);
   });
   document.head.append(adopted);
-  return loaded;
+  const settled = loaded.finally(() => adopting.delete(href));
+  adopting.set(href, settled);
+  return settled;
 }
 
 /**
@@ -266,6 +280,9 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
       // the picture over the content while the router changes the page.
       cover.querySelector<HTMLElement>('.dive-picture')?.style.removeProperty('view-transition-name');
     }
+    // The case study's stylesheets being loaded into this page, the router would not wait for them.
+    handedOver = true;
+    await Promise.allSettled(adopting.values());
     await navigate(href);
     // The router swaps the page, the picture with it. Still there a moment later, the page never changed (the
     // navigation was dropped on the way, and no other took its place): the browser opens the case study itself.
@@ -273,6 +290,7 @@ async function dive(href: string, image: HTMLImageElement, slug: string | null, 
     if (cover.isConnected) location.assign(href);
   } finally {
     ahead.flown = true;
+    handedOver = false;
     landing = false;
     ahead.opening?.remove();
     release();

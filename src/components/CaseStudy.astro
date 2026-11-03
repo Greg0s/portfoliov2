@@ -496,6 +496,11 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     view-transition-name: case-header;
   }
 
+  /* The dots apart from it: the page that comes in shows them live, its current dot stretching out of the last one. */
+  :global(html[data-slide]) .dots {
+    view-transition-name: case-dots;
+  }
+
   :global(html[data-slide]) .cover img {
     view-transition-name: none !important;
   }

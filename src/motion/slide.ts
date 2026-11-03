@@ -19,6 +19,8 @@ interface Slide {
   side: Side;
   /** How far a swipe moved the page already, in pixels: negative to the left. */
   offset: number;
+  /** The case study left, in the ring's order: its dot hands over to the one that comes in. */
+  from: number;
 }
 
 let ready = false;
@@ -69,6 +71,24 @@ function apply({ side, offset }: Slide): void {
   html.style.setProperty('--slide-ease', ease);
 }
 
+/**
+ * On a touch screen, the dot of the case study left shrinks back as the one that comes in stretches out, over the
+ * slide: the row says which way the page went.
+ */
+function moveDot({ from, offset }: Slide): void {
+  const dots = Array.from(document.querySelectorAll<HTMLElement>('.dots > span'));
+  const to = dots.findIndex((dot) => dot.classList.contains('current'));
+  const left = dots[from];
+  const current = dots[to];
+  if (!left || !current || from === to || getComputedStyle(current).display === 'none') return;
+  const { duration, ease } = offset === 0 ? FROM_REST : FROM_SWIPE;
+  const timing = { duration: Number.parseFloat(duration), easing: ease };
+  const wide = { width: getComputedStyle(current).width, backgroundColor: getComputedStyle(current).backgroundColor };
+  const narrow = { width: getComputedStyle(left).width, backgroundColor: getComputedStyle(left).backgroundColor };
+  left.animate([wide, narrow], timing);
+  current.animate([narrow, wide], timing);
+}
+
 function clear(): void {
   const html = document.documentElement;
   delete html.dataset.slide;
@@ -82,8 +102,9 @@ export function initSlide(): void {
   document.addEventListener('astro:before-preparation', (event) => {
     const offset = handed ?? 0;
     handed = null;
-    const side = sideOf(ring(), event.from.pathname, event.to.pathname);
-    slide = side && !prefersReducedMotion() ? { side, offset } : null;
+    const paths = ring();
+    const side = sideOf(paths, event.from.pathname, event.to.pathname);
+    slide = side && !prefersReducedMotion() ? { side, offset, from: paths.indexOf(event.from.pathname) } : null;
     // Set before the old page is captured: its cover leaves with it, its header stays (CaseStudy.astro).
     if (slide) apply(slide);
     else clear();
@@ -105,6 +126,7 @@ export function initSlide(): void {
     // page is captured, and the page shows in place, without its opening rise.
     apply(slide);
     document.documentElement.dataset.slid = '';
+    moveDot(slide);
     slide = null;
   });
 }

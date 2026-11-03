@@ -189,6 +189,16 @@ html[data-dive-fade]::view-transition-new(root) {
   html[data-slide]::view-transition-group(case-header) {
     animation-duration: calc(var(--slide-duration) / 2);
   }
+
+  /* The dots show live, on the page that comes in, where slide.ts moves its current dot (CaseStudy.astro). */
+  html[data-slide]::view-transition-group(case-dots),
+  html[data-slide]::view-transition-new(case-dots) {
+    animation: none;
+  }
+
+  html[data-slide]::view-transition-old(case-dots) {
+    display: none;
+  }
 }
 
 @keyframes slide-away {
