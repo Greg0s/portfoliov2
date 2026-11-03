@@ -6,6 +6,7 @@
  * rise. A swipe hands its offset over, so that the page goes on from where the finger left it, quicker and easing out.
  * With "reduce motion", the router's fade (base.css).
  */
+import { moveDots } from './dots';
 import { prefersReducedMotion } from './reducedMotion';
 import { sideOf, type Side } from '../lib/ring';
 
@@ -71,24 +72,6 @@ function apply({ side, offset }: Slide): void {
   html.style.setProperty('--slide-ease', ease);
 }
 
-/**
- * On a touch screen, the dot of the case study left shrinks back as the one that comes in stretches out, over the
- * slide: the row says which way the page went.
- */
-function moveDot({ from, offset }: Slide): void {
-  const dots = Array.from(document.querySelectorAll<HTMLElement>('.dots > span'));
-  const to = dots.findIndex((dot) => dot.classList.contains('current'));
-  const left = dots[from];
-  const current = dots[to];
-  if (!left || !current || from === to || getComputedStyle(current).display === 'none') return;
-  const { duration, ease } = offset === 0 ? FROM_REST : FROM_SWIPE;
-  const timing = { duration: Number.parseFloat(duration), easing: ease };
-  const wide = { width: getComputedStyle(current).width, backgroundColor: getComputedStyle(current).backgroundColor };
-  const narrow = { width: getComputedStyle(left).width, backgroundColor: getComputedStyle(left).backgroundColor };
-  left.animate([wide, narrow], timing);
-  current.animate([narrow, wide], timing);
-}
-
 function clear(): void {
   const html = document.documentElement;
   delete html.dataset.slide;
@@ -126,7 +109,7 @@ export function initSlide(): void {
     // page is captured, and the page shows in place, without its opening rise.
     apply(slide);
     document.documentElement.dataset.slid = '';
-    moveDot(slide);
+    moveDots(slide.from, Number.parseFloat(slide.offset === 0 ? FROM_REST.duration : FROM_SWIPE.duration));
     slide = null;
   });
 }

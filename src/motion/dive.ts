@@ -197,6 +197,12 @@ async function caseOpening(href: string): Promise<HTMLElement | null> {
   const article = page.querySelector('article.case');
   if (!header || !article) return null;
   await Promise.all(Array.from(page.head.querySelectorAll<HTMLLinkElement>('link[rel=stylesheet]'), adoptStylesheet));
+  // In development, the styles come inline, one per module, which the router keeps by their id when the page changes.
+  for (const style of page.head.querySelectorAll<HTMLStyleElement>('style[data-vite-dev-id]')) {
+    const id = style.dataset.viteDevId ?? '';
+    if (!handedOver && !document.head.querySelector(`style[data-vite-dev-id="${CSS.escape(id)}"]`))
+      document.head.append(document.importNode(style, true));
+  }
   // The picture flies under the opening media's place, and the body lies below the screen. The page's own media is
   // decoded meanwhile, so that it shows at once when the page takes over from the picture.
   const cover = article.querySelector<HTMLElement>('.cover');
