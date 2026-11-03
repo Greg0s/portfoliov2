@@ -115,8 +115,8 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 
       <div class="sheet">
         <div class="intro">
-          <p class="tag">{projectTag(project)}</p>
           <h1>{title}</h1>
+          <p class="tag">{projectTag(project)}</p>
           <p class="lede">{lede ?? summary}</p>
         </div>
 
@@ -588,15 +588,12 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     font-weight: 600;
     letter-spacing: var(--tracking-tag);
     text-transform: uppercase;
-    color: rgb(243 243 241 / 88%);
-    /* Over any cover, light or busy, where the fade under the title has hardly begun: a small dark frosted chip. */
-    align-self: flex-start;
-    width: fit-content;
-    padding: 5px 11px 4px;
-    margin-left: -11px;
-    border-radius: 999px;
-    background: rgb(6 6 7 / 55%);
-    backdrop-filter: blur(10px) saturate(1.2);
+    color: var(--color-muted);
+  }
+
+  /* Under the title, close to it: it reads as the title's line. */
+  h1 + .tag {
+    margin-top: -10px;
   }
 
   h1 {
