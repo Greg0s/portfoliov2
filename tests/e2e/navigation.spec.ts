@@ -49,6 +49,27 @@ test.describe('desktop header', () => {
     await atTop('#accueil');
   });
 
+  test('lights the current section and dims the other links', async ({ page }) => {
+    const header = page.getByRole('banner');
+    const name = header.getByRole('link', { name: 'Grégoire Tinnes' });
+    const projects = header.getByRole('link', { name: 'Projets' });
+    const contact = header.getByRole('link', { name: 'Contact' });
+
+    await page.goto('./');
+    await expect(name).toHaveAttribute('aria-current', 'location');
+    await expect(projects).not.toHaveAttribute('aria-current');
+
+    await page.goto('./#lyrix');
+    await expect(projects).toHaveAttribute('aria-current', 'location');
+    await expect(name).not.toHaveAttribute('aria-current');
+    await expect(projects).not.toHaveCSS('text-shadow', 'none');
+    await expect(contact).toHaveCSS('color', 'rgba(243, 243, 241, 0.68)');
+
+    await page.goto('./#contact');
+    await expect(contact).toHaveAttribute('aria-current', 'location');
+    await expect(projects).not.toHaveAttribute('aria-current');
+  });
+
   test('hides the menu button', async ({ page }) => {
     await page.goto('./');
     await expect(page.getByRole('button', { name: 'Menu' })).toBeHidden();
@@ -57,6 +78,14 @@ test.describe('desktop header', () => {
 
 test.describe('mobile menu', () => {
   test.skip(({ isMobile }) => !isMobile, 'the menu only exists on small screens');
+
+  test('shows no current section in the header', async ({ page }) => {
+    await page.goto('./#lyrix');
+    const name = page.getByRole('banner').getByRole('link', { name: 'Grégoire Tinnes' });
+    await expect(page.locator('[data-site-header]')).toHaveAttribute('data-section', 'projects');
+    await expect(name).toHaveCSS('text-shadow', 'none');
+    await expect(name).toHaveCSS('color', 'rgb(243, 243, 241)');
+  });
 
   test('opens and closes with the keyboard and gives the focus back', async ({ page }) => {
     await page.goto('./');
