@@ -1,0 +1,116 @@
+/* The showcase proposals (`showcase.ts`): the sky behind the cards, the arrows and the counter over them. */
+.showcase-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.showcase-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.showcase-ui > * {
+  pointer-events: inherit;
+}
+
+.showcase-counter {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(var(--header-height) + 5vh);
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(64px, 6vw, 96px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.showcase-counter .all {
+  color: var(--color-muted);
+}
+
+.showcase-arrows {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.arrows-bottom .showcase-arrows {
+  left: 50%;
+  bottom: 7vh;
+  translate: -50% 0;
+}
+
+.arrows-cartel .showcase-arrows {
+  left: var(--cartel-x);
+  top: calc(var(--cartel-y) + 128px);
+}
+
+.showcase-count {
+  min-width: 64px;
+  font-family: var(--font-display);
+  font-size: var(--size-label);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-align: center;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.showcase-count .now {
+  color: var(--color-text);
+}
+
+.showcase-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 16px;
+  background: rgb(12 12 13 / 40%);
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    border-color 250ms var(--ease-ui),
+    background-color 250ms var(--ease-ui),
+    scale 250ms var(--ease-ui);
+}
+
+.showcase-arrow svg {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.showcase-arrow:hover {
+  border-color: rgb(243 243 241 / 55%);
+  background: rgb(243 243 241 / 8%);
+}
+
+.showcase-arrow:active {
+  scale: 0.94;
+}
+
+.showcase-arrow:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 4px;
+}
+
+/* The cartels: placed and faded by the journey, frame by frame, always aligned to their left. */
+html[data-showcase][data-journey='on'] .journey .project .cartel {
+  align-items: flex-start !important;
+  text-align: left !important;
+  transition: none !important;
+}
