@@ -243,6 +243,22 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     margin: 0;
   }
 
+  /* 6 — A soft glow on the current link, as if lit (Grégoire's request, 3 November 2026). */
+  [data-indicator='6'] .links > a[aria-current],
+  [data-indicator='6'] .where-word {
+    color: var(--color-text);
+    text-shadow:
+      0 0 1px rgb(255 255 255 / 45%),
+      0 0 10px rgb(255 255 255 / 55%),
+      0 0 22px rgb(255 240 225 / 30%);
+  }
+
+  [data-indicator='6'] .links > a {
+    transition:
+      text-shadow 600ms var(--ease-ui),
+      opacity 200ms ease;
+  }
+
   /* The menu marks its current link the same way. */
   :global([data-indicator='1'] ~ .menu .links a[aria-current]),
   :global([data-indicator='4'] ~ .menu .links a[aria-current]) {
@@ -254,6 +270,13 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
   :global([data-indicator='2'][data-section] ~ .menu .links a:not([aria-current])),
   :global([data-indicator='5'][data-section] ~ .menu .links a:not([aria-current])) {
     color: var(--color-muted);
+  }
+
+  :global([data-indicator='6'] ~ .menu .links a[aria-current]) {
+    text-shadow:
+      0 0 2px rgb(255 255 255 / 45%),
+      0 0 18px rgb(255 255 255 / 50%),
+      0 0 40px rgb(255 240 225 / 28%);
   }
 
   :global([data-indicator='3'] ~ .menu .links a[aria-current]::before) {

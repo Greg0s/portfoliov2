@@ -4,15 +4,15 @@
  * sections' place on screen (the list, "reduce motion", no WebGL). The header and the menu mark their link with
  * `aria-current="location"`, and the header carries `data-section` and, through the projects, the project's number.
  *
- * Proposals (header thread, 2 November 2026): `?entete=1` to `?entete=5` pick how the header shows it.
+ * Proposals (header thread, 2 November 2026): `?entete=1` to `?entete=6` pick how the header shows it.
  */
 import { fragments } from '../i18n/routes';
 import { currentJourney } from '../scene/journey/registry';
 
 export type Section = 'projects' | 'contact';
 
-const VARIANTS = ['1', '2', '3', '4', '5'];
-const DEFAULT_VARIANT = '1';
+const VARIANTS = ['1', '2', '3', '4', '5', '6'];
+const DEFAULT_VARIANT = '6';
 
 /** The variant asked for in the address, kept for the rest of the visit. */
 let variant = DEFAULT_VARIANT;
