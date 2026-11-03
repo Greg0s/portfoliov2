@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { HANDOFF_FADE, planetHandoff } from '../../src/scene/planet/handoff';
 import { MOMENT_FADE, mixMoments, momentColors } from '../../src/scene/planet/lights';
 import { createWind, roseAngle, SCARF_LOOP } from '../../src/scene/planet/wind';
-import { frameSampler } from '../../src/scene/quality';
+import { frameSampler, JOURNEY_MIN_FPS, SLOW_WINDOWS, WINDOW_TIME, type FrameSampler } from '../../src/scene/quality';
 import { craterPlanet, crumpledBall, type Arrays, type Calm } from '../../src/scene/workers/relief';
 
 const hash = (arrays: Arrays): string =>
@@ -110,17 +110,51 @@ describe('the handoff', () => {
 });
 
 describe('the quality', () => {
-  it('lets a scene keep going at 40 fps or more over 3 s, and stops it under', () => {
-    const fast = frameSampler();
-    const slow = frameSampler();
-    let fastVerdict = 'measuring';
-    let slowVerdict = 'measuring';
-    for (let i = 0; i < 200; i += 1) {
-      fastVerdict = fast.add(1000 / 45);
-      slowVerdict = slow.add(1000 / 30);
+  /** Feeds `seconds` of frames of `ms` each, with a hitch of `hitch` ms every `every` frames; returns the verdicts. */
+  const feed = (sampler: FrameSampler, seconds: number, ms: number, every = 0, hitch = 0): string[] => {
+    const verdicts: string[] = [];
+    for (let t = 0, i = 1; t < seconds * 1000; i += 1) {
+      const delta = every > 0 && i % every === 0 ? hitch : ms;
+      t += delta;
+      const verdict = sampler.add(delta);
+      if (verdict !== 'measuring') verdicts.push(verdict);
     }
-    expect(fastVerdict).toBe('fast');
-    expect(slowVerdict).toBe('slow');
+    return verdicts;
+  };
+
+  it('keeps a scene at 60 fps, and at a steady 30 fps (a battery saver, a 30 Hz screen)', () => {
+    expect(feed(frameSampler(), 2, 1000 / 60)[0]).toBe('fast');
+    expect(feed(frameSampler(), 2, 1000 / 30)[0]).toBe('fast');
+  });
+
+  it('never lets the hitches of a fast scroll decide', () => {
+    // A 300 ms hitch every 10 frames: the mean falls to 12 fps, the usual frame stays at 60.
+    const sampler = frameSampler();
+    expect(feed(sampler, 10, 1000 / 60, 10, 300).every((verdict) => verdict === 'fast')).toBe(true);
+  });
+
+  it('gives a scene up only when its usual frame stays slow for several windows in a row', () => {
+    const sampler = frameSampler();
+    const verdicts = feed(sampler, (SLOW_WINDOWS * WINDOW_TIME) / 1000 + 0.1, 1000 / 20);
+    expect(verdicts).toEqual([...Array<string>(SLOW_WINDOWS - 1).fill('lagging'), 'slow']);
+    expect(sampler.rate).toBeCloseTo(20);
+    // A fast window in between starts the count again.
+    const mixed = frameSampler();
+    feed(mixed, (WINDOW_TIME * (SLOW_WINDOWS - 1)) / 1000, 1000 / 20);
+    expect(feed(mixed, WINDOW_TIME / 1000, 1000 / 60)).toEqual(['fast']);
+    expect(feed(mixed, (WINDOW_TIME * (SLOW_WINDOWS - 1)) / 1000, 1000 / 20)).not.toContain('slow');
+  });
+
+  it('starts again after a reset, and leaves pauses out', () => {
+    const sampler = frameSampler();
+    feed(sampler, (WINDOW_TIME * (SLOW_WINDOWS - 1)) / 1000, 1000 / 20);
+    sampler.reset();
+    expect(feed(sampler, WINDOW_TIME / 1000, 1000 / 20)).toEqual(['lagging']);
     expect(frameSampler().add(1000)).toBe('measuring');
+  });
+
+  it('holds the journey to its own, lower floor', () => {
+    expect(feed(frameSampler(JOURNEY_MIN_FPS), 2, 1000 / 24)[0]).toBe('fast');
+    expect(feed(frameSampler(JOURNEY_MIN_FPS), 2, 1000 / 15)[0]).toBe('lagging');
   });
 });

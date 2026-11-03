@@ -1,28 +1,72 @@
 /**
  * The quality decisions (implementation plan §2.8, main spec §6.4): the frame rate is measured on the visitor's
- * device, never guessed from its kind. A live scene that stays under 40 frames per second over its first seconds
- * gives way to its fallback: the planet freezes on its image. The decision holds for the visit (the tab's session).
+ * device, never guessed from its kind. Falling back is a last resort: a scene gives way only when its usual frame stays
+ * slow for several windows in a row. Each window is judged on its median frame, so the hitches of a fast scroll, an
+ * image decoded or a program linked in the background never count; a device whose browser caps the frame rate at 30
+ * (a battery saver, a 30 Hz screen) keeps everything. The decisions hold for the visit (the tab's session).
  */
 
-/** The rate under which a scene gives way, in frames per second, and how long it is measured, in ms. */
-export const MIN_FPS = 40;
-export const SAMPLE_TIME = 3000;
+/** A live scene (the planet, the office) gives way when its median frame stays under this rate, in frames per second. */
+export const SCENE_MIN_FPS = 28;
+/** The journey gives way to the list when its median frame stays under this rate, in frames per second. */
+export const JOURNEY_MIN_FPS = 20;
+/** How much frame time a window measures, in ms. */
+export const WINDOW_TIME = 1500;
+/** How many slow windows in a row make a device slow. */
+export const SLOW_WINDOWS = 3;
+/** A frame this long or longer is a pause (a hidden tab, a stalled page), not the device's pace: it is left out. */
+const PAUSE_MS = 1000;
+
+export type Verdict = 'measuring' | 'lagging' | 'fast' | 'slow';
 
 export interface FrameSampler {
-  /** Adds a frame of `delta` ms; returns the verdict once enough time is measured. */
-  add(delta: number): 'measuring' | 'fast' | 'slow';
+  /**
+   * Adds a frame of `delta` ms. At the end of each window: `fast` once a window keeps the rate, `lagging` for a slow
+   * window, `slow` once `windows` slow windows came in a row; `measuring` in between.
+   */
+  add(delta: number): Verdict;
+  /** The median rate of the last window measured, in frames per second (0 before the first). */
+  readonly rate: number;
+  /** Starts again from nothing: after a pause the page asked for, what came before no longer tells. */
+  reset(): void;
 }
 
-/** Measures frames over `duration` ms and says whether they kept `minFps`. */
-export function frameSampler(duration = SAMPLE_TIME, minFps = MIN_FPS): FrameSampler {
+/** The median of `values` (not empty). */
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = sorted.length >> 1;
+  return sorted.length % 2 ? (sorted[middle] ?? 0) : ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2;
+}
+
+/** Measures frames by windows of `window` ms, and says whether their median keeps `minFps`. */
+export function frameSampler(minFps = SCENE_MIN_FPS, window = WINDOW_TIME, windows = SLOW_WINDOWS): FrameSampler {
+  let frames: number[] = [];
   let elapsed = 0;
-  let frames = 0;
+  let slow = 0;
+  let rate = 0;
   return {
     add(delta) {
+      if (!(delta > 0) || delta >= PAUSE_MS) return 'measuring';
+      frames.push(delta);
       elapsed += delta;
-      frames += 1;
-      if (elapsed < duration) return 'measuring';
-      return (1000 * frames) / elapsed >= minFps ? 'fast' : 'slow';
+      if (elapsed < window) return 'measuring';
+      rate = 1000 / median(frames);
+      frames = [];
+      elapsed = 0;
+      if (rate >= minFps) {
+        slow = 0;
+        return 'fast';
+      }
+      slow += 1;
+      return slow >= windows ? 'slow' : 'lagging';
+    },
+    get rate() {
+      return rate;
+    },
+    reset() {
+      frames = [];
+      elapsed = 0;
+      slow = 0;
     },
   };
 }

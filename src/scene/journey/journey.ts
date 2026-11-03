@@ -46,7 +46,7 @@ import type { Handoff } from '../planet/handoff';
 import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
 import { withBase } from '../../lib/url';
-import { frameSampler, isSlow, markSlow, SAMPLE_TIME, type FrameSampler } from '../quality';
+import { frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
 const LIGHT = {
@@ -119,8 +119,21 @@ interface WorldParts {
   body: HTMLElement;
 }
 
-/** The journey's own floor, in frames per second over the projects: under it, the list takes over. */
-const JOURNEY_MIN_FPS = 25;
+/**
+ * Under this median rate, in frames per second, a window of the journey's moves lags: while the page still prepares a
+ * scene, it pauses once to let it finish, showing that it loads (`HOLD_MAX` at most), rather than giving anything up.
+ */
+const LAG_FPS = 40;
+/** How long a loading pause lasts at least (no flash), and at most, in ms. */
+const HOLD_MIN = 600;
+const HOLD_MAX = 3000;
+
+/** A loading pause: why, since when, and the anchor the visitor asked for meanwhile. */
+interface Hold {
+  reason: 'lag' | 'arrival';
+  start: number;
+  next: number | null;
+}
 
 export interface JourneyOptions {
   /** Frozen time: no drift, no floating, no twinkle (`?still=1`). */
@@ -329,7 +342,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let handoff: Handoff | null = null;
   let planetLoading = false;
   let lastPlanetDraw = 0;
-  // Its first seconds on screen are measured: too slow, it gives way to its image for the rest of the visit.
+  // Its first seconds on screen are measured: kept too slow, it gives way to its image for the rest of the visit.
   let planetSampler: FrameSampler | null = null;
   // `?planete=live` keeps it whatever the rate, for tests and captures on machines without a GPU.
   const planetForced = new URLSearchParams(location.search).get('planete') === 'live';
@@ -403,13 +416,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       const verdict = planetSampler.add(now - previousDraw);
       if (verdict === 'fast') planetSampler = null;
       else if (verdict === 'slow') {
+        // Only the planet gives way, to its image: the journey has its own measure, and turns to the list only when
+        // its own frames stay too slow (main spec §6.3).
         planetSlow = true;
         markSlow('planet');
         freePlanet();
-        // The light version, for the rest of the visit (main spec §6.3): the list, without 3D. This page turns to it
-        // only while the visitor rests at the opening, so that nothing moves under their eyes.
-        markSlow('lite');
-        if (!glide && current === target && current < (anchors[1] ?? 0) * 0.5) options.onLite?.(null);
       }
     }
   }
@@ -420,11 +431,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   function followCamera(delta: number): void {
     const edge = LAST_PROJECT - 1 / range;
-    if (current >= edge && target >= edge) {
+    // While the office finishes getting ready, the camera waits on the last project.
+    const aim = hold?.reason === 'arrival' ? Math.min(target, LAST_PROJECT) : target;
+    if (current >= edge && aim >= edge) {
       // Through the end, the camera runs on its own clock: it speeds up, cruises and slows down at the same pace both
       // ways, so the arrival at the office and the way back take the same 3.5 s, even in one gesture.
       const q = endClock(current);
-      const goal = endClock(target);
+      const goal = endClock(aim);
       const d = goal - q;
       const vmax = 1 / 3200;
       const acc = vmax / 300;
@@ -432,7 +445,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       endSpeed += Math.max(-acc * delta, Math.min(acc * delta, want - endSpeed));
       const next = q + endSpeed * delta;
       if (Math.abs(d) < 1e-5 || (d > 0 && next >= goal) || (d < 0 && next <= goal)) {
-        current = target;
+        current = aim;
         endSpeed = 0;
       } else {
         current = endProgressAt(next);
@@ -441,8 +454,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     }
     // Elsewhere it eases toward the scroll, like a light inertia.
     const before = current;
-    current += (target - current) * (1 - Math.exp(-delta / (scene.view.mobile ? 150 : 130)));
-    if (Math.abs(target - current) < 0.00002) current = target;
+    current += (aim - current) * (1 - Math.exp(-delta / (scene.view.mobile ? 150 : 130)));
+    if (Math.abs(aim - current) < 0.00002) current = aim;
     // Entering the end, the clock takes over at the speed the camera had.
     endSpeed = Math.max(-1 / 3200, Math.min(1 / 3200, (endClock(current) - endClock(before)) / delta || 0));
   }
@@ -450,6 +463,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   // ---------- Gliding from anchor to anchor ----------
 
   let glide: { from: number; to: number; start: number; duration: number; ease: (t: number) => number } | null = null;
+  /** The loading pause under way, if any (see the frame loop). */
+  let hold: Hold | null = null;
 
   function setSnap(on: boolean): void {
     html.style.scrollSnapType = on ? '' : 'none';
@@ -479,6 +494,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   function glideTo(index: number, speed = 0): void {
     const to = positions[index];
     if (to === undefined) return;
+    // During a loading pause, the last gesture waits for its end.
+    if (hold) {
+      hold.next = index;
+      return;
+    }
     if (glide?.to === to) return;
     endGlide();
     const from = window.scrollY;
@@ -950,8 +970,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   // It is prepared from the first project on (at once on `#contact`), and drawn while the contact shows. On a phone,
   // which links its programs one by one, that takes seconds: begun at the middle of the journey, it was not ready for a
-  // visitor going through the projects at a swipe each. Its first seconds on screen are measured: too slow, it gives way
-  // to its layers, which also stand in without WebGL, and for the arrival when it is not ready in time.
+  // visitor going through the projects at a swipe each. Its first seconds on screen are measured: kept too slow, it gives
+  // way to its layers, which also stand in without WebGL, and for the arrival when it is still not ready after a short
+  // loading pause.
   const OFFICE_START = anchors[1] ?? 0.1;
   // Not ready by the middle of the journey, its layers get ready too.
   const OFFICE_WARM = anchors[5] ?? 0.5;
@@ -1159,30 +1180,95 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   // arrival at the office into much more on a device drawing a few frames a second. Up to 250 ms, it moves as far as
   // the time the frame took.
   let lastFrame = 0;
-  // Through the projects, a device that keeps the journey under 25 frames per second (a browser drawing without its
-  // graphics card, say) is given the list for the rest of the visit, once the camera rests (main spec §6.4). Only the
-  // frames of a move count. The measurement run (`?mesure=`) and `?lite=0` keep the journey; so do automated
-  // browsers, which draw in software on CI, unless `?lite=auto` asks for the measure.
+  // Through the projects, a device whose usual frame keeps the journey under 20 frames per second for several seconds of
+  // moves (a browser drawing without its graphics card, say) is given the list for the rest of the visit, once the camera
+  // rests (main spec §6.4). Only the frames of a move count, and each window of them is judged on its median frame, so
+  // the hitches of a fast scroll never decide. When the moves lag while a scene is still being prepared, the page first
+  // pauses once to let it finish, showing that it loads (`HOLD_MAX` at most), and measures again. The measurement run
+  // (`?mesure=`) and `?lite=0` keep the journey; so do automated browsers, which draw in software on CI, unless
+  // `?lite=auto` asks for the measure.
   const params = new URLSearchParams(location.search);
   const judged =
     params.get('lite') === 'auto' || (!navigator.webdriver && !params.has('mesure') && params.get('lite') !== '0');
-  let journeySampler: FrameSampler | null = judged ? frameSampler(SAMPLE_TIME, JOURNEY_MIN_FPS) : null;
+  // The loading pauses play in the measurement run too, which reports them; not in automated browsers, unless
+  // `?lite=auto` or `?pause=1` asks for them.
+  const pauses = params.get('lite') === 'auto' || params.get('pause') === '1' || !navigator.webdriver;
+  let journeySampler: FrameSampler | null = judged ? frameSampler(JOURNEY_MIN_FPS) : null;
+  const lagSampler: FrameSampler | null = pauses ? frameSampler(LAG_FPS, undefined, 1) : null;
   let liteDue = false;
+  let lagDue = false;
+  let lagHeld = false;
+  let arrivalHeld = false;
+
+  /** Whether a scene is still being prepared: the planet, the live office or its layers. */
+  const preparing = (): boolean =>
+    (planetLoading && !livePlanet && !planetSlow) ||
+    (officeLoading && !officeView && !officeFailed) ||
+    standInLoading ||
+    officeReplacing;
+  /** Whether the live office is still getting ready, not found too slow: worth waiting for at the arrival. */
+  const officeComing = (): boolean => officeLoading && !officeView && !officeFailed && !officeSlow;
+
+  function startHold(now: number, reason: Hold['reason']): void {
+    hold = { reason, start: now, next: null };
+    root.dataset.loading = reason;
+    if (coarse.matches) html.style.overflow = 'hidden';
+    performance.mark(`journey:hold-${reason}`);
+  }
+
+  function endHold(now: number): void {
+    if (!hold) return;
+    const { reason, start, next } = hold;
+    hold = null;
+    delete root.dataset.loading;
+    if (coarse.matches) html.style.removeProperty('overflow');
+    performance.measure(`journey:hold-${reason}`, { start, end: now });
+    // What came before the pause no longer tells the device's pace.
+    journeySampler?.reset();
+    lagSampler?.reset();
+    if (next !== null) glideTo(next);
+  }
+
   const stopTick = onTick((now, delta) => {
     const frame = lastFrame > 0 ? now - lastFrame : 0;
     const elapsed = delta >= 64 && lastFrame > 0 ? Math.min(250, frame) : delta;
     lastFrame = now;
     const onProjects = current >= (anchors[1] ?? 0) && current <= LAST_PROJECT;
-    // A frame over a second is a hidden tab or a pause, not the device's pace.
-    if (journeySampler && frame > 0 && frame < 1000 && onProjects && (glide || current !== target)) {
-      const verdict = journeySampler.add(frame);
-      if (verdict !== 'measuring') journeySampler = null;
+    if (frame > 0 && onProjects && !hold && (glide || current !== target)) {
+      const verdict = journeySampler?.add(frame);
       if (verdict === 'slow') {
-        markSlow('lite');
-        liteDue = true;
+        // Kept too slow: a scene still being prepared may be the cause, and gets its pause first.
+        if (preparing() && !lagHeld) lagDue = true;
+        else {
+          markSlow('lite');
+          liteDue = true;
+          journeySampler = null;
+        }
       }
+      if (lagSampler?.add(frame) === 'slow' && preparing() && !lagHeld) lagDue = true;
     }
-    if (liteDue && !glide && current === target) {
+    if (hold) {
+      const waited = now - hold.start;
+      const waiting = hold.reason === 'arrival' ? officeComing() : preparing();
+      if (waited >= HOLD_MAX || (waited >= HOLD_MIN && !waiting)) endHold(now);
+    } else if (lagDue && !glide && current === target) {
+      lagDue = false;
+      lagHeld = true;
+      if (preparing()) startHold(now, 'lag');
+    } else if (
+      pauses &&
+      !arrivalHeld &&
+      target > LAST_PROJECT &&
+      current <= LAST_PROJECT &&
+      officeComing() &&
+      !html.dataset.officeArrival
+    ) {
+      // The arrival comes before the live office is ready: the camera waits on the last project, for a few seconds at
+      // most, rather than playing it with the layers.
+      arrivalHeld = true;
+      startHold(now, 'arrival');
+    }
+    if (liteDue && !glide && current === target && !hold) {
       liteDue = false;
       options.onLite?.(anchorFragment.get(nearestAnchor(window.scrollY, positions)) ?? null);
       return;
