@@ -212,6 +212,15 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 </Base>
 
 <style>
+  /*
+   * A swipe moves the page sideways (src/motion/swipe.ts): what it pushes past the screen's right edge must not widen
+   * the page, else a phone widens its layout viewport, taking the fixed header along.
+   */
+  :global(html:has([data-case-slug])),
+  :global(body:has([data-case-slug])) {
+    overflow-x: clip;
+  }
+
   /* The header stays at the top while the page scrolls. */
   .case-header {
     position: fixed;
