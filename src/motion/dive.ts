@@ -410,27 +410,88 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
  * the project). On touch screens, the root stops scrolling for two frames; the router swapping the root's
  * attributes, it is done again after the swap.
  */
-/** The case study's content, header and footer fade away, sinking a little; its opening media stays. */
+/**
+ * The case study's content, header and footer fade away; its opening media stays. Each goes the way it came, backwards:
+ * the header and its shade rising off, the fade under the title fading out, the content sinking a little.
+ */
 function easeAway(): Promise<void> {
-  const parts = document.querySelectorAll<HTMLElement>(
-    '[data-case-slug] .sheet, [data-case-slug] .next, .case-header, .case-footer, .peeks',
-  );
-  const fades = Array.from(parts, (part) =>
-    part
-      .animate(
+  const timing = { duration: EASE_AWAY_MS, easing: 'cubic-bezier(0.33, 0, 0.2, 1)', fill: 'forwards' } as const;
+  const gone = { opacity: 0 };
+  const moves: Animation[] = [];
+  for (const part of document.querySelectorAll<HTMLElement>(
+    '[data-case-slug] .sheet, [data-case-slug] .next, .case-footer, .peeks',
+  ))
+    moves.push(
+      part.animate(
         [
           { opacity: 1, translate: '0 0' },
-          { opacity: 0, translate: '0 14px' },
+          { ...gone, translate: '0 14px' },
         ],
-        {
-          duration: EASE_AWAY_MS,
-          easing: 'cubic-bezier(0.33, 0, 0.2, 1)',
-          fill: 'forwards',
-        },
-      )
-      .finished.catch(() => undefined),
-  );
-  return Promise.all(fades).then(() => undefined);
+        timing,
+      ),
+    );
+  const header = document.querySelector<HTMLElement>('.case-header');
+  if (header)
+    moves.push(
+      header.animate(
+        [
+          { opacity: 1, translate: '0 0' },
+          { ...gone, translate: '0 -12px' },
+        ],
+        timing,
+      ),
+    );
+  const cover = document.querySelector<HTMLElement>('[data-case-slug] .cover');
+  if (cover)
+    moves.push(cover.animate([{ opacity: 1 }, gone], { ...timing, easing: 'linear', pseudoElement: '::before' }));
+  return Promise.all(moves.map(({ finished }) => finished.catch(() => undefined))).then(() => undefined);
+}
+
+/** The homes already warmed, by their address. */
+const warmed = new Set<string>();
+
+/**
+ * On a case study, once the page is idle: the home it leads back to, loaded ahead with its stylesheets and scripts, so
+ * that the way back does not wait for them (a visit that came straight to the case study has none of them yet).
+ */
+function warmHome(): void {
+  const link = document.querySelector<HTMLAnchorElement>('.case-header .back');
+  if (!link) return;
+  const url = new URL(link.href);
+  url.hash = '';
+  if (warmed.has(url.href)) return;
+  warmed.add(url.href);
+  const idle = (callback: () => void): void => {
+    if ('requestIdleCallback' in window) requestIdleCallback(callback, { timeout: 3000 });
+    else setTimeout(callback, 1500);
+  };
+  idle(() => {
+    prefetch(url.href, { ignoreSlowConnection: false });
+    void fetch(url.href)
+      .then((response) => (response.ok ? response.text() : ''))
+      .then((html) => {
+        const page = new DOMParser().parseFromString(html, 'text/html');
+        const hints: [string, string, string | null][] = [
+          ...Array.from(
+            page.querySelectorAll<HTMLLinkElement>('link[rel=stylesheet]'),
+            (style): [string, string, string | null] => ['preload', style.getAttribute('href') ?? '', 'style'],
+          ),
+          ...Array.from(
+            page.querySelectorAll<HTMLScriptElement>('script[type=module][src]'),
+            (script): [string, string, string | null] => ['modulepreload', script.getAttribute('src') ?? '', null],
+          ),
+        ];
+        for (const [rel, href, as] of hints) {
+          if (!href || document.head.querySelector(`link[href="${CSS.escape(href)}"]`)) continue;
+          const hint = document.createElement('link');
+          hint.rel = rel;
+          hint.href = href;
+          if (as) hint.as = as;
+          document.head.append(hint);
+        }
+      })
+      .catch(() => undefined);
+  });
 }
 
 function stopFling(): void {
@@ -498,6 +559,7 @@ export function initDive(): void {
     stopFling();
   });
   // The overlay already shows the page as it opens: it changes at once, without the router's fade.
+  document.addEventListener('astro:page-load', warmHome);
   document.addEventListener('astro:before-swap', (event) => {
     if (landing) event.viewTransition.skipTransition();
   });
