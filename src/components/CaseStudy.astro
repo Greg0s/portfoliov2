@@ -760,6 +760,16 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
       display: none;
     }
 
+    /* On a phone, the header sits above the banner rather than over it: the banner shows whole (2 November 2026). */
+    .case {
+      padding-top: var(--cover-top);
+    }
+
+    .case-header::before {
+      height: calc(var(--header-height) + 16px);
+      mask-image: linear-gradient(to bottom, #000 75%, transparent);
+    }
+
     .case-footer {
       justify-content: space-between;
     }

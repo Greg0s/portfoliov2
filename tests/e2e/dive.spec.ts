@@ -18,8 +18,14 @@ async function countDives(page: Page): Promise<void> {
         if (checked.has(picture) || !picture.style.viewTransitionName) continue;
         checked.add(picture);
         const box = picture.getBoundingClientRect();
-        const width = document.documentElement.clientWidth;
-        if (Math.abs(box.top) > 1 || Math.abs(box.width - width) > 1 || Math.abs(box.height - (width * 9) / 16) > 1)
+        const html = document.documentElement;
+        const width = html.clientWidth;
+        const top = Number.parseFloat(getComputedStyle(html).getPropertyValue('--cover-top')) || 0;
+        if (
+          Math.abs(box.top - top) > 1 ||
+          Math.abs(box.width - width) > 1 ||
+          Math.abs(box.height - (width * 9) / 16) > 1
+        )
           record.offMedia.push(`${String(box.top)} ${String(box.width)}×${String(box.height)}`);
       }
     }).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });

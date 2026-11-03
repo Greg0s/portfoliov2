@@ -1,7 +1,7 @@
 /**
  * The dive into a case study (journey spec §6, main spec §7.4): a click on the sharp card flies its picture in 0.9 s
  * straight onto the place of the case study's opening media, full width
- * and flush with the top, keeping its format, while the rest fades out in 0.3 s; then the client router shows the case
+ * and flush with the top (under the header on a phone), keeping its format, while the rest fades out in 0.3 s; then the client router shows the case
  * study around it, a named view transition handing the picture over to the opening media. In the journey, the card
  * itself flies, out of its 3D turn (see `journey.ts`). "Back to projects" and the browser's Back button play it the
  * other way: the home comes back with only the picture, on the opening media's place, the journey lands on the same
@@ -60,10 +60,15 @@ interface Box {
   radius: string;
 }
 
-/** Where a case study's opening media sits when it opens: full width, flush with the top, in 16:9 like the cards. */
+/**
+ * Where a case study's opening media sits when it opens: full width, in 16:9 like the cards, flush with the top behind
+ * the header on a computer, under it on a phone (tokens.css).
+ */
 const openingMedia = (): Box => {
-  const width = document.documentElement.clientWidth;
-  return { left: 0, top: 0, width, height: (width * 9) / 16, radius: '0px' };
+  const html = document.documentElement;
+  const width = html.clientWidth;
+  const top = Number.parseFloat(getComputedStyle(html).getPropertyValue('--cover-top')) || 0;
+  return { left: 0, top, width, height: (width * 9) / 16, radius: '0px' };
 };
 const boxOf = (element: Element): Box => {
   const rect = element.getBoundingClientRect();
