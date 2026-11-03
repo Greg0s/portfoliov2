@@ -879,7 +879,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(intro, 'transform', `translateY(${(-16 * fade).toFixed(1)}px)`);
       set(intro, 'pointer-events', fade < 0.5 ? 'auto' : 'none');
     }
-    html.dataset.introFaded = fade > 0.98 ? 'true' : 'false';
     if (cta) {
       const atOpening = depth < 0.004;
       set(cta, 'opacity', atOpening ? '1' : '0');
@@ -1270,7 +1269,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       marker.remove();
     });
     delete html.dataset.stars;
-    delete html.dataset.introFaded;
     delete html.dataset.office;
     delete html.dataset.officeScene;
     delete html.dataset.officeArrival;

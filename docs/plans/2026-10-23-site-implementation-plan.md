@@ -247,7 +247,7 @@ and robots.
 
 | File                                                 | Content                                                                                                                                                          |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/Opening.astro`                       | planet fallback per moment (LCP, `fetchpriority="high"`), name, job title, tagline, "See the projects"                                                           |
+| `src/components/Opening.astro`                       | planet fallback per moment (LCP, `fetchpriority="high"`), name, job, "See the projects", the arrival                                                             |
 | `src/components/Journey.astro`                       | the projects as an ordered list of cards with their cartel: the same DOM the journey animates at step 6                                                          |
 | `src/components/ProjectCard.astro`, `Cartel.astro`   | card (cover, link, `id` for the fragment), cartel                                                                                                                |
 | `src/components/Contact.astro`, `EmailActions.astro` | "On s'écrit ?", `mailto:` link, copy button (shown only with JavaScript), links, CV, copyright                                                                   |
@@ -305,20 +305,20 @@ small worlds; floating, cursor, tilt, drift, job title, blackout jump and reduce
 
 **Files**
 
-| File                                                         | Content                                                                                                                                              |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/motion/ticker.ts`                                       | the only loop (`requestAnimationFrame`): the glides, the camera, the CSS and the render; paused when the tab is hidden                               |
-| `src/scene/journey/anchors.ts`                               | anchor positions over 12.5 screens (opening 1, each project 1.25, the end 1.5)                                                                       |
-| `src/scene/journey/steps.ts`                                 | `f(s) = s + k · sin(2πs) / 2π`, `k = 0.75`                                                                                                           |
-| `src/scene/journey/camera.ts`                                | progress → camera depth; per object: scale, blur (sharp within ±10 %, up to 12 px), opacity (down to 0.25); CSS and Three.js cameras from one source |
-| `src/scene/journey/layout.ts`                                | the 8 card slots (desktop and mobile, journey spec §5), 21/16 small worlds                                                                           |
-| `src/scene/journey/snap.ts`                                  | a gesture (wheel, trackpad with inertia, touch, keys) → next or previous anchor, never blocking native scroll                                        |
-| `src/scene/journey/journey.ts`                               | applies the transforms, cartel in 300 ms / out 200 ms, focus → anchor, fragments                                                                     |
-| `src/scene/renderer.ts`                                      | the shared `WebGLRenderer`: pixel ratio capped (2, 1.5 on phones), context loss, visibility                                                          |
-| `src/scene/stars/stars.ts`, `stars.glsl.ts`                  | one `Points` geometry, three layers (about 60, 40, 20), twinkle 2.5 to 7 s in the shader; the trails of step 7 reuse it                              |
-| `src/components/SmallWorlds.astro`                           | the small worlds in SVG and CSS                                                                                                                      |
-| `src/motion/float.ts`, `cursor.ts`, `tilt.ts`, `jobTitle.ts` | floating, "See the project" disc and mobile pill, camera drift and mouse tilt, the weightless job title                                              |
-| `src/motion/reducedMotion.ts`                                | list mode, still opening, fade-only transitions                                                                                                      |
+| File                                                        | Content                                                                                                                                                          |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/motion/ticker.ts`                                      | the only loop (`requestAnimationFrame`): the glides, the camera, the CSS and the render; paused when the tab is hidden                                           |
+| `src/scene/journey/anchors.ts`                              | anchor positions over 12.5 screens (opening 1, each project 1.25, the end 1.5)                                                                                   |
+| `src/scene/journey/steps.ts`                                | `f(s) = s + k · sin(2πs) / 2π`, `k = 0.75`                                                                                                                       |
+| `src/scene/journey/camera.ts`                               | progress → camera depth; per object: scale, blur (sharp within ±10 %, up to 12 px), opacity (down to 0.25); CSS and Three.js cameras from one source             |
+| `src/scene/journey/layout.ts`                               | the 8 card slots (desktop and mobile, journey spec §5), 21/16 small worlds                                                                                       |
+| `src/scene/journey/snap.ts`                                 | a gesture (wheel, trackpad with inertia, touch, keys) → next or previous anchor, never blocking native scroll                                                    |
+| `src/scene/journey/journey.ts`                              | applies the transforms, cartel in 300 ms / out 200 ms, focus → anchor, fragments                                                                                 |
+| `src/scene/renderer.ts`                                     | the shared `WebGLRenderer`: pixel ratio capped (2, 1.5 on phones), context loss, visibility                                                                      |
+| `src/scene/stars/stars.ts`, `stars.glsl.ts`                 | one `Points` geometry, three layers (about 60, 40, 20), twinkle 2.5 to 7 s in the shader; the trails of step 7 reuse it                                          |
+| `src/components/SmallWorlds.astro`                          | the small worlds in SVG and CSS                                                                                                                                  |
+| `src/motion/float.ts`, `cursor.ts`, `tilt.ts`, `arrival.ts` | floating, "See the project" disc and mobile pill, camera drift and mouse tilt, the arrival on the opening (replaced the weightless job title on 2 November 2026) |
+| `src/motion/reducedMotion.ts`                               | list mode, still opening, fade-only transitions                                                                                                                  |
 
 **Tests**
 

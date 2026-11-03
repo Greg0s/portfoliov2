@@ -48,7 +48,7 @@ On repart d'un repo vide : `Greg0s/portfoliov2`.
 - Le slug d'un projet est identique dans les deux langues.
 - **En-tête**, fixe pendant tout le parcours : le nom (libellé, retour à l'ouverture), Projets (premier projet), Contact (le bureau), sélecteur FR/EN. Sur ordinateur, la section où l'on se trouve s'allume d'une légère lueur (le nom sur l'ouverture, Projets pendant les projets, Contact au bureau) et les autres liens s'atténuent un peu ; sur mobile, rien ne l'indique (décision de Grégoire, 3 novembre 2026). Chaque lien de l'en-tête passe par le noir : l'image s'éteint, la caméra saute à destination, l'image revient (section 5.5). Sur mobile, un bouton « Menu » ouvre une navigation plein écran qui s'ouvre comme on baisse la lumière d'un musée (spec du parcours, section 8).
 - **Accueil**, une seule page où l'on recule d'ancre en ancre (section 5.4) :
-  1. **Ouverture** : la planète du Petit Prince en 3D à gauche ; à droite, le nom, le métier animé, « Je code des images. » et la phrase « Entre l'image et le code, je conçois des interfaces et des expériences web interactives, avec autant de soin pour le rendu que pour la technique. » ; en bas au centre, le seul appel, « Voir les projets ». Sur mobile, la planète passe au-dessus du texte.
+  1. **Ouverture** : la planète du Petit Prince en 3D à gauche ; à droite, le nom et le métier, « Développeur créatif » ; en bas au centre, le seul appel, « Voir les projets ». Sur mobile, la planète passe au-dessus du texte. Au début d'une visite, l'ouverture sort du noir : la planète s'allume, puis le reste apparaît (spec du parcours, section 6, choix de Grégoire du 2 novembre 2026, qui retire le métier animé, « Je code des images. » et la phrase d'accroche). La phrase « Entre l'image et le code, je conçois des interfaces et des expériences web interactives, avec autant de soin pour le rendu que pour la technique. » reste la description de la page.
   2. **Les 8 projets** : la caméra recule et chaque carte passe, fait sa mise au point et affiche son cartel ; un clic plonge dans la carte et ouvre l'étude de cas.
   3. **Contact**, dans le bureau qui termine le parcours : la caméra repasse par la fenêtre d'un appartement et s'arrête dans les yeux de la personne assise. « On s'écrit ? », l'email (un clic ouvre la messagerie et un bouton à l'icône de copie, à sa droite, copie l'adresse ; sur mobile, un toucher ouvre une bulle avec ces deux actions), LinkedIn, GitHub, CV en PDF, Instagram, sans copyright (retiré par Grégoire le 30 octobre 2026). L'écran de l'ordinateur montre ce qu'il y a derrière chaque lien.
 - **Étude de cas** : lien « Retour aux projets », numéro (01 / 08), média d'ouverture (la carte dans laquelle on a plongé), tag (année et type), titre, chapeau, fiche (année, rôle, stack, liens), puis _Contexte_, _Ce que j'ai fait_, _Défis techniques_ (chaque défi en trois temps : problème, solution, résultat), images et vidéos, le projet suivant (le dernier renvoie au premier) et, en bas, un lien « Contact » qui mène au bureau par le noir. Sur un écran où le média d'ouverture dépasse les deux tiers de la hauteur (ordinateur), le contenu remonte sur le bas du média, derrière un fondu sombre : le tag, le titre et le chapeau s'affichent en amorce dans le tiers bas de l'écran, et montent en place à l'ouverture de la page (décision de Grégoire, 29 octobre 2026).
@@ -63,16 +63,16 @@ La rigueur d'un musée d'art moderne (MoMA, MAM Paris), le calme photographique 
 
 ### 5.1 Typographie
 
-| Rôle             | Police                  | Réglages                                                                         |
-| ---------------- | ----------------------- | -------------------------------------------------------------------------------- |
-| Titres           | Libre Franklin          | 500, interlettrage -0,035em ; titres de projet en 600, -0,02em                   |
-| Sous-titres      | Libre Franklin italique | 300, interlettrage -0,01em ; le métier animé, les titres des cartels du mur      |
-| Texte            | Manrope                 | 400 et 500                                                                       |
-| Libellés         | Manrope                 | 500, 12 px, capitales, interlettrage 0,16em                                      |
-| Tags des projets | Libre Franklin          | 600, 12 px, capitales, interlettrage 0,06em ; le type des images du mur en 11 px |
+| Rôle             | Police                  | Réglages                                                                             |
+| ---------------- | ----------------------- | ------------------------------------------------------------------------------------ |
+| Titres           | Libre Franklin          | 500, interlettrage -0,035em ; titres de projet en 600, -0,02em                       |
+| Sous-titres      | Libre Franklin italique | 300, interlettrage -0,01em ; le métier de l'ouverture, les titres des cartels du mur |
+| Texte            | Manrope                 | 400 et 500                                                                           |
+| Libellés         | Manrope                 | 500, 12 px, capitales, interlettrage 0,16em                                          |
+| Tags des projets | Libre Franklin          | 600, 12 px, capitales, interlettrage 0,06em ; le type des images du mur en 11 px     |
 
 - Polices auto-hébergées via Fontsource (fichiers variables, licence OFL), deux fichiers préchargés au plus.
-- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; métier animé 27 px (23 px sur mobile) ; « On s'écrit ? » 56 px (30 px sur mobile) ; email du contact 24 px (18 px) ; titres de projet 28 px ; « Je code des images. » 28 px ; texte courant 15 à 18 px.
+- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; métier 27 px (23 px sur mobile) ; « On s'écrit ? » 56 px (30 px sur mobile) ; email du contact 24 px (18 px) ; titres de projet 28 px ; texte courant 15 à 18 px.
 - Deux familles seulement, sans empattement : Libre Franklin et Manrope. Seule exception, l'écran de l'ordinateur du bureau imite Windows : il utilise la police du système (`"Segoe UI", system-ui`), sans fichier téléchargé.
 
 ### 5.2 Couleurs : « Noir musée »
@@ -136,13 +136,13 @@ Le détail est dans les specs du parcours (sections 4 à 9) et du bureau (sectio
 | Caméra              | dérive très légère (quelques pixels, une fraction de degré, sur une dizaine de secondes) ; sur ordinateur, inclinaison de 1 à 2° vers la souris                                                                                                                          |
 | Passage par le noir | extinction en 0,25 s (`cubic-bezier(0.32, 0, 0.67, 0)`), saut, retour en 0,35 s (`cubic-bezier(0.33, 1, 0.68, 1)`)                                                                                                                                                       |
 | Bureau              | la tête suit la souris (au plus 13 px pour le bureau, 8 pour la pièce, 4 pour la ville, 2 pour le ciel, amorti de 0,5 s) ; nuages lents, fenêtres de la ville qui s'allument ou s'éteignent, étoile filante de temps en temps, l'heure de la barre des tâches qui avance |
-| Métier animé        | « Creative developer », « Ingénieur multimédia », « Dreamer », « Full-stack developer », « Human » ; transition « apesanteur » de 1,8 s (les lettres s'envolent, les suivantes se posent), puis 2,4 s de pause                                                           |
+| Arrivée             | au début d'une visite : le noir, la planète qui s'allume, la nuit qui se lève, le nom et le métier qui se posent lettre à lettre, puis l'en-tête et l'appel, en 4,6 s environ, six fois plus vite après un geste (spec du parcours, section 6)                           |
 | Étoiles             | scintillement de 2,5 à 7 s ; étoile filante toutes les 9 s sur l'ouverture                                                                                                                                                                                               |
 
-- **Départ différé** (décidé avec Grégoire le 24 octobre 2026) : les animations d'ambiance (dérive de la caméra, flottements, scintillement, vent sur la planète) attendent le premier geste du visiteur (souris, doigt, molette, touche), ou 4 s après le chargement. Jusque-là, la scène ne se redessine pas au repos : la page se charge sur un fil principal tranquille (Lighthouse passe de 55 à plus de 90). Le métier animé n'attend pas.
+- **Départ différé** (décidé avec Grégoire le 24 octobre 2026) : les animations d'ambiance (dérive de la caméra, flottements, scintillement, vent sur la planète) attendent le premier geste du visiteur (souris, doigt, molette, touche), ou 4 s après le chargement. Jusque-là, la scène ne se redessine pas au repos : la page se charge sur un fil principal tranquille (Lighthouse passe de 55 à plus de 90). L'arrivée n'attend pas.
 - Courbes : `cubic-bezier(0.23, 1, 0.32, 1)` pour les réactions d'interface, `cubic-bezier(0.37, 0, 0.63, 1)` pour les flottements, `cubic-bezier(0.65, 0, 0.35, 1)` pour la plongée.
 - En HTML et CSS, on n'anime que `transform`, `opacity` et `filter`.
-- **Animations réduites, automatiquement** : si le visiteur a activé « réduire les animations » dans son système, ni recul, ni flottement, ni inclinaison, ni mouvement de tête : l'ouverture est fixe, les projets défilent en liste avec leur cartel toujours visible, puis le bureau, fixe derrière le contact, sans nuages, ni étoile filante, ni fenêtres qui s'allument ; un fondu de 200 ms remplace la plongée, un fondu l'arrivée au bureau ; les scènes 3D s'arrêtent sur une pose fixe, le métier change en fondu de 500 ms et les étoiles scintillent très lentement. **Il n'y a pas de bouton pause** : c'est un choix de Grégoire, qui s'écarte du critère WCAG 2.2.2 pour les visiteurs qui n'ont pas activé ce réglage.
+- **Animations réduites, automatiquement** : si le visiteur a activé « réduire les animations » dans son système, ni recul, ni flottement, ni inclinaison, ni mouvement de tête : l'ouverture est fixe, les projets défilent en liste avec leur cartel toujours visible, puis le bureau, fixe derrière le contact, sans nuages, ni étoile filante, ni fenêtres qui s'allument ; un fondu de 200 ms remplace la plongée, un fondu l'arrivée au bureau ; les scènes 3D s'arrêtent sur une pose fixe et les étoiles scintillent très lentement. L'ouverture s'affiche sans l'arrivée. **Il n'y a pas de bouton pause** : c'est un choix de Grégoire, qui s'écarte du critère WCAG 2.2.2 pour les visiteurs qui n'ont pas activé ce réglage.
 
 ## 6. Les scènes 3D
 
@@ -215,7 +215,7 @@ src/
     office/             scène du bureau, reprise de docs/prototypes/bureau
     journey/            caméra du parcours : ancres, paliers, mise au point, saut
     time.ts             heure du visiteur et moment (aube, crépuscule)
-  motion/               flottements, survols, passage par le noir, métier animé, menu
+  motion/               arrivée, flottements, survols, passage par le noir, menu
   styles/               jetons (variables CSS), base
 public/
   models/               petit-prince.glb (version optimisée)
