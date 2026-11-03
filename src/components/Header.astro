@@ -248,9 +248,8 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
   [data-indicator='6'] .where-word {
     color: var(--color-text);
     text-shadow:
-      0 0 1px rgb(255 255 255 / 45%),
-      0 0 10px rgb(255 255 255 / 55%),
-      0 0 22px rgb(255 240 225 / 30%);
+      0 0 8px rgb(255 255 255 / 32%),
+      0 0 18px rgb(255 240 225 / 14%);
   }
 
   [data-indicator='6'] .links > a {
@@ -274,9 +273,8 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
 
   :global([data-indicator='6'] ~ .menu .links a[aria-current]) {
     text-shadow:
-      0 0 2px rgb(255 255 255 / 45%),
-      0 0 18px rgb(255 255 255 / 50%),
-      0 0 40px rgb(255 240 225 / 28%);
+      0 0 14px rgb(255 255 255 / 30%),
+      0 0 32px rgb(255 240 225 / 14%);
   }
 
   :global([data-indicator='3'] ~ .menu .links a[aria-current]::before) {
