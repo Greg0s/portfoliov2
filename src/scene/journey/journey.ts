@@ -869,14 +869,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const cardWidth = ring.card;
     const cardHeight = (cardWidth * 9) / 16;
     showcasePoses = scene.cards.map((_, i) => showcase.pose(i, view));
-    // The hover of a card beside the front one fades in (220 ms) and out (320 ms), rather than switch.
+    // The hover of a card beside the front one fades in (450 ms) and out (650 ms), rather than switch.
     const glowNow = performance.now();
     const glowDelta = hoverGlowAt > 0 ? Math.min(100, glowNow - hoverGlowAt) : 0;
     hoverGlowAt = glowNow;
     showcasePoses.forEach((_, i) => {
       const want = hovered === i && focus !== i && presence > 0.9 ? 1 : 0;
       const was = hoverGlow[i] ?? 0;
-      const eased = was + (want - was) * (1 - Math.exp(-glowDelta / (want > was ? 75 : 110)));
+      const eased = was + (want - was) * (1 - Math.exp(-glowDelta / (want > was ? 150 : 220)));
       hoverGlow[i] = Math.abs(want - eased) < 0.004 ? want : eased;
       if (hoverGlow[i] !== want) redraw = true;
     });
