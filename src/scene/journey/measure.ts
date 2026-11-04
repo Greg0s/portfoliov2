@@ -251,18 +251,25 @@ export function startMeasure(root: HTMLElement): () => void {
     // Let the page load what it loads late (Three.js, the stars) before the first phase; a hurried visitor glances.
     await wait(hurried ? 1000 : 2500);
     frame = requestAnimationFrame(tick);
-    const contact = anchors.length - 1;
-    for (let index = 1; index <= contact && !stopped; index += 1) {
-      enter(index === 1 ? 'ouverture' : index === contact ? 'fin' : 'projets');
-      journey.glideTo(index);
-      await until(() => anchorIs(index));
+    // The opening to the ring, the ring turned card by card with a rest on the way, then the ring to the contact.
+    enter('ouverture');
+    journey.glideTo(1);
+    await until(() => anchorIs(1));
+    const projects = root.querySelectorAll('[data-project]').length;
+    for (let card = 1; card < projects && !stopped; card += 1) {
+      enter('projets');
+      journey.turn(1);
+      await until(() => journey.turned());
       if (hurried) await wait(150);
-      else if (index === 4) {
+      else if (card === 3) {
         // A rest on a project: the cards float, the stars twinkle.
         enter('repos');
         await wait(3000);
       }
     }
+    enter('fin');
+    journey.glideTo(anchors.length - 1);
+    await until(() => anchorIs(anchors.length - 1));
     phase = null;
     cancelAnimationFrame(frame);
     observer?.disconnect();

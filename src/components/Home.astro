@@ -10,6 +10,8 @@ import Opening from './Opening.astro';
 import { t, type Locale } from '../i18n';
 import { SCREENS } from '../scene/journey/anchors';
 import { applyJourneyMode } from '../scene/journey/mode';
+// The ring's own styles, with the page's: a stylesheet a script brought would leave with the first page change.
+import '../scene/showcase/showcase.css';
 
 interface Props {
   locale: Locale;

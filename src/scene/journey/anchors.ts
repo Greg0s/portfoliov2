@@ -1,89 +1,104 @@
 /**
- * The journey's anchors and the camera's depth along it (journey spec §4). The journey is 11.25 screens of scroll: the
- * opening and the fading of its text (1 screen), 1.25 screens per project, 1.5 screens for the end. The scroll always
- * stops on an anchor: the opening, each of the 7 projects (its card sharp), the contact.
+ * The journey's anchors and the camera's depth along it (journey spec §4). The journey is 3.75 screens of scroll: the
+ * opening and the fading of its text (1 screen), the ring of projects (1.25 screens, its anchor in the middle), 1.5
+ * screens for the end. The scroll always stops on an anchor: the opening, the ring of projects, the contact.
+ *
+ * `journeyTrack` builds the same journey for any number of stops between the opening and the contact; the site has
+ * one, the ring (see `src/scene/showcase/`).
  */
 import { step } from './steps';
 
+/** The projects on the ring; the content checks hold the projects' folders to it. */
 export const PROJECTS = 7;
 
 const OPENING = 1;
-const PER_PROJECT = 1.25;
+const PER_STOP = 1.25;
 const END = 1.5;
 
-/** Screens of scroll, from the opening to the contact. */
-export const SCREENS = OPENING + PER_PROJECT * PROJECTS + END;
-
-/** Progress (0 to 1) where the projects' stretch starts and ends, and where the end starts. */
-export const PROJECTS_START = OPENING / SCREENS;
-export const END_START = (OPENING + PER_PROJECT * PROJECTS) / SCREENS;
-
-/** Progress of each anchor: the opening, the projects in the middle of their stretch, the contact. */
-export const anchors: readonly number[] = [
-  0,
-  ...Array.from({ length: PROJECTS }, (_, i) => (OPENING + PER_PROJECT * i + PER_PROJECT / 2) / SCREENS),
-  1,
-];
-
-/** The anchor of the project at `index` (0 to `PROJECTS - 1`). */
-export function projectAnchor(index: number): number {
-  return anchors[index + 1] ?? 0;
-}
-
-/** The progress of the last project's anchor, where the end starts its own clock. */
-export const LAST_PROJECT = projectAnchor(PROJECTS - 1);
+/** The camera's depth at the first stop, where the ring is sharp. */
+export const RING_DEPTH = 1.5;
 
 function smoothstep(t: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/**
- * The camera's distance from the planet, in perspective units, for a scroll progress `u` (0 to 1). The opening eases
- * from 0 to 1; each project's stretch adds 1 through the steps, its card sharp at depth `1.5 + i`; the end goes 20
- * further back, slowing down onto the contact.
- */
-export function cameraDepth(u: number): number {
-  const p = Math.max(0, Math.min(1, u));
-  if (p < PROJECTS_START) {
-    const t = p / PROJECTS_START;
-    return 1.6 * t * t - 0.6 * t * t * t;
-  }
-  if (p < END_START) {
-    const x = (p - PROJECTS_START) / ((END_START - PROJECTS_START) / PROJECTS);
-    const i = Math.min(PROJECTS - 1, Math.floor(x));
-    return 1 + i + step(x - i);
-  }
-  const t = Math.min(1, (p - END_START) / (1 - END_START));
-  return 1 + PROJECTS + 20 * (smoothstep(t) + 0.105 * (t * t * t - 2 * t * t + t));
+/** A journey from the opening to the contact, through a number of stops. */
+export interface Track {
+  stops: number;
+  /** Screens of scroll, from the opening to the contact. */
+  screens: number;
+  /** Progress (0 to 1) where the stops' stretch starts, and where the end starts. */
+  stopsStart: number;
+  endStart: number;
+  /** Progress of each anchor: the opening, each stop in the middle of its stretch, the contact. */
+  anchors: readonly number[];
+  /** The progress of the last stop's anchor, where the end starts its own clock. */
+  lastStop: number;
+  /**
+   * The camera's distance from the planet, in perspective units, for a scroll progress `u` (0 to 1). From the opening
+   * to the first stop, it draws back evenly with the scroll, to depth 1.5 (the glide eases the move); each stop's
+   * stretch then adds 1 through the steps, sharp at depth `1.5 + i`; the end goes 20 further back, slowing down onto
+   * the contact.
+   */
+  cameraDepth: (u: number) => number;
+  /** Progress through the end (0 to 1): the last stop leaves, then the office arrives. */
+  endProgress: (u: number) => number;
+  /** From scroll progress to time through the end. */
+  endClock: (u: number) => number;
+  /** From time through the end back to scroll progress. */
+  endProgressAt: (q: number) => number;
 }
 
-/** Progress through the end (0 to 1): the last card leaves, then the office arrives. */
-export function endProgress(u: number): number {
-  return Math.max(0, Math.min(1, (u - END_START) / (1 - END_START)));
+/** The journey through `stops` stops. */
+export function journeyTrack(stops: number): Track {
+  const screens = OPENING + PER_STOP * stops + END;
+  const stopsStart = OPENING / screens;
+  const endStart = (OPENING + PER_STOP * stops) / screens;
+  const anchors = [0, ...Array.from({ length: stops }, (_, i) => (OPENING + PER_STOP * i + PER_STOP / 2) / screens), 1];
+  const first = anchors[1] ?? stopsStart;
+  const lastStop = anchors[stops] ?? 0;
+  // The end runs on its own clock (journey spec, office spec §5): time through the end, from the last stop (0) to the
+  // contact (1). The last stop leaves over its first 12 % (0.3 screen into the end), then the office arrives, evenly
+  // in time.
+  const endSplit = endStart + 0.3 / screens;
+  return {
+    stops,
+    screens,
+    stopsStart,
+    endStart,
+    anchors,
+    lastStop,
+    cameraDepth: (u) => {
+      const p = Math.max(0, Math.min(1, u));
+      if (p < first) return (RING_DEPTH * p) / first;
+      if (p < endStart) {
+        const x = (p - stopsStart) / ((endStart - stopsStart) / stops);
+        const i = Math.min(stops - 1, Math.floor(x));
+        return 1 + i + step(x - i);
+      }
+      const t = Math.min(1, (p - endStart) / (1 - endStart));
+      return 1 + stops + 20 * (smoothstep(t) + 0.105 * (t * t * t - 2 * t * t + t));
+    },
+    endProgress: (u) => Math.max(0, Math.min(1, (u - endStart) / (1 - endStart))),
+    endClock: (u) => {
+      const q =
+        u <= endSplit
+          ? (0.12 * (u - lastStop)) / (endSplit - lastStop)
+          : 0.12 + (0.88 * (u - endSplit)) / (1 - endSplit);
+      return Math.max(0, Math.min(1, q));
+    },
+    endProgressAt: (q) =>
+      q <= 0.12 ? lastStop + ((endSplit - lastStop) * q) / 0.12 : endSplit + ((1 - endSplit) * (q - 0.12)) / 0.88,
+  };
 }
 
-/** Depth of the card of the project at `index` when it is sharp. */
-export function cardDepth(index: number): number {
-  return 1.5 + index;
-}
+/** The site's journey: the opening, the ring of projects, the contact. */
+export const journey = journeyTrack(1);
 
-// The end runs on its own clock (journey spec, office spec §5): time through the end, from the last project (0) to
-// the contact (1). The last card leaves over its first 12 % (0.3 screen into the end), then the office arrives, evenly
-// in time.
-const END_SPLIT = END_START + 0.3 / SCREENS;
-
-/** From scroll progress to time through the end. */
-export function endClock(u: number): number {
-  const q =
-    u <= END_SPLIT
-      ? (0.12 * (u - LAST_PROJECT)) / (END_SPLIT - LAST_PROJECT)
-      : 0.12 + (0.88 * (u - END_SPLIT)) / (1 - END_SPLIT);
-  return Math.max(0, Math.min(1, q));
-}
-
-/** From time through the end back to scroll progress. */
-export function endProgressAt(q: number): number {
-  return q <= 0.12
-    ? LAST_PROJECT + ((END_SPLIT - LAST_PROJECT) * q) / 0.12
-    : END_SPLIT + ((1 - END_SPLIT) * (q - 0.12)) / 0.88;
-}
+/** Screens of scroll, from the opening to the contact. */
+export const SCREENS = journey.screens;
+/** Progress of each anchor: the opening, the ring, the contact. */
+export const anchors: readonly number[] = journey.anchors;
+/** The progress of the ring's anchor. */
+export const RING = journey.lastStop;
+export const { cameraDepth, endProgress, endClock, endProgressAt } = journey;

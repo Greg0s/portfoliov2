@@ -4,15 +4,14 @@ import { blurFilter } from '../../src/scene/journey/blur';
 import {
   anchors,
   cameraDepth,
-  cardDepth,
   endClock,
   endProgressAt,
-  LAST_PROJECT,
-  PROJECTS,
-  projectAnchor,
+  journeyTrack,
+  RING,
+  RING_DEPTH,
   SCREENS,
 } from '../../src/scene/journey/anchors';
-import { cardLook, diveLook, focusedCard, planetLook, projectCss, type Sway } from '../../src/scene/journey/camera';
+import { cardLook, diveLook, planetLook, projectCss, type Sway } from '../../src/scene/journey/camera';
 import { projectThree } from '../../src/scene/journey/camera3d';
 import { sceneFor, seeded, worldCount } from '../../src/scene/journey/layout';
 import {
@@ -40,20 +39,19 @@ describe('the steps of a project', () => {
 });
 
 describe('the anchors of the journey', () => {
-  it('are the opening, the 7 projects and the contact, over 11.25 screens', () => {
-    expect(PROJECTS).toBe(7);
-    expect(SCREENS).toBe(11.25);
-    expect(anchors).toHaveLength(PROJECTS + 2);
+  it('are the opening, the ring of projects and the contact, over 3.75 screens', () => {
+    expect(SCREENS).toBe(3.75);
+    expect(anchors).toHaveLength(3);
     expect(anchors[0]).toBe(0);
     expect(anchors.at(-1)).toBe(1);
-    // The opening takes 1 screen, each project 1.25, its anchor in the middle.
-    expect(projectAnchor(0) * SCREENS).toBeCloseTo(1.625, 12);
-    expect(projectAnchor(6) * SCREENS).toBeCloseTo(9.125, 12);
+    // The opening takes 1 screen, the ring 1.25, its anchor in the middle.
+    expect(RING * SCREENS).toBeCloseTo(1.625, 12);
   });
 
-  it('put each card in focus on its anchor', () => {
-    for (let i = 0; i < PROJECTS; i += 1) expect(cameraDepth(projectAnchor(i))).toBeCloseTo(cardDepth(i), 10);
+  it('put the ring in focus on its anchor, the camera drawing back evenly to it', () => {
+    expect(cameraDepth(RING)).toBeCloseTo(RING_DEPTH, 10);
     expect(cameraDepth(0)).toBe(0);
+    expect(cameraDepth(RING / 2)).toBeCloseTo(RING_DEPTH / 2, 10);
   });
 
   it('move the camera only back', () => {
@@ -61,7 +59,7 @@ describe('the anchors of the journey', () => {
   });
 
   it('run the end on a clock that goes both ways', () => {
-    expect(endClock(LAST_PROJECT)).toBe(0);
+    expect(endClock(RING)).toBe(0);
     expect(endClock(1)).toBeCloseTo(1, 12);
     fc.assert(
       fc.property(fc.double({ min: 0, max: 1, noNaN: true }), (q) => {
@@ -69,37 +67,16 @@ describe('the anchors of the journey', () => {
       }),
     );
   });
+
+  it('build the same journey for any number of stops', () => {
+    const track = journeyTrack(8);
+    expect(track.screens).toBe(12.5);
+    expect(track.anchors).toHaveLength(10);
+    expect(track.cameraDepth(track.anchors[3] ?? 0)).toBeCloseTo(3.5, 10);
+  });
 });
 
-describe('the focus', () => {
-  it('on each project anchor, makes its card sharp and the others blurred', () => {
-    for (const [width, height] of [
-      [1440, 900],
-      [390, 844],
-    ] as const) {
-      const { cards } = sceneFor(width, height);
-      cards.forEach((card, i) => {
-        const depth = cameraDepth(projectAnchor(i));
-        expect(focusedCard(cards, depth)).toBe(i);
-        expect(cardLook(card, depth).blur).toBe(0);
-        expect(cardLook(card, depth).opacity).toBe(1);
-        cards
-          .filter((other) => other.index !== i)
-          .forEach((other) => {
-            const look = cardLook(other, depth);
-            // Blurred, or already gone.
-            expect(look.blur > 1 || look.opacity < 0.01).toBe(true);
-          });
-      });
-    }
-  });
-
-  it('keeps the card in focus a little longer than it takes it (hysteresis)', () => {
-    const { cards } = sceneFor(1440, 900);
-    expect(focusedCard(cards, cardDepth(2) + 0.12)).toBe(-1);
-    expect(focusedCard(cards, cardDepth(2) + 0.12, 2)).toBe(2);
-  });
-
+describe('the planet', () => {
   it('lets the planet recede to a point of light', () => {
     expect(planetLook(0, 0.7, 0).scale).toBe(1);
     expect(planetLook(0, 0.7, 0).blur).toBe(0);
@@ -114,7 +91,7 @@ describe('the dive', () => {
       fc.property(
         fc.integer({ min: 320, max: 2560 }),
         fc.integer({ min: 480, max: 1600 }),
-        fc.integer({ min: 0, max: PROJECTS - 1 }),
+        fc.integer({ min: 0, max: 7 }),
         (width, height, index) => {
           const { cards, view } = sceneFor(width, height);
           const card = cards[index];
@@ -244,8 +221,8 @@ describe('anchor to anchor', () => {
     expect(stepAnchor(0, positions, 1)).toBe(1);
     expect(stepAnchor(positions.at(-1) ?? 0, positions, 1)).toBe(positions.length - 1);
     // Between two anchors, a step goes to the next one in its direction.
-    expect(stepAnchor((positions[3] ?? 0) + 100, positions, 1)).toBe(4);
-    expect(stepAnchor((positions[3] ?? 0) + 100, positions, -1)).toBe(3);
+    expect(stepAnchor((positions[1] ?? 0) + 100, positions, 1)).toBe(2);
+    expect(stepAnchor((positions[1] ?? 0) + 100, positions, -1)).toBe(1);
   });
 
   it('starts a finger glide at the finger speed, without overshooting', () => {

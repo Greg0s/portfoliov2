@@ -32,6 +32,7 @@ Ce même recul finit dans un bureau : la caméra repasse par la fenêtre et s'ar
 | 13  | Indice de clic           | sur ordinateur, un curseur « Voir le projet » en disque clair ; sur mobile, une flèche d'ouverture dans le coin de l'image |
 | 14  | Appel de l'ouverture     | un seul, en bas au centre : « Voir les projets » (22 octobre 2026)                                                         |
 | 15  | Liens de l'en-tête       | un fondu au noir, rapide, quel que soit le lien (22 octobre 2026)                                                          |
+| 16  | Projets                  | sur un anneau autour de la planète, un projet en avant, flèches et glissement de côté (4 novembre 2026, section 5.1)       |
 
 ## 3. Le canevas v3
 
@@ -56,13 +57,30 @@ La scène (étoiles, planète, cartes, cartels, textes) est un seul composant, u
 - **Les astéroïdes du livre** : essayés le 22 octobre 2026 (six des petits mondes devenus les astéroïdes 325 à 330, avec leurs habitants), puis écartés par Grégoire le 23 octobre ; les petits mondes restent tels quels.
 - **Le vent sur la planète** : l'écharpe du Petit Prince flotte doucement, une vague qui court du cou jusqu'au bout du ruban (une boucle de 6 s, en 96 images rendues par le prototype `docs/prototypes/petit-prince`, `npm run vent`) ; la rose se balance au même souffle, en continu et sans à-coup (de −1,2° à 2,4°, un aller-retour de 6 s, accéléré et ralenti en douceur ; amplitude augmentée de moitié le 23 octobre 2026 pour qu'il se voie un peu plus) ; toutes les 7 à 14 s, un coup de vent presse les deux ensemble (1,6 fois plus vite pendant 2,2 s). Avec « Réduire les animations », et dans le storyboard, la planète reste le rendu fixe.
 - **Vie d'une carte** : elle arrive par-dessus l'épaule, tout près et floue, en fondu ; elle devient nette quand elle occupe environ un tiers de la largeur de l'écran (de 30 à 38 % selon la carte) ; puis elle repart vers la planète en rapetissant, en se floutant et en s'estompant.
-- **Ancres** : le défilement s'arrête toujours sur une ancre : l'ouverture, chacun des projets (carte nette ; huit dans la maquette, sept sur le site depuis le 31 octobre 2026), puis le contact. Un geste (molette, pavé tactile, doigt, clavier) mène à l'ancre suivante ou précédente ; on ne peut pas rester entre deux.
-- **Paliers** : sur le tronçon de chaque projet, la position de la caméra suit `f(s) = s + k · sin(2πs) / 2π`, avec `s` la progression dans le tronçon (de 0 à 1) et `k = 0,75`. Le recul tombe à 25 % de sa vitesse moyenne au milieu du tronçon, quand la carte est nette, et monte à 175 % entre deux projets, sans à-coup. Avec les ancres, cette courbe rythme le passage d'une ancre à l'autre : départ et arrivée en douceur, accélération entre les deux.
-- **Longueur** : douze écrans et demi de défilement dans la maquette (onze et quart sur le site, avec sept projets) : l'ouverture et l'effacement du texte (un écran), un écran et quart par projet, un écran et demi pour la fin.
+- **Ancres** : le défilement s'arrête toujours sur une ancre : l'ouverture, l'anneau des projets (section 5), puis le contact. Un geste (molette, pavé tactile, doigt, clavier) mène à l'ancre suivante ou précédente ; on ne peut pas rester entre deux. Jusqu'au 4 novembre 2026, chacun des projets avait son ancre, sur un tronçon où la caméra suivait `f(s) = s + k · sin(2πs) / 2π` (`k = 0,75`) ; l'anneau les a remplacées.
+- **De l'ouverture à l'anneau** : un seul glissement de 1,15 s (`easeInOutSine`, une durée proche de l'ancien passage au premier projet), sans à-coup : la caméra recule d'un mouvement régulier, la planète rapetisse et glisse au centre en restant nette, et l'anneau, déjà autour d'elle, se resserre jusqu'à sa taille. Le texte de l'ouverture s'efface dans le premier tiers du mouvement, avant que les cartes n'apparaissent.
+- **Longueur** : trois écrans trois quarts de défilement : l'ouverture et le recul jusqu'à l'anneau (un écran et demi environ), puis la fin.
 - **Compteur** : retiré le 22 octobre 2026, à la demande de Grégoire ; la distance depuis l'astéroïde B 612 n'est plus affichée.
 - **Touches « poétiques »** : la caméra dérive très légèrement (quelques pixels, une fraction de degré, sur une dizaine de secondes) ; sur ordinateur, elle s'incline de 1 à 2° vers la souris, ce qui remplace la parallaxe de la v2. La planète garde la lumière selon l'heure.
 
 ## 5. Les projets
+
+### 5.1 L'anneau autour de la planète (4 novembre 2026)
+
+Choisi par Grégoire le 4 novembre 2026 (proposition 1, cartel collé à la carte, parmi cinq), sur ordinateur puis aussi sur mobile, où il remplace le parcours de projet en projet. Il remplace les sections 5.2 et 8 pour les projets.
+
+- **Une seule halte** : tous les projets tiennent sur une seule ancre. Les cartes (sept depuis le 31 octobre 2026) sont posées sur un anneau elliptique, incliné, autour de la planète du Petit Prince, au centre de l'écran ; un projet est en avant, net et éclairé (le premier de la liste par défaut), les autres tournent derrière, plus petits, flous et estompés. La planète passe devant le fond de l'anneau.
+- **Éléments stellaires** : de la poussière d'étoiles (900 grains) et quelques corps (disques lumineux, planètes à anneau, petites étoiles, une lune, deux par projet) gravitent sur l'anneau, dessinés dans un canvas 2D derrière les cartes ; ils suivent l'anneau avec un léger retard, plus souple. La moitié lointaine de l'anneau passe sous la planète : seuls la planète et ses personnages la cachent, pas l'espace transparent autour (4 novembre 2026, à la demande de Grégoire).
+- **Tourner l'anneau** : les flèches en bas au centre (précédent, suivant), avec entre elles un compteur discret « 01 / 07 » (le projet en avant) ; ←/→ au clavier ; la molette ou le pavé tactile de côté ; un clic sur une carte de derrière l'amène en avant (sans l'ouvrir) ; le focus clavier sur une carte aussi. L'anneau tourne sur un ressort amorti (ω = 5,2), sans rebond : départ souple, arrivée qui se pose, environ une seconde. L'anneau boucle : après le dernier vient le premier.
+- **Au doigt** : un glissement de côté sur l'anneau le fait suivre le doigt, puis, au lâcher, amène le projet suivant ou précédent (au-delà de 40 px), ou revient ; un glissement vertical change d'ancre comme ailleurs. Les flèches restent en bas.
+- **Carte en avant** : environ un quart de la largeur sur ordinateur, 78 % sur mobile ; anneau blanc et halo comme avant. Le survol garde le curseur « Voir le projet » et le léger soulèvement, et le clic ouvre l'étude de cas par la plongée (section 5.2). Les cartes de derrière ne s'ouvrent pas : leur clic fait tourner l'anneau ; au survol, elles s'éclairent un peu (plus opaques, moins floues), en fondu à l'entrée (450 ms) comme à la sortie (650 ms).
+- **Cartel** : collé à la carte en avant, à sa droite sur ordinateur, en dessous sur mobile, aligné à gauche ; il monte de 10 px et s'efface dès que l'anneau tourne, puis revient avec le projet suivant.
+- **Adresses** : `#projets` mène à l'anneau tel qu'il est ; `#<slug>` mène à l'anneau, ce projet en avant. Le sélecteur de langue garde le projet en avant.
+- **Version allégée** : la cadence se juge aussi pendant que l'anneau tourne ; la liste reprend au projet en avant.
+
+### 5.2 Les cartes et la plongée
+
+Le tableau qui suit donne les places des cartes dans le parcours de projet en projet, remplacé par l'anneau ; leurs formats, le cartel, l'indice de clic et la plongée restent.
 
 | #   | Projet                     | Côté   | Décalage horizontal | Décalage vertical | Largeur nette | Rotation (Y, Z) |
 | --- | -------------------------- | ------ | ------------------- | ----------------- | ------------- | --------------- |
@@ -82,7 +100,7 @@ Décalages mesurés au moment où la carte est nette, depuis le centre de l'écr
 - **Cartel** : du côté du centre, 300 px de large au plus : titre (Libre Franklin 600, 28 px), tag (« 2024 — Three.js · génératif », Libre Franklin 600, 12 px, capitales), description courte (Manrope, 15 px). Il apparaît en 300 ms et s'efface en 200 ms.
 - **Indice de clic** : sur ordinateur, au survol de la carte nette, la souris devient un disque clair de 96 px (#F3F3F1) où « Voir le projet » s'écrit en capitales sombres (Libre Franklin 600, 11 px) ; il apparaît en grandissant (300 ms). Sur mobile, sans survol, un rond sombre de 38 px s'affiche dans le coin bas droit de l'image de la carte nette, avec une flèche d'ouverture (↗) au trait de 1,5 px : la pastille « + Voir le projet », qui cachait le bas de l'image, a été remplacée le 29 octobre 2026 (choix de Grégoire parmi quatre variantes).
 - **Survol** : la carte nette se soulève à peine (450 ms).
-- **Clavier** : Tab passe d'un projet à l'autre dans l'ordre ; la caméra glisse jusqu'à l'ancre du projet qui reçoit le focus ; Entrée l'ouvre.
+- **Clavier** : Tab passe d'un projet à l'autre dans l'ordre ; l'anneau tourne jusqu'au projet qui reçoit le focus ; Entrée l'ouvre.
 - **Plongée** : au clic, la caméra repart vers l'avant pendant 0,9 s (`cubic-bezier(0.65, 0, 0.35, 1)`) ; la carte, redressée, vole droit à la place du média d'ouverture de l'étude de cas (toute la largeur, collée en haut, sous l'en-tête sur téléphone, en 16:9) en gardant son format du début à la fin, tout le reste s'efface en 300 ms, puis l'étude de cas s'ouvre autour d'elle. « Retour aux projets » joue l'inverse : l'étude de cas s'efface autour de l'image, qui revient dans sa carte pendant que le reste réapparaît, et rend le parcours à la même progression. « Projet suivant » ne plonge plus : depuis le 2 novembre 2026, les études de cas sont côte à côte (spec principale, section 5.4).
 - **Projet suivant** : depuis une étude de cas, « Projet suivant » mène directement à l'étude suivante, sans repasser par le parcours : la page glisse vers la gauche et l'étude suivante arrive de la droite, et sur écran tactile on balaie d'une étude à l'autre, en boucle (décision de Grégoire, 2 novembre 2026, spec principale, section 5.4 ; la maquette faisait grandir l'image du projet suivant). Au retour, on retrouve la carte de ce projet dans le parcours.
 - **Médias** : les images actuelles en attendant les vidéos en boucle ; une vidéo se met en pause dès que sa carte s'éloigne de la zone nette.
@@ -111,7 +129,7 @@ Cette fin est remplacée par le bureau (`2026-10-21-maquette-v3-bureau.md`) ; el
 
 - Le même parcours au doigt, sur 390 × 844 : la planète en haut de l'ouverture, le texte en dessous.
 - Les mêmes ancres qu'à l'ordinateur, au doigt.
-- Les projets passent près du centre avec une alternance légère (5 à 8 % de décalage) ; la carte nette fait environ 78 % de la largeur, avec son cartel en dessous.
+- Les projets sont sur l'anneau (section 5.1), comme sur ordinateur : la carte en avant fait environ 78 % de la largeur, avec son cartel en dessous ; on change de projet en glissant de côté, ou par les flèches en bas (46 px, au-dessus de la zone de sécurité de l'écran). Avant le 4 novembre 2026, ils passaient près du centre l'un après l'autre, avec une alternance légère.
 - Le menu plein écran de la v2, la même plongée, le contact au bureau.
 - **Le menu s'ouvre comme on baisse la lumière d'un musée** : le fond de nuit couvre la scène en fondu (0,26 s), puis le nom et « Fermer », « Projets », « Contact » et les langues apparaissent en montant de 10 px, l'un après l'autre (0,32 s chacun, 50 ms d'écart, `cubic-bezier(0.23, 1, 0.32, 1)`). « Fermer » le referme en un seul fondu plus court (0,18 s), les mots restant en place ; un lien du menu le ferme dans le noir, avec le saut. Avec « Réduire les animations », les mots apparaissent sans monter.
 - Si la cadence reste sous 40 images par seconde pendant les 3 premières secondes (le seuil de la spec principale), le site bascule sur une version allégée : la planète s'éloigne au début, puis les projets défilent en liste, sans 3D. Cette version n'est pas prototypée dans la maquette.

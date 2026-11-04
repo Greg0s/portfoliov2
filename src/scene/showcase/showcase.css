@@ -1,0 +1,105 @@
+/* The ring of projects (`showcase.ts`): its sky behind the cards, the arrows and the counter over them. */
+.showcase-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.showcase-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.showcase-arrows {
+  position: absolute;
+  left: 50%;
+  bottom: 7vh;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+@media (width < 768px) {
+  .showcase-arrows {
+    bottom: calc(28px + env(safe-area-inset-bottom));
+    gap: 12px;
+  }
+}
+
+.showcase-count {
+  min-width: 64px;
+  font-family: var(--font-display);
+  font-size: var(--size-label);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-align: center;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.showcase-count .now {
+  color: var(--color-text);
+}
+
+.showcase-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 16px;
+  background: rgb(12 12 13 / 40%);
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    border-color 250ms var(--ease-ui),
+    background-color 250ms var(--ease-ui),
+    scale 250ms var(--ease-ui);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (width < 768px) {
+  .showcase-arrow {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+  }
+}
+
+.showcase-arrow svg {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (hover: hover) {
+  .showcase-arrow:hover {
+    border-color: rgb(243 243 241 / 55%);
+    background: rgb(243 243 241 / 8%);
+  }
+}
+
+.showcase-arrow:active {
+  scale: 0.94;
+}
+
+.showcase-arrow:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 4px;
+}
+
+/* The cartels: placed and faded by the journey, frame by frame, always aligned to their left. */
+html[data-showcase][data-journey='on'] .journey .project .cartel {
+  align-items: flex-start !important;
+  text-align: left !important;
+  transition: none !important;
+}

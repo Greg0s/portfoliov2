@@ -7,7 +7,7 @@
  * The stars and the small worlds come from the mockup's seeded random sequence, in its order, so that the site draws
  * the same sky.
  */
-import { cardDepth, PROJECTS } from './anchors';
+import { PROJECTS, RING_DEPTH } from './anchors';
 import { MOBILE_CARD_WIDTH, mobileSlotAt, slotAt } from '../slots';
 
 /** Below this width, the journey has its mobile framing (the same breakpoint as the CSS). */
@@ -181,7 +181,7 @@ export function sceneFor(width: number, height: number): Scene {
       const cardWidth = (MOBILE_CARD_WIDTH / 100) * width;
       return {
         index,
-        z: cardDepth(index),
+        z: RING_DEPTH,
         x: (slot.x / 100) * width,
         y: slot.y,
         width: cardWidth,
@@ -197,7 +197,7 @@ export function sceneFor(width: number, height: number): Scene {
     const cardWidth = (slot.width / 100) * width;
     return {
       index,
-      z: cardDepth(index),
+      z: RING_DEPTH,
       x: (slot.x / 100) * width,
       y: (slot.y / 100) * height,
       width: cardWidth,
