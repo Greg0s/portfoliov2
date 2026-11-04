@@ -72,7 +72,7 @@ La rigueur d'un musée d'art moderne (MoMA, MAM Paris), le calme photographique 
 | Tags des projets | Libre Franklin          | 600, 12 px, capitales, interlettrage 0,06em ; le type des images du mur en 11 px     |
 
 - Polices auto-hébergées via Fontsource (fichiers variables, licence OFL), deux fichiers préchargés au plus.
-- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; métier 27 px (23 px sur mobile) ; « On s'écrit ? » 40 px (30 px sur mobile) ; email du contact 20 px (18 px) ; titres de projet 28 px ; texte courant 15 à 18 px.
+- Tailles de référence : nom de l'ouverture `clamp(52px, 6.07vw, 88px)` ; métier 27 px (23 px sur mobile) ; « On s'écrit ? » 56 px (34 px sur mobile) ; email du contact 24 px (20 px) ; titres de projet 28 px ; texte courant 15 à 18 px.
 - Deux familles seulement, sans empattement : Libre Franklin et Manrope. Seule exception, l'écran de l'ordinateur du bureau imite Windows : il utilise la police du système (`"Segoe UI", system-ui`), sans fichier téléchargé.
 
 ### 5.2 Couleurs : « Noir musée »

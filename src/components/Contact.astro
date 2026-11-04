@@ -76,7 +76,7 @@ const links = [
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 440px;
+    width: 560px;
     text-align: center;
     translate: -50% 0;
   }
@@ -87,11 +87,12 @@ const links = [
     inset: -80px -110px;
     z-index: -1;
     pointer-events: none;
-    background: radial-gradient(closest-side, rgb(18 21 56 / 62%), rgb(0 0 0 / 0%));
+    background: radial-gradient(closest-side, rgb(18 21 56 / 53%), rgb(0 0 0 / 0%));
+    transform: translateY(30px);
   }
 
   :global(html[data-moment='aube']) .text::before {
-    background: radial-gradient(closest-side, rgb(16 24 52 / 62%), rgb(0 0 0 / 0%));
+    background: radial-gradient(closest-side, rgb(16 24 52 / 53%), rgb(0 0 0 / 0%));
   }
 
   .label {
@@ -135,6 +136,14 @@ const links = [
   @media (768px <= width < 1360px) {
     .links {
       gap: 0 16px;
+    }
+  }
+
+  /* On small desktops the screen comes closer still: the email and the title step down, the copy button clear of it. */
+  @media (768px <= width < 1200px) {
+    .text {
+      --size-contact-title: 48px;
+      --size-contact-email: 20px;
     }
   }
 
