@@ -59,9 +59,13 @@ test('a case study leads to its live site, from its facts and, for some, from a 
   await expect(page.getByText('Perfmanager est en ligne.')).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 2, name: 'Ce que je fais' })).toBeVisible();
 
-  // Siemens has no link at all.
+  // Siemens has no link but its recommendation letter, in the page's language.
   await page.goto('en/projects/siemens/');
-  await expect(page.getByRole('complementary').getByRole('link')).toHaveCount(0);
+  const siemens = page.getByRole('complementary').getByRole('link');
+  await expect(siemens).toHaveCount(1);
+  await expect(siemens).toHaveText(/Read the recommendation/);
+  await expect(siemens).toHaveAttribute('href', /\/letters\/siemens-en\.pdf$/);
+  expect((await page.request.get('letters/siemens-en.pdf')).headers()['content-type']).toBe('application/pdf');
 });
 
 test('a case study declares its alternates and switches language on the same project', async ({ page }) => {

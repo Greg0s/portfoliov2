@@ -6,6 +6,7 @@
  */
 import { t, type Locale } from '../i18n';
 import type { Project } from '../lib/projects';
+import { withBase } from '../lib/url';
 
 interface Props {
   locale: Locale;
@@ -14,7 +15,7 @@ interface Props {
 
 const { locale, project } = Astro.props;
 const label = t(locale);
-const { year, stack, links } = project.data;
+const { year, stack, links, letter } = project.data;
 const { period, role } = project.text.data;
 
 /** The links in their order of importance: the first one present is the button, the others follow it. */
@@ -23,9 +24,14 @@ const kinds = [
   { key: 'gallery', button: label('case.cta.gallery'), text: label('case.link.gallery') },
   { key: 'video', button: label('case.cta.video'), text: label('case.link.video') },
   { key: 'code', button: label('case.cta.code'), text: label('case.link.code') },
+  { key: 'letter', button: label('case.cta.letter'), text: label('case.link.letter') },
 ] as const;
+const hrefs: Partial<Record<(typeof kinds)[number]['key'], string | undefined>> = {
+  ...links,
+  ...(letter ? { letter: withBase(`letters/${project.slug}-${locale}.pdf`) } : {}),
+};
 const present = kinds.flatMap((kind) => {
-  const href = links[kind.key];
+  const href = hrefs[kind.key];
   return href ? [{ ...kind, href }] : [];
 });
 const [main, ...others] = present;

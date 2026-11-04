@@ -38,6 +38,11 @@ const projects = defineCollection({
         coverFocus: focus,
         /** The card's muted video loop, added at step 9. */
         loop: z.string().optional(),
+        /**
+         * A recommendation letter, published as `public/letters/<slug>-<locale>.pdf` (its translation, then the
+         * original), linked from the case study's facts.
+         */
+        letter: z.boolean().default(false),
         /** The case study ends on a band that leads to the live site ("Lyrix est en ligne"). */
         band: z.boolean().default(false),
       })
