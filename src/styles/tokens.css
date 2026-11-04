@@ -70,8 +70,8 @@
     --cover-top: var(--header-height);
     --gutter: 20px;
     --size-job: 23px;
-    --size-contact-title: 30px;
-    --size-contact-email: 18px;
+    --size-contact-title: 34px;
+    --size-contact-email: 20px;
     --size-body: 15px;
   }
 }

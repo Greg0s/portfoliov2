@@ -14,18 +14,16 @@ export interface Frame {
   aspect: number;
   /** On the wall (desktop only) or on the desk (the only one seen on mobile). */
   place: 'wall' | 'desk';
-  /** The landscape photo sits behind the contact text, which keeps the mouse: it never shows a label. */
-  cartel: boolean;
 }
 
 export const frames = [
-  { id: 'film', type: 'film', aspect: 16 / 9, place: 'wall', cartel: true },
-  { id: 'painting', type: 'painting', aspect: 3 / 2, place: 'wall', cartel: true },
-  { id: 'poster', type: 'poster', aspect: 2 / 3, place: 'wall', cartel: true },
-  { id: 'photo-portrait', type: 'photo', aspect: 4 / 5, place: 'wall', cartel: true },
-  { id: 'photo-landscape', type: 'photo', aspect: 4 / 3, place: 'wall', cartel: false },
-  { id: 'album', type: 'album', aspect: 1, place: 'wall', cartel: true },
-  { id: 'desk', type: 'photo', aspect: 4 / 5, place: 'desk', cartel: true },
+  { id: 'film', type: 'film', aspect: 16 / 9, place: 'wall' },
+  { id: 'painting', type: 'painting', aspect: 3 / 2, place: 'wall' },
+  { id: 'poster', type: 'poster', aspect: 2 / 3, place: 'wall' },
+  { id: 'photo-portrait', type: 'photo', aspect: 4 / 5, place: 'wall' },
+  { id: 'photo-landscape', type: 'photo', aspect: 4 / 3, place: 'wall' },
+  { id: 'album', type: 'album', aspect: 1, place: 'wall' },
+  { id: 'desk', type: 'photo', aspect: 4 / 5, place: 'desk' },
 ] as const satisfies readonly Frame[];
 
 export type FrameId = (typeof frames)[number]['id'];
