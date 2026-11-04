@@ -165,7 +165,7 @@ test.describe('on phones', () => {
     await expect(page.getByRole('link', { name: 'Envoyer un mail' })).toBeVisible();
     await page.getByRole('button', { name: 'Copier', exact: true }).tap();
     await expect(page.getByRole('button', { name: 'Copié', exact: true })).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('contact@gregoiretinn.es');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('gregoire.tinnes@gmail.com');
     await expect(email).not.toHaveAttribute('data-bubble-open', { timeout: 2000 });
 
     // A tap elsewhere closes it too.

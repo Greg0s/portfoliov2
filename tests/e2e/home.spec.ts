@@ -20,9 +20,9 @@ for (const { lang, path, dir, projects, first } of homes) {
     await expect(card.getByRole('heading', { level: 3, name: first })).toBeVisible();
 
     await expect(page.getByRole('heading', { level: 2, name: projects })).toBeAttached();
-    await expect(page.getByRole('link', { name: 'contact@gregoiretinn.es' })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: 'gregoire.tinnes@gmail.com' })).toHaveAttribute(
       'href',
-      'mailto:contact@gregoiretinn.es',
+      'mailto:gregoire.tinnes@gmail.com',
     );
     expect(errors).toEqual([]);
   });
@@ -37,7 +37,7 @@ test('the copy button copies the address and says so', async ({ page, context, b
   const button = page.getByRole('button', { name: 'Copier l’adresse' });
   await button.click();
   await expect(page.getByText('Adresse copiée')).toBeAttached();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('contact@gregoiretinn.es');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('gregoire.tinnes@gmail.com');
 });
 
 test('a card leads to its case study, and the back link returns to it', async ({ page }) => {

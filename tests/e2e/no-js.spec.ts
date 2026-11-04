@@ -13,7 +13,7 @@ test('the home is complete and usable without JavaScript', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 3, name: title })).toBeVisible();
   }
 
-  await expect(page.getByRole('link', { name: 'contact@gregoiretinn.es' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'gregoire.tinnes@gmail.com' })).toBeVisible();
   // The copy button needs JavaScript: it stays hidden rather than doing nothing.
   await expect(page.getByRole('button', { name: 'Copier l’adresse' })).toBeHidden();
 

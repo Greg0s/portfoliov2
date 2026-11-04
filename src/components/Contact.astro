@@ -139,9 +139,11 @@ const links = [
     }
   }
 
-  /* On small desktops the screen comes closer still: the email and the title step down, the copy button clear of it. */
+  /* On small desktops the screen comes closer still: the text moves a little left, and the email and the title step
+     down, the copy button clear of it. */
   @media (768px <= width < 1200px) {
     .text {
+      left: 46%;
       --size-contact-title: 48px;
       --size-contact-email: 20px;
     }
@@ -168,8 +170,10 @@ const links = [
       width: 276px;
     }
 
+    /* Its centre behind the email. */
     .text::before {
       inset: -60px -50px;
+      transform: translateY(16px);
     }
 
     .title {

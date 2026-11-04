@@ -1,7 +1,7 @@
 /** Site-wide settings: who the site is for and where to reach him (main spec §7.2). */
 export const config = {
   name: 'Grégoire Tinnes',
-  email: 'contact@gregoiretinn.es',
+  email: 'gregoire.tinnes@gmail.com',
   links: {
     linkedin: 'https://www.linkedin.com/in/gr%C3%A9goire-tinnes-6776a41a1/',
     github: 'https://github.com/Greg0s',

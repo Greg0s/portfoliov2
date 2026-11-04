@@ -6,7 +6,7 @@ of the dreamer who watches the planet. Each project opens into a case study, in 
 
 - **Preview**: https://greg0s.github.io/portfoliov2/ (under construction; the current site stays at
   [gregoiretinn.es](https://gregoiretinn.es) until this one goes live)
-- **Contact**: contact@gregoiretinn.es
+- **Contact**: gregoire.tinnes@gmail.com
 
 ## Stack
 

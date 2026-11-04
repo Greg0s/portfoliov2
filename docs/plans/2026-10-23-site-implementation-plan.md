@@ -150,7 +150,7 @@ language switch and blackout.
 | `src/styles/tokens.css`                           | the colour tokens of §5.2, type scale of §5.1, easings and durations of §5.5                                                                                    |
 | `src/styles/base.css`                             | background gradient, page tint per moment, focus ring, links, skip link, `.visually-hidden`                                                                     |
 | `src/styles/fonts.css`                            | Fontsource variable Libre Franklin (roman, italic) and Manrope, Latin subset only; roman Libre Franklin and Manrope preloaded, the italic not                   |
-| `src/config.ts`                                   | email `contact@gregoiretinn.es`, LinkedIn, GitHub, Instagram, CV path                                                                                           |
+| `src/config.ts`                                   | email `gregoire.tinnes@gmail.com`, LinkedIn, GitHub, Instagram, CV path                                                                                         |
 | `src/i18n/fr.ts`, `en.ts`                         | interface strings; `en` typed as `Record<keyof typeof fr, string>`                                                                                              |
 | `src/i18n/routes.ts`                              | route ids → path per locale (`home`, `project`), `alternate(url)`, fragments per locale                                                                         |
 | `src/i18n/index.ts`                               | `getLocale(url)`, `t(locale)`                                                                                                                                   |
@@ -262,7 +262,7 @@ and robots.
 
 - E2E with JavaScript disabled: the opening, the 8 projects with their cartel and the contact are visible, every link
   works, no hidden content; the planet and office fallbacks show.
-- E2E: no broken internal link (crawl of every built page); the copy button copies `contact@gregoiretinn.es` and
+- E2E: no broken internal link (crawl of every built page); the copy button copies `gregoire.tinnes@gmail.com` and
   announces it; old URLs land on their target.
 - Budgets: planet fallbacks ≤ 50 kB each, office set ≤ 500 kB; Lighthouse on the home (expected near 100).
 

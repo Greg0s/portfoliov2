@@ -38,7 +38,7 @@ Grégoire l'a validée le 23 octobre 2026 : c'est la fin de l'étape 0 de la spe
 - D'autres images pour chaque cadre du mur, plus tard : au moins 600 px de côté, d'un format proche de celui du cadre, avec le titre, l'auteur et l'année quand il les connaît. Depuis le 24 octobre 2026, six cadres ont leur image en pleine définition (celles de la maquette) ; la pochette de Drivin Thru the Night reçue ne fait que 500 px, donc le cadre de la pochette reste vide en attendant une version d'au moins 600 px. Chaque cadre n'a qu'une image, donc la Corbeille relance un tirage qui ne change rien.
 - Les photos et visuels en haute définition des études de cas.
 - Les études de cas restent telles quelles pour l'instant (choix de Grégoire, 24 octobre 2026) : il les reprendra plus tard lui-même (titres, textes, images, vidéos), et certains projets changeront. Les rôles et la part de chacun dans les projets d'équipe sont à vérifier à ce moment-là.
-- Le CV en PDF, dans une version qui n'affiche que contact@gregoiretinn.es : celui reçu le 24 octobre 2026 porte une adresse personnelle, qui ne doit pas être publiée. Le site l'ajoute aux liens du contact dès qu'il est dans `public/` (spec principale, section 8.2).
+- Le CV est publié tel qu'il l'a fait, avec son adresse (décision du 24 octobre 2026). Depuis le 4 novembre 2026, l'adresse du contact est gregoire.tinnes@gmail.com (son choix, à la place de contact@gregoiretinn.es).
 
 ## Les outils
 
