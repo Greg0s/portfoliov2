@@ -116,17 +116,24 @@ test.describe('on a touch screen', () => {
     await recordSlides(page);
     await page.goto('projets/obaine/');
     await expect(page.getByRole('heading', { level: 1, name: 'Obaine' })).toBeVisible();
+    // Once the page is idle, both neighbours' pages are laid beside it.
+    const next = page.locator('[data-peek="next"]');
+    await expect(next).toHaveAttribute('data-filled', '');
+    await expect(page.locator('[data-peek="previous"]')).toHaveAttribute('data-filled', '');
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 300, y: 500 }] });
     for (let x = 290; x >= 160; x -= 10) {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: 500 }] });
       await page.waitForTimeout(16);
     }
-    // Halfway: the page is 140 px to the left, the next case study's name comes in from the right edge.
+    // Halfway: the page is 140 px to the left, the next case study's page comes in from the right edge, beside it.
     expect(await page.locator('main').evaluate((main) => main.style.transform)).toBe('translateX(-140px)');
-    const next = page.locator('[data-peek="next"]');
-    await expect(next).toContainText('Littérature & Combinatoire');
     await expect(next).toBeInViewport();
+    const edges = await page.evaluate(() => ({
+      page: document.querySelector('main')?.getBoundingClientRect().right,
+      next: document.querySelector('[data-peek="next"]')?.getBoundingClientRect().left,
+    }));
+    expect(edges.next).toBeCloseTo(edges.page ?? 0, 0);
     // Back almost to the start, slowly: the finger changed its mind.
     for (let x = 170; x <= 280; x += 10) {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: 500 }] });

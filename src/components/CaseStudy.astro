@@ -390,6 +390,22 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     transition: translate 250ms var(--ease-ui);
   }
 
+  /*
+   * Once loaded (src/motion/swipe.ts), the neighbour's page itself, as it opens: right beside this one, at its top,
+   * still, its content in place.
+   */
+  .peek[data-filled] {
+    top: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    text-align: start;
+    translate: none;
+    opacity: 1;
+  }
+
   /* Far enough, the swipe leads there on release: the arrow says so. */
   .peek.next[data-armed] .peek-arrow {
     translate: 6px 0;

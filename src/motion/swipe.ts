@@ -1,7 +1,7 @@
 /**
  * Swiping from one case study to the next on a touch screen (main spec §5.4, decided on 2 November 2026). A finger
- * moving sideways takes the page with it, the neighbour's name coming in from the edge, as if the case studies lay side
- * by side; let go far enough, or quickly enough, the page goes on sliding there (slide.ts), round the ring, else it
+ * moving sideways takes the page with it, the neighbour's page coming in from the edge, as if the case studies lay side
+ * by side (both neighbours loaded once the page is idle, their name standing in until then); let go far enough, or quickly enough, the page goes on sliding there (slide.ts), round the ring, else it
  * springs back. A finger moving up or down scrolls, as ever. On the first two case studies a visitor opens on a touch
  * screen, until a first swipe, the page leans once toward the next one, showing its name: the hint that it is there.
  */
@@ -61,6 +61,13 @@ function peek(side: Side): HTMLElement | null {
 
 const width = (): number => document.documentElement.clientWidth;
 
+const filled = (element: HTMLElement): boolean => element.hasAttribute('data-filled');
+
+/** How much of a neighbour shows: its page, whole, once loaded; else its name, coming in as the page goes. */
+function shown(element: HTMLElement, revealed: number): number {
+  return filled(element) ? 1 : Math.min(1, Math.max(0, revealed / (width() * COMMIT)));
+}
+
 /** Puts the page `x` pixels sideways, and the neighbour it reveals beside it. */
 function place(x: number): void {
   offset = x;
@@ -71,7 +78,7 @@ function place(x: number): void {
     if (!element) continue;
     const revealed = side === 'next' ? -x : x;
     element.style.transform = transform;
-    element.style.opacity = String(Math.min(1, Math.max(0, revealed / (width() * COMMIT))));
+    element.style.opacity = String(shown(element, revealed));
     element.toggleAttribute('data-armed', revealed >= width() * COMMIT);
   }
 }
@@ -90,8 +97,8 @@ function springBack(): void {
     if (!element || revealed <= 0) continue;
     element.animate(
       [
-        { transform: `translateX(${String(from)}px)`, opacity: Math.min(1, revealed / (width() * COMMIT)) },
-        { transform: 'none', opacity: 0 },
+        { transform: `translateX(${String(from)}px)`, opacity: shown(element, revealed) },
+        { transform: 'none', opacity: filled(element) ? 1 : 0 },
       ],
       { duration: SPRING_MS, easing: SPRING_EASE },
     );
@@ -125,6 +132,89 @@ function warm(side: Side): Promise<void> {
   image.srcset = element.dataset.srcset ?? '';
   image.src = element.dataset.src ?? '';
   return image.decode().catch(() => undefined);
+}
+
+/** The neighbour's page holds still, as it will once slid in: no entrance, no twinkling. */
+const STILL =
+  ':host { display: block; } *, *::before, *::after { animation: none !important; transition: none !important; }';
+
+/**
+ * Lays the neighbour's page on `side` in its peek, as it opens at its top: fetched, its content copied without what
+ * would act (scripts, ids, the marks the scripts and the view transitions look for), and still (case-studies CSS).
+ */
+async function fill(side: Side): Promise<void> {
+  const element = peek(side);
+  const href = element?.dataset.href;
+  if (!element || !href || filled(element)) return;
+  try {
+    const response = await fetch(href);
+    if (!response.ok) return;
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const content = page.querySelector('main');
+    if (!content || filled(element) || !element.isConnected) return;
+    for (const node of content.querySelectorAll('script, noscript')) node.remove();
+    for (const node of content.querySelectorAll('[id]')) node.removeAttribute('id');
+    for (const name of ['data-case-slug', 'data-ring', 'data-astro-transition-scope']) {
+      for (const node of content.querySelectorAll(`[${name}]`)) node.removeAttribute(name);
+    }
+    for (const video of content.querySelectorAll('video')) {
+      video.removeAttribute('autoplay');
+      video.preload = 'none';
+    }
+    // In a closed shadow root, out of reach of the page's scripts and of assistive technologies, with the page's styles.
+    const view = document.createElement('div');
+    view.className = 'peek-page';
+    const root = view.attachShadow({ mode: 'closed' });
+    const sheets = Array.from(
+      document.head.querySelectorAll<HTMLLinkElement | HTMLStyleElement>('link[rel=stylesheet], style'),
+      (sheet) => sheet.cloneNode(true) as HTMLLinkElement | HTMLStyleElement,
+    );
+    const still = document.createElement('style');
+    still.textContent = STILL;
+    root.append(...sheets, still, ...Array.from(content.childNodes, (node) => document.importNode(node, true)));
+    // The styles load once in the document (from the cache): the name stays until they have.
+    const loads = sheets
+      .filter((sheet): sheet is HTMLLinkElement => sheet instanceof HTMLLinkElement)
+      .map(
+        (link) =>
+          new Promise<void>((resolve) => {
+            link.addEventListener(
+              'load',
+              () => {
+                resolve();
+              },
+              { once: true },
+            );
+            link.addEventListener(
+              'error',
+              () => {
+                resolve();
+              },
+              { once: true },
+            );
+          }),
+      );
+    view.hidden = true;
+    element.append(view);
+    await Promise.race([Promise.all(loads), wait(1500)]);
+    view.hidden = false;
+    element.replaceChildren(view);
+    element.inert = true;
+    element.setAttribute('data-filled', '');
+  } catch {
+    // Not loaded: the neighbour's name stands in.
+  }
+}
+
+/** Once the page is idle, both neighbours are laid in their peeks, so that a swipe shows them at once. */
+function fillBoth(): void {
+  if (!onCaseStudy() || !touchScreen() || prefersReducedMotion()) return;
+  const run = (): void => {
+    void fill('next');
+    void fill('previous');
+  };
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 1500 });
+  else setTimeout(run, 300);
 }
 
 const wait = (ms: number): Promise<void> =>
@@ -190,12 +280,14 @@ function nudge(): void {
       { transform: 'none' },
     ];
     for (const element of moving()) element.animate(frames, options);
-    peek('next')?.animate(
+    const next = peek('next');
+    const hidden = next && filled(next) ? 1 : 0;
+    next?.animate(
       [
-        { transform: 'none', opacity: 0 },
+        { transform: 'none', opacity: hidden },
         { transform: lean, opacity: 1, offset: 0.4 },
         { transform: lean, opacity: 1, offset: 0.55 },
-        { transform: 'none', opacity: 0 },
+        { transform: 'none', opacity: hidden },
       ],
       options,
     );
@@ -269,5 +361,6 @@ export function initSwipe(): void {
     offset = 0;
     dropDots();
     nudge();
+    fillBoth();
   });
 }
