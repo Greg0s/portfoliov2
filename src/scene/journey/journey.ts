@@ -111,6 +111,9 @@ const SWAY_REST_MS = 600;
  */
 const TRACK_SLACK = 200;
 const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
+const easeInOutSine = (t: number): number => (1 - Math.cos(Math.PI * t)) / 2;
+/** The glide between the opening and the showcase, in ms. */
+const SHOWCASE_GLIDE_MS = 2400;
 
 interface CardParts {
   item: HTMLElement;
@@ -172,7 +175,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const showcaseId = mobileAtStart ? null : showcaseAsked;
   const route = journeyTrack(showcaseId === null ? PROJECTS : 1);
   const { anchors, screens: SCREENS, lastStop: LAST_PROJECT } = route;
-  const { cameraDepth, endClock, endProgress, endProgressAt } = route;
+  const { endClock, endProgress, endProgressAt } = route;
+  /** Where the showcase's stop is, along the scroll. */
+  const SHOWCASE_AT = route.anchors[1] ?? 0.4;
+  // To the showcase, the camera draws back evenly with the scroll: the glide alone eases the move, from start to end.
+  const cameraDepth =
+    showcaseId === null
+      ? route.cameraDepth
+      : (u: number): number => (u < SHOWCASE_AT ? (1.5 * Math.max(0, u)) / SHOWCASE_AT : route.cameraDepth(u));
   // Firefox sorts everything in one 3D scene plane by plane: a card's dark shadow, in the card's own plane, would
   // now and then be drawn over the card. There each card is flattened into its own picture, the perspective of its
   // turn given by its own frame, seen from the vanishing point at the card's distance: the same drawing, in one plane.
@@ -541,8 +551,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     if (Math.abs(to - from) < 2) return;
     direction = Math.sign(to - from);
     setSnap(false);
-    const duration = glideDuration(to - from);
-    const ease = speed > 0 ? easeFrom((speed * duration) / Math.abs(to - from)) : easeInOutCubic;
+    // Between the opening and the showcase, one long, even move: the camera draws back and turns toward the ring.
+    const toShowcase =
+      showcaseId !== null && Math.min(from, to) < 2 && Math.abs(Math.max(from, to) - (positions[1] ?? 0)) < 2;
+    const duration = toShowcase ? SHOWCASE_GLIDE_MS : glideDuration(to - from);
+    const ease = toShowcase
+      ? easeInOutSine
+      : speed > 0
+        ? easeFrom((speed * duration) / Math.abs(to - from))
+        : easeInOutCubic;
     glide = { from, to, start: -1, duration, ease };
   }
 
@@ -830,9 +847,27 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   ): { x: number; y: number; diameter: number } | null {
     if (!showcase) return null;
     const { design } = showcase;
-    const plane = cardLook({ z: SHOWCASE_Z } as CardPlace, depth);
+    const approach = ringApproach(depth, view, sway);
+    let plane = cardLook({ z: SHOWCASE_Z } as CardPlace, depth);
     const relative = SHOWCASE_Z - depth;
-    const presence = 1 - smoothstep(0.08, 0.45, Math.abs(relative));
+    let presence = 1 - smoothstep(0.08, 0.45, Math.abs(relative));
+    if (approach) {
+      // On the way to the ring, the ring is already around the planet, larger while the camera is still close: it
+      // comes into view as the camera draws back, rather than from behind it.
+      plane = {
+        depth: 0,
+        scale: 1,
+        opacity: smoothstep(0.3, 0.95, approach.t),
+        blur: 10 * (1 - smoothstep(0.45, 1, approach.t)),
+      };
+      presence = smoothstep(0.7, 1, approach.t);
+      set(world3d, 'transform-origin', '0 0');
+      set(
+        world3d,
+        'transform',
+        `translate(${approach.ox.toFixed(2)}px, ${approach.oy.toFixed(2)}px) scale(${approach.zoom.toFixed(4)})`,
+      );
+    } else set(world3d, 'transform', 'none');
     const selected = showcase.selected();
     const inFront = showcase.settled() && presence > 0.9;
     focus = diving >= 0 ? diving : inFront ? selected : -1;
@@ -916,6 +951,33 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(parts.cartel, 'transform', design.cartel === 'below' ? 'none' : 'translate(0, -50%)');
     });
     return showcase.planet(view);
+  }
+
+  /**
+   * The ring's planet on its way from the opening to the stop (depth 0 to `SHOWCASE_Z`), as one move of the camera
+   * drawing back and turning: the planet, sharp all the way, shrinks by the same ratio for each step of depth and
+   * slides to the ring's centre as it shrinks, as a camera receding toward that point would see it. `zoom`, `ox` and
+   * `oy` map the showcase as drawn at the stop onto this moment (screen = zoom · stop + offset). Null past the stop, or
+   * without a ring.
+   */
+  function ringApproach(
+    depth: number,
+    view: View,
+    sway: Sway,
+  ): { t: number; sP: number; x: number; y: number; zoom: number; ox: number; oy: number; diameter: number } | null {
+    const held = showcase?.planet(view);
+    if (!held || planetSize <= 0 || depth > SHOWCASE_Z) return null;
+    const ringScale = held.diameter / planetSize;
+    const ring = projectCss(held.x, held.y, 0, view, sway);
+    const t = Math.max(0, depth / SHOWCASE_Z);
+    const sP = Math.pow(ringScale, t);
+    const k = Math.abs(1 - ringScale) > 1e-3 ? (1 - sP) / (1 - ringScale) : t;
+    const fromX = view.vpX + planetRest.x + sway.dx;
+    const fromY = view.vpY + planetRest.y + sway.dy;
+    const x = fromX + (ring.x - fromX) * k;
+    const y = fromY + (ring.y - fromY) * k;
+    const zoom = sP / ringScale;
+    return { t, sP, x, y, zoom, ox: x - zoom * ring.x, oy: y - zoom * ring.y, diameter: held.diameter };
   }
 
   // ---------- Drawing a frame ----------
@@ -1062,16 +1124,25 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     let dx = planetRest.x * (sP - 1) + mid.x + sway.dx;
     let dy = planetRest.y * (sP - 1) + mid.y + sway.dy;
     if (held && planetSize > 0) {
-      // The ring's planet: from the opening, it comes to the ring's centre, sharp, then recedes with the ring.
-      const w = smoothstep(0.25, 1.35, depth);
-      const relative = Math.min(SHOWCASE_Z - depth, 0.72);
-      const at = projectCss(held.x, held.y, relative, view, sway);
-      const heldScale = (held.diameter * at.scale) / planetSize;
-      sP += (heldScale - sP) * w;
-      dx += (at.x - view.vpX - planetRest.x - dx) * w;
-      dy += (at.y - view.vpY - planetRest.y - dy) * w;
-      const blur = planetState.blur + (12 * smoothstep(0.1, 0.8, Math.abs(relative)) - planetState.blur) * w;
-      planetState = { ...planetLook(Math.pow(sP, -1 / 1.3) - 1, light.sky, arrival), scale: sP, blur };
+      // The ring's planet. From the opening to the stop, the camera draws back and turns in one move: the planet,
+      // sharp all the way, shrinks evenly (by the same ratio for each step of depth) and slides to the ring's centre as
+      // it shrinks, as a camera receding toward that point would see it. Past the stop, it recedes with the ring.
+      const ringScale = held.diameter / planetSize;
+      const approach = ringApproach(depth, view, sway);
+      if (approach) {
+        sP = approach.sP;
+        dx = approach.x - view.vpX - planetRest.x;
+        dy = approach.y - view.vpY - planetRest.y;
+        planetState = { ...planetLook(Math.pow(sP, -1 / 1.3) - 1, light.sky, arrival), scale: sP, blur: 0 };
+      } else {
+        const past = depth - SHOWCASE_Z;
+        const at = projectCss(held.x, held.y, -past, view, sway);
+        sP = ringScale * at.scale;
+        dx = at.x - view.vpX - planetRest.x;
+        dy = at.y - view.vpY - planetRest.y;
+        const blur = 12 * smoothstep(0.1, 0.8, past);
+        planetState = { ...planetLook(Math.pow(sP, -1 / 1.3) - 1, light.sky, arrival), scale: sP, blur };
+      }
     }
     const group = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) rotate(${sway.roll.toFixed(3)}deg)`;
     if (decorGroup) set(decorGroup, 'transform', `${group} scale(${sP.toFixed(4)})`);
@@ -1096,8 +1167,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     drawPlanet(now, u, planetState.blur, moment);
     if (showcase) {
       const relative = SHOWCASE_Z - depth;
-      const disc =
-        held && planetSize > 0
+      const approach = ringApproach(depth, view, sway);
+      const ring = approach && held ? projectCss(held.x, held.y, 0, view, sway) : null;
+      const disc = ring
+        ? { x: ring.x, y: ring.y, r: (approach?.diameter ?? 0) / 2 }
+        : held && planetSize > 0
           ? {
               x: view.vpX + planetRest.x + dx,
               y: view.vpY + planetRest.y + dy,
@@ -1107,8 +1181,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       showcase.draw({
         view,
         sway,
-        shift: Math.min(relative, 0.72),
-        presence: (1 - smoothstep(0.08, 0.45, Math.abs(relative))) * others,
+        shift: approach ? 0 : Math.min(relative, 0.72),
+        presence:
+          (approach ? smoothstep(0.3, 0.95, approach.t) : 1 - smoothstep(0.08, 0.45, Math.abs(relative))) * others,
+        zoom: approach ? { k: approach.zoom, x: approach.ox, y: approach.oy } : null,
         time,
         poses: showcasePoses,
         planet: disc,

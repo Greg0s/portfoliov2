@@ -42,6 +42,8 @@ export interface Frame {
   poses: readonly Pose[];
   /** The planet's disc on screen, if the showcase holds it. */
   planet: { x: number; y: number; r: number } | null;
+  /** On the way to the ring: the sky as drawn at the stop, scaled by `k` and moved by `x`, `y` (px). */
+  zoom: { k: number; x: number; y: number } | null;
 }
 
 export interface Showcase {
@@ -492,7 +494,8 @@ export function createShowcase(
       ui.style.pointerEvents = frame.presence > 0.9 ? 'auto' : 'none';
       ui.style.visibility = frame.presence > 0.01 ? 'visible' : 'hidden';
       if (frame.presence < 0.004) return;
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      const zoom = frame.zoom ?? { k: 1, x: 0, y: 0 };
+      ctx.setTransform(ratio * zoom.k, 0, 0, ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
       if (design.sky === 'ring') drawRing(ctx, frame);
       else if (design.sky === 'path') drawPath(ctx, frame);
       else if (design.sky === 'lens') drawLens(ctx, frame);
