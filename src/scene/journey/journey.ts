@@ -1423,6 +1423,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   // At rest, only the weightless motions move, by a few px per second: drawn 20 times a second, they look the same
   // and leave the main thread free. A glide, the camera catching up, the mouse or a hover draw at every frame.
   let lastDraw = 0;
+  /** Whether the frame where the camera came to rest has been drawn. */
+  let restDrawn = true;
   // The glide scrolls first in the frame, before the job title or anything else writes a style.
   const stopGlideTick = onTick(stepGlide, { first: true });
   // The camera keeps its pace when frames are slow: the ticker caps a frame at 64 ms, which would stretch the 3.5 s
@@ -1532,8 +1534,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     followCamera(elapsed);
     if (showcase.update(elapsed)) redraw = true;
     const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
-    // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds.
-    if (atRest && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
+    // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds. The frame where the
+    // camera comes to rest is always drawn, so that it says where it rests.
+    if (atRest && restDrawn && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
+    restDrawn = atRest;
     lastDraw = now;
     redraw = false;
     draw(now);

@@ -6,8 +6,8 @@ const RING = 1;
 const CONTACT = 2;
 
 /** The anchor the journey rests on, once it has settled there. */
-async function expectAnchor(page: Page, anchor: number): Promise<void> {
-  await expect(page.locator('[data-journey-root]')).toHaveAttribute('data-anchor', String(anchor), { timeout: 20_000 });
+async function expectAnchor(page: Page, anchor: number, timeout = 20_000): Promise<void> {
+  await expect(page.locator('[data-journey-root]')).toHaveAttribute('data-anchor', String(anchor), { timeout });
 }
 
 /** Waits for the journey to start: it marks the page, then rests on an anchor. */
@@ -522,7 +522,9 @@ test('the arrival waits a few seconds at most for the live office, showing that 
   const held = Date.now();
   await expect(home).not.toHaveAttribute('data-loading', { timeout: 10_000 });
   expect(Date.now() - held).toBeLessThan(4500);
-  await expectAnchor(page, CONTACT);
+  // The live office goes on getting ready without a GPU, every frame of the arrival drawn in software: on CI's shared
+  // machines, the 3.5 s of the arrival may take far longer.
+  await expectAnchor(page, CONTACT, 45_000);
   await expect(page.locator('html')).toHaveAttribute('data-office-arrival', /.+/);
   expect(errors).toEqual([]);
 });
