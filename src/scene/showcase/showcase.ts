@@ -7,7 +7,6 @@
 import { projectCss, type Sway } from '../journey/camera';
 import type { View } from '../journey/layout';
 import { offset, ringFor, ringPoint, ringPose, type Pose, type Ring } from './ring';
-import './showcase.css';
 
 /**
  * The ring turns on a critically damped spring: it sets off gently, glides and settles without a bump, about a second
@@ -102,19 +101,36 @@ function spring(state: { x: number; v: number }, target: number, omega: number, 
   state.x += state.v * dt;
 }
 
-/** Starts the ring over the journey's section `space`, for the projects titled `titles`. */
-export function createShowcase(space: HTMLElement, titles: readonly string[], onMove: () => void): Showcase {
+/**
+ * Starts the ring over the journey's section `space`, for the projects titled `titles`. The ring's far half is drawn
+ * just under `planet` (the planet's own element), so that only the planet and its characters hide it, not the
+ * transparent space around them; its near half over the planet, under the cards.
+ */
+export function createShowcase(
+  space: HTMLElement,
+  titles: readonly string[],
+  onMove: () => void,
+  planet: HTMLElement | null = null,
+): Showcase {
   const n = titles.length;
   const french = document.documentElement.lang.startsWith('fr');
   const html = document.documentElement;
   html.dataset.showcase = 'ring';
 
-  // The sky, behind the cards (over the planet and the stars).
-  const canvas = document.createElement('canvas');
-  canvas.className = 'showcase-sky';
-  canvas.setAttribute('aria-hidden', 'true');
+  // The sky, behind the cards: its near half over the planet, its far half under it.
+  const sky = (where: 'near' | 'far'): HTMLCanvasElement => {
+    const element = document.createElement('canvas');
+    element.className = 'showcase-sky';
+    element.dataset.half = where;
+    element.setAttribute('aria-hidden', 'true');
+    return element;
+  };
+  const canvas = sky('near');
   space.before(canvas);
+  const farCanvas = sky('far');
+  if (planet) planet.before(farCanvas);
   const context = canvas.getContext('2d');
+  const farContext = planet ? farCanvas.getContext('2d') : null;
 
   // The arrows and the counter, over the cards.
   const ui = document.createElement('div');
@@ -170,10 +186,12 @@ export function createShowcase(space: HTMLElement, titles: readonly string[], on
   let ratio = 1;
   function resize(view: View): void {
     ratio = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = Math.round(view.width * ratio);
-    canvas.height = Math.round(view.height * ratio);
-    canvas.style.width = `${String(view.width)}px`;
-    canvas.style.height = `${String(view.height)}px`;
+    for (const element of [canvas, farCanvas]) {
+      element.width = Math.round(view.width * ratio);
+      element.height = Math.round(view.height * ratio);
+      element.style.width = `${String(view.width)}px`;
+      element.style.height = `${String(view.height)}px`;
+    }
   }
 
   // The ring's dust and its stellar bodies, between the projects' sections.
@@ -250,48 +268,59 @@ export function createShowcase(space: HTMLElement, titles: readonly string[], on
     ctx.restore();
   }
 
-  /** Whether a point behind the planet's centre is hidden by its disc. */
+  /**
+   * Whether a point behind the planet's centre is hidden by its disc: only without the far layer, which lets the
+   * planet's own pixels hide it.
+   */
   function hidden(x: number, y: number, z: number, planet: Frame['planet']): boolean {
-    return z < 0 && planet !== null && Math.hypot(x - planet.x, y - planet.y) < planet.r * 0.94;
+    return !farContext && z < 0 && planet !== null && Math.hypot(x - planet.x, y - planet.y) < planet.r * 0.94;
   }
 
-  function drawRing(ctx: CanvasRenderingContext2D, frame: Frame): void {
+  function drawRing(near: CanvasRenderingContext2D, far: CanvasRenderingContext2D, frame: Frame): void {
+    const layer = (z: number): CanvasRenderingContext2D => (z < 0 ? far : near);
     const { view, sway, shift, time } = frame;
     const ring = ringFor(view);
     const angle = (-2 * Math.PI * dust.x) / n;
     const drift = time * 0.000012;
     const bodyScale = view.mobile ? 0.7 : 1;
     // The dust, brighter on the ring's front.
-    ctx.fillStyle = '#f3f3f1';
+    near.fillStyle = '#f3f3f1';
+    far.fillStyle = '#f3f3f1';
     for (const grain of grains) {
       const theta = grain.theta + angle + drift;
       const point = ringPoint(ring, theta, grain.r);
       const at = projectCss(point.x, point.y + grain.dy * bodyScale, point.z + shift, view, sway);
       if (hidden(at.x, at.y, point.z, frame.planet)) continue;
       const front = 0.35 + 0.65 * (0.5 + 0.5 * Math.cos(theta));
+      const ctx = layer(point.z);
       ctx.globalAlpha = grain.alpha * front;
       const size = grain.size * at.scale;
       ctx.fillRect(at.x - size / 2, at.y - size / 2, size, size);
     }
-    ctx.globalAlpha = 1;
-    // A faint line along the ring.
-    ctx.strokeStyle = 'rgb(243 243 241 / 9%)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    let pen = false;
+    near.globalAlpha = 1;
+    far.globalAlpha = 1;
+    // A faint line along the ring, its far half under the planet.
+    for (const ctx of near === far ? [near] : [near, far]) {
+      ctx.strokeStyle = 'rgb(243 243 241 / 9%)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+    }
+    let pen: CanvasRenderingContext2D | null = null;
     for (let k = 0; k <= 180; k += 1) {
       const theta = (k / 180) * Math.PI * 2;
       const point = ringPoint(ring, theta);
       const at = projectCss(point.x, point.y, point.z + shift, view, sway);
+      const ctx = layer(point.z);
       if (hidden(at.x, at.y, point.z, frame.planet)) {
-        pen = false;
+        pen = null;
         continue;
       }
-      if (pen) ctx.lineTo(at.x, at.y);
+      if (pen === ctx) ctx.lineTo(at.x, at.y);
       else ctx.moveTo(at.x, at.y);
-      pen = true;
+      pen = ctx;
     }
-    ctx.stroke();
+    near.stroke();
+    if (far !== near) far.stroke();
     // The stellar bodies between the projects.
     for (const item of bodies) {
       const theta = item.theta + angle;
@@ -299,7 +328,7 @@ export function createShowcase(space: HTMLElement, titles: readonly string[], on
       const at = projectCss(point.x, point.y + item.dy * bodyScale, point.z + shift, view, sway);
       if (hidden(at.x, at.y, point.z, frame.planet)) continue;
       const front = 0.25 + 0.75 * (0.5 + 0.5 * Math.cos(theta));
-      body(ctx, item.kind, at.x, at.y, item.size * bodyScale * at.scale, item.alpha * front);
+      body(layer(point.z), item.kind, at.x, at.y, item.size * bodyScale * at.scale, item.alpha * front);
     }
   }
 
@@ -353,22 +382,28 @@ export function createShowcase(space: HTMLElement, titles: readonly string[], on
     draw(frame) {
       if (!context) return;
       const ctx = context;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const far = farContext ?? ctx;
+      for (const each of [ctx, far]) {
+        each.setTransform(1, 0, 0, 1, 0, 0);
+        each.clearRect(0, 0, canvas.width, canvas.height);
+      }
       canvas.style.opacity = frame.presence.toFixed(3);
+      farCanvas.style.opacity = canvas.style.opacity;
       ui.style.opacity = smooth(0.6, 0.95, frame.presence).toFixed(3);
       ui.style.visibility = frame.presence > 0.01 ? 'visible' : 'hidden';
       // Only the arrows take the pointer: the rest of the layer lets it through to the cards.
       if (arrows) arrows.style.pointerEvents = frame.presence > 0.9 ? 'auto' : 'none';
       if (frame.presence < 0.004) return;
       const zoom = frame.zoom ?? { k: 1, x: 0, y: 0 };
-      ctx.setTransform(ratio * zoom.k, 0, 0, ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
-      drawRing(ctx, frame);
+      for (const each of [ctx, far])
+        each.setTransform(ratio * zoom.k, 0, 0, ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
+      drawRing(ctx, far, frame);
     },
     resize,
     stop() {
       ui.removeEventListener('click', onButton);
       canvas.remove();
+      farCanvas.remove();
       ui.remove();
       delete html.dataset.showcase;
     },

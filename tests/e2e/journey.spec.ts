@@ -307,6 +307,32 @@ test('the card in front shows the cursor under the mouse, and a click opens its 
   await expect(page).toHaveURL(/\/projets\/lyrix\/$/);
 });
 
+test('back from a case study, the arrows keep their styles and still turn the ring', async ({ page, isMobile }) => {
+  await openJourney(page, './#lyrix');
+  await expectAnchor(page, RING);
+  const lyrix = Number(await page.locator('#lyrix').getAttribute('data-project'));
+  await expectFront(page, lyrix);
+  const card = page.locator('#lyrix a.card');
+  if (isMobile) await card.tap();
+  else await card.click();
+  await expect(page).toHaveURL(/\/projets\/lyrix\/$/);
+  // On to the next case study, then back to the projects.
+  await page.getByRole('navigation', { name: 'Projet suivant' }).getByRole('link').click();
+  await expect(page).not.toHaveURL(/\/projets\/lyrix\/$/);
+  await expect(page.locator('[data-case-slug]')).toBeVisible();
+  await page.getByRole('link', { name: 'Retour aux projets' }).click();
+  await expectAnchor(page, RING);
+  const next = page.getByRole('button', { name: 'Projet suivant' });
+  // Still laid out at the bottom of the screen, not in the page's flow at its top.
+  const box = await next.boundingBox();
+  const height = page.viewportSize()?.height ?? 0;
+  expect(box?.y ?? 0).toBeGreaterThan(height / 2);
+  // Back on the case study it came from, the one after Lyrix; the arrow brings the next one.
+  await expectFront(page, (lyrix + 1) % 7);
+  await next.click();
+  await expectFront(page, (lyrix + 2) % 7);
+});
+
 test('a card behind turns to the front at its click, rather than open', async ({ page, isMobile }) => {
   test.skip(isMobile, 'phones turn the ring with a swipe');
   await openJourney(page, './#projets');

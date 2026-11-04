@@ -225,6 +225,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     () => {
       redraw = true;
     },
+    planetFrame,
   );
   /** The screen's height the track was laid out for, in px. */
   let screen = 0;
@@ -241,6 +242,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let endSpeed = 0;
   let focus = -1;
   let hovered = -1;
+  /** How lit each card beside the front one is by the mouse, from 0 to 1: it eases in and out of the hover. */
+  const hoverGlow: number[] = [];
+  let hoverGlowAt = 0;
   /**
    * The dive into a case study, or back from it: the card at `index` between its place (0) and the opening media
    * (1). Forward, it stays on the opening media until the page leaves.
@@ -865,6 +869,17 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const cardWidth = ring.card;
     const cardHeight = (cardWidth * 9) / 16;
     showcasePoses = scene.cards.map((_, i) => showcase.pose(i, view));
+    // The hover of a card beside the front one fades in (220 ms) and out (320 ms), rather than switch.
+    const glowNow = performance.now();
+    const glowDelta = hoverGlowAt > 0 ? Math.min(100, glowNow - hoverGlowAt) : 0;
+    hoverGlowAt = glowNow;
+    showcasePoses.forEach((_, i) => {
+      const want = hovered === i && focus !== i && presence > 0.9 ? 1 : 0;
+      const was = hoverGlow[i] ?? 0;
+      const eased = was + (want - was) * (1 - Math.exp(-glowDelta / (want > was ? 75 : 110)));
+      hoverGlow[i] = Math.abs(want - eased) < 0.004 ? want : eased;
+      if (hoverGlow[i] !== want) redraw = true;
+    });
     showcasePoses.forEach((pose, i) => {
       const parts = cards[i];
       const place = scene.cards[i];
@@ -892,9 +907,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         set(parts.link, 'border-radius', `${(dive.radius * (1 - k)).toFixed(2)}px`);
       } else {
         // A card the mouse is over, beside the one in front, lights up a little: a click brings it in front.
-        const over = hovered === i && !lit && presence > 0.9;
-        const opacity = Math.min(1, pose.opacity * (over ? 1.6 : 1) + (over ? 0.12 : 0)) * plane.opacity * others;
-        const blur = Math.max(pose.blur * (over ? 0.5 : 1), plane.blur);
+        const over = lit ? 0 : (hoverGlow[i] ?? 0);
+        const opacity = Math.min(1, pose.opacity * (1 + 0.6 * over) + 0.12 * over) * plane.opacity * others;
+        const blur = Math.max(pose.blur * (1 - 0.5 * over), plane.blur);
         set(parts.place, 'transform', cssTransform(pose.x, pose.y, z, view, sway));
         cardPerspective(parts, pose.x, pose.y, z, lift, view);
         set(parts.link, 'opacity', opacity.toFixed(3));
