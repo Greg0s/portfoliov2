@@ -77,6 +77,8 @@ const momentScript = `(${applyMoment.toString()})();`;
   import { initDive } from '../motion/dive';
   import { initMenu } from '../motion/menu';
   import { initNav } from '../motion/nav';
+  import { initSlide } from '../motion/slide';
+  import { initSwipe } from '../motion/swipe';
   import { initSection } from '../motion/section';
   import { applyMoment, onMomentChange } from '../scene/time';
 
@@ -84,6 +86,8 @@ const momentScript = `(${applyMoment.toString()})();`;
   initMenu();
   initNav();
   initDive();
+  initSlide();
+  initSwipe();
   initSection();
   // The router swaps the root element's attributes for the new page's: the moment is set again on each page.
   document.addEventListener('astro:after-swap', applyMoment);

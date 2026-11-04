@@ -7,8 +7,15 @@ import { join } from 'node:path';
 import type { AstroIntegration } from 'astro';
 import sharp from 'sharp';
 import { parse } from 'yaml';
-import { checkProjectFiles, checkProjectOrder, checkWallPictures, type WallPicture } from '../lib/content-checks';
+import {
+  checkProjectCount,
+  checkProjectFiles,
+  checkProjectOrder,
+  checkWallPictures,
+  type WallPicture,
+} from '../lib/content-checks';
 import { frames } from '../lib/wall';
+import { PROJECTS } from '../scene/journey/anchors';
 
 const IMAGE = /\.(?:avif|jpe?g|png|webp)$/i;
 
@@ -38,7 +45,24 @@ export async function findContentErrors(root: string): Promise<string[]> {
     }
   }
 
-  return [...checkProjectFiles(projectFolders), ...checkProjectOrder(orders), ...checkWallPictures(pictures, frames)];
+  // A recommendation letter, in each language (content.config.ts).
+  const letters = projectFolders
+    .filter(({ files }) => files.includes('project.yaml'))
+    .filter(({ slug }) => {
+      const data = parse(readFileSync(join(projectsDir, slug, 'project.yaml'), 'utf8')) as { letter?: unknown };
+      return data.letter === true;
+    })
+    .flatMap(({ slug }) => ['fr', 'en'].map((locale) => `public/letters/${slug}-${locale}.pdf`))
+    .filter((path) => !existsSync(join(root, path)))
+    .map((path) => `${path}: the recommendation letter is missing`);
+
+  return [
+    ...letters,
+    ...checkProjectFiles(projectFolders),
+    ...checkProjectOrder(orders),
+    ...checkProjectCount(orders.length, PROJECTS),
+    ...checkWallPictures(pictures, frames),
+  ];
 }
 
 export default function contentChecks(): AstroIntegration {

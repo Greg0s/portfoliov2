@@ -1,6 +1,6 @@
 /**
- * The journey (journey spec): one scroll-driven move back from the Little Prince's planet, through the 8 projects, to
- * the contact. The page scrolls natively over a track of 12.5 screens, snapped on the anchors; the scene stays on
+ * The journey (journey spec): one scroll-driven move back from the Little Prince's planet, through the projects, to
+ * the contact. The page scrolls natively over a track as long as the journey (`SCREENS` in anchors.ts), snapped on the anchors; the scene stays on
  * screen, and at every frame the camera follows the scroll and places the planet, the cards, their cartels, the small
  * worlds and the stars. The HTML stays the one of the list (no JavaScript, "reduce motion"): the journey only places
  * it, so a screen reader reads the projects in order, then the contact.
@@ -49,6 +49,7 @@ import { withBase } from '../../lib/url';
 import { frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
 import { lowerResolution } from '../renderer';
 import { blurFilter } from './blur';
+import { coverTop } from '../../lib/cover';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
 const LIGHT = {
@@ -225,8 +226,16 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
    * The dive into a case study, or back from it: the card at `index` between its place (0) and the opening media
    * (1). Forward, it stays on the opening media until the page leaves.
    */
-  let dive: { index: number; forward: boolean; start: number; radius: number; lift: number; done: () => void } | null =
-    null;
+  let dive: {
+    index: number;
+    forward: boolean;
+    start: number;
+    radius: number;
+    lift: number;
+    /** Where the opening media starts, from the top of the screen (tokens.css). */
+    top: number;
+    done: () => void;
+  } | null = null;
   /** The sway and the cards' float coming to rest for the dive (`forward`), or back once it is over. */
   let rest: { forward: boolean; start: number } | null = null;
   /** Whether the next frame must be drawn, even at rest. */
@@ -804,7 +813,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       const lift = options.still ? 0 : 12 * swing(time, place.floatDuration, place.floatDelay) * (1 - floatRest);
       set(parts.float, 'transform', `translateY(${lift.toFixed(2)}px)`);
       if (i === diving && dive) {
-        const flight = diveLook(place, look, view, k);
+        const flight = diveLook(place, look, view, k, dive.top);
         set(parts.place, 'transform', cssTransform(flight.x, flight.y, flight.depth, view, sway));
         cardPerspective(parts, flight.x, flight.y, flight.depth, lift, view);
         set(parts.link, 'opacity', '1');
@@ -1330,7 +1339,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       // than jump back at its first frame.
       const lift = focus === index - 1 && hovered === index - 1 && !scene.view.mobile ? HOVER_LIFT : 0;
       return new Promise<void>((resolve) => {
-        dive = { index: index - 1, forward: true, start: -1, radius, lift, done: resolve };
+        dive = { index: index - 1, forward: true, start: -1, radius, lift, top: coverTop(), done: resolve };
         rest = { forward: true, start: -1 };
         redraw = true;
       });
@@ -1341,7 +1350,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       if (index === undefined || !parts) return null;
       const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
       const back = new Promise<void>((resolve) => {
-        dive = { index: index - 1, forward: false, start: -1, radius, lift: 0, done: resolve };
+        dive = { index: index - 1, forward: false, start: -1, radius, lift: 0, top: coverTop(), done: resolve };
         // Everything is already at rest: the sway and the float come back once the card is home.
         rest = { forward: true, start: performance.now() - DIVE_MS };
       });

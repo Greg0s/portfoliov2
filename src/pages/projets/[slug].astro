@@ -5,15 +5,12 @@ import { getProjects } from '../../lib/projects';
 
 export const getStaticPaths = (async () => {
   const projects = await getProjects('fr');
-  return projects.map((project, index) => ({
-    params: { slug: project.slug },
-    props: { project, next: projects[(index + 1) % projects.length], total: projects.length },
-  }));
+  return projects.map((project) => ({ params: { slug: project.slug }, props: { project, projects } }));
 }) satisfies GetStaticPaths;
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
-const { project, next, total } = Astro.props;
+const { project, projects } = Astro.props;
 ---
 
-<CaseStudy locale="fr" project={project} next={next ?? project} total={total} />
+<CaseStudy locale="fr" project={project} projects={projects} />

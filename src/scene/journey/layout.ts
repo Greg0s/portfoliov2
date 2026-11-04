@@ -1,5 +1,5 @@
 /**
- * The journey's scene for a screen (journey spec §4 and §5): the view (vanishing point, perspective), the 8 cards
+ * The journey's scene for a screen (journey spec §4 and §5): the view (vanishing point, perspective), the cards
  * where they are sharp, the far and near stars, and the small worlds. The mockup's scene is drawn for 1440 × 900 on
  * desktop and 390 × 844 on mobile; on other screens its positions scale with the screen, except what the opening
  * places in pixels (the vanishing point on mobile, the cards' vertical offsets on mobile).
