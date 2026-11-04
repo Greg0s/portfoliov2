@@ -247,7 +247,7 @@ test('a project or contact link lands on its anchor', async ({ page }) => {
 
   await openJourney(page, './#contact');
   await expectAnchor(page, CONTACT);
-  await expect(page.getByRole('link', { name: 'contact@gregoiretinn.es' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'gregoire.tinnes@gmail.com' })).toBeVisible();
 });
 
 test('the focus goes from card to card, with its cartel, and Enter opens the case study', async ({ page }) => {
@@ -431,7 +431,7 @@ test('?office=layers arrives at the seat over the layers, and logs no error', as
   await expect(page.locator('.office-layers .office-layer-image')).toHaveCount(3);
   await expect(page.locator('.office-canvas')).toHaveCount(0);
   await expect(page.locator('.office-screen')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'contact@gregoiretinn.es' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'gregoire.tinnes@gmail.com' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

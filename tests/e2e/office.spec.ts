@@ -111,15 +111,15 @@ test.describe('on desktop', () => {
     await expect(desktop).toHaveAttribute('data-bin-live', '');
   });
 
-  test('hovering a picture shows its cartel, and the landscape photo behind the text has none', async ({ page }) => {
+  test('hovering a picture shows its cartel', async ({ page }) => {
     // Each frame draws one of its pictures at random: the middle one of each pool, Project Hail Mary for the poster.
     await page.addInitScript(() => {
       Math.random = () => 0.5;
     });
     await openOffice(page);
     const cartels = page.locator('.office-cartel');
-    // The six frames of the wall but the landscape photo, and the small frame of the desk.
-    await expect(cartels).toHaveCount(6);
+    // The six frames of the wall and the small frame of the desk.
+    await expect(cartels).toHaveCount(7);
     const poster = cartels.filter({ hasText: 'Projet Dernière Chance' });
     await expect(poster).toHaveCSS('opacity', '0');
     const hit = poster.locator('xpath=preceding-sibling::div[contains(@class, "office-cartel-hit")][1]');
@@ -165,7 +165,7 @@ test.describe('on phones', () => {
     await expect(page.getByRole('link', { name: 'Envoyer un mail' })).toBeVisible();
     await page.getByRole('button', { name: 'Copier', exact: true }).tap();
     await expect(page.getByRole('button', { name: 'Copié', exact: true })).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('contact@gregoiretinn.es');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('gregoire.tinnes@gmail.com');
     await expect(email).not.toHaveAttribute('data-bubble-open', { timeout: 2000 });
 
     // A tap elsewhere closes it too.

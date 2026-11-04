@@ -1,6 +1,6 @@
 /**
- * The pictures' labels (office spec §3): on desktop, hovering a picture of the wall shows its cartel under it, or on its
- * right where it would cover the contact text, in 200 ms with a 4 px rise (none with reduced motion), and it fades out
+ * The pictures' labels (office spec §3): on desktop, hovering a picture of the wall shows its cartel under it, in 200 ms
+ * with a 4 px rise (none with reduced motion), and it fades out
  * in 140 ms. On phones, a tap on the small frame of the desk shows its cartel above it, and a tap elsewhere closes it.
  * They answer once the camera is at rest, slide with the head as their layer does, and stay decorative for screen
  * readers. A picture with nothing known has no cartel.
@@ -37,8 +37,6 @@ export interface Cartels {
   dispose(): void;
 }
 
-/** The frames whose cartels go on their right, clear of the contact text; the others go under, or above on phones. */
-const ON_THE_RIGHT = new Set(['photo-portrait', 'photo-landscape']);
 const CARTEL_W = 250;
 
 const el = (tag: string, className: string, parent: HTMLElement): HTMLElement => {
@@ -55,14 +53,7 @@ function box(quad: Quad): { l: number; t: number; r: number; b: number } {
   return { l: Math.max(0, Math.min(...xs)), t: Math.min(...ys), r: Math.max(...xs), b: Math.max(...ys) };
 }
 
-export function createCartels(
-  parent: HTMLElement,
-  rest: Placement,
-  framing: Framing,
-  frame: FrameSpec,
-  /** The frames that may show a cartel (the landscape photo, behind the text, never does). */
-  labelled: ReadonlySet<string>,
-): Cartels {
+export function createCartels(parent: HTMLElement, rest: Placement, framing: Framing, frame: FrameSpec): Cartels {
   const mobile = framing === 'mobile';
   const layers = {
     room: el('div', 'office-layer office-cartels', parent),
@@ -78,7 +69,6 @@ export function createCartels(
   };
 
   for (const picture of rest.pictures) {
-    if (!labelled.has(picture.id)) continue;
     // On phones, only the frame on the desk is in the field.
     if (mobile && picture.id !== 'desk') continue;
     const layer = picture.id === 'desk' ? layers.desk : layers.room;
@@ -86,10 +76,10 @@ export function createCartels(
     const hit = el('div', 'office-cartel-hit', layer);
     Object.assign(hit.style, { left: px(l), top: px(t), width: px(r - l), height: px(b - t) });
     const card = el('div', 'office-cartel', layer);
-    const right = !mobile && ON_THE_RIGHT.has(picture.id);
+    // Under the picture on desktop, above the desk's frame on phones.
     const above = mobile;
-    const left = right ? r + 12 : Math.max(16, Math.min(picture.corners[0][0], picture.corners[3][0]));
-    const top = right ? t : above ? t - 10 : b + 10;
+    const left = Math.max(16, Math.min(picture.corners[0][0], picture.corners[3][0]));
+    const top = above ? t - 10 : b + 10;
     Object.assign(card.style, { left: px(Math.min(left, frame.w - CARTEL_W - 16)), top: px(top) });
     if (above) card.classList.add('above');
     items.set(picture.id, { hit, card, known: false });
