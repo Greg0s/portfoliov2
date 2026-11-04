@@ -166,6 +166,53 @@ html[data-dive-fade]::view-transition-new(root) {
   animation: none !important;
 }
 
+/* The case studies side by side (motion/slide.ts): the page slides sideways and the other comes in right beside it,
+   both opaque, from where a swipe left them. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-slide]::view-transition-old(root),
+  html[data-slide]::view-transition-new(root) {
+    animation-duration: var(--slide-duration);
+    animation-timing-function: var(--slide-ease);
+    animation-fill-mode: both;
+    mix-blend-mode: normal;
+  }
+
+  html[data-slide]::view-transition-old(root) {
+    animation-name: slide-away;
+  }
+
+  html[data-slide]::view-transition-new(root) {
+    animation-name: slide-in;
+  }
+
+  /* The header stays; its number changes in place over the first half of the slide. */
+  html[data-slide]::view-transition-group(case-header) {
+    animation-duration: calc(var(--slide-duration) / 2);
+  }
+
+  /* The dots show live, on the page that comes in, where slide.ts moves its current dot (CaseStudy.astro). */
+  html[data-slide]::view-transition-group(case-dots),
+  html[data-slide]::view-transition-new(case-dots) {
+    animation: none;
+  }
+
+  html[data-slide]::view-transition-old(case-dots) {
+    display: none;
+  }
+}
+
+@keyframes slide-away {
+  to {
+    transform: translateX(var(--slide-old-to));
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(var(--slide-new-from));
+  }
+}
+
 /* With reduced motion, a 200 ms fade replaces the dive (main spec §5.6): the router's own CSS turns every view
    transition off then, which would leave a cut. */
 @media (prefers-reduced-motion: reduce) {
@@ -213,4 +260,65 @@ html[data-flou='0'] * {
 
 html[data-fusion='0'] * {
   mix-blend-mode: normal !important;
+}
+
+/*
+ * The light pill buttons to a project (ProjectFacts.astro, CaseStudy.astro): pointed at, they brighten and their arrow
+ * leaves up and to the right as another comes in from below; pressed, they give a little, and spring back.
+ */
+.pill-button {
+  transition:
+    background 220ms ease,
+    box-shadow 320ms ease,
+    scale 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pill-button:hover {
+  opacity: 1;
+  background: #fff;
+  box-shadow: 0 0 0 5px rgb(243 243 241 / 10%);
+}
+
+.pill-button:active {
+  scale: 0.96;
+  transition-duration: 220ms, 320ms, 90ms;
+  transition-timing-function: ease, ease, ease-out;
+}
+
+.arrow-swap {
+  position: relative;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.arrow-swap > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transition: translate 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.arrow-swap > span + span {
+  translate: -110% 110%;
+}
+
+.pill-button:hover .arrow-swap > span:first-child,
+.pill-button:focus-visible .arrow-swap > span:first-child {
+  translate: 110% -110%;
+}
+
+.pill-button:hover .arrow-swap > span + span,
+.pill-button:focus-visible .arrow-swap > span + span {
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill-button,
+  .arrow-swap > span {
+    transition: none;
+  }
 }

@@ -35,6 +35,15 @@ export function checkProjectOrder(projects: readonly { slug: string; order: numb
   return [...new Set(errors)];
 }
 
+/** The journey has one anchor and one slot per project (src/scene/journey/anchors.ts): the counts must agree. */
+export function checkProjectCount(count: number, expected: number): string[] {
+  return count === expected
+    ? []
+    : [
+        `Found ${String(count)} projects, but the journey is built for ${String(expected)}: set PROJECTS in src/scene/journey/anchors.ts.`,
+      ];
+}
+
 export const MIN_WALL_SIDE = 600;
 
 type Shape = 'portrait' | 'square' | 'landscape' | 'wide';

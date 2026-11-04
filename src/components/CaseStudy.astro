@@ -1,12 +1,14 @@
 ---
 /**
- * A case study (main spec §4, mockup Etude): its own header (back to the projects, number, languages), the opening
- * media, tag, title and lede, the facts, the body written in Markdown (Context, What I did, Technical challenges), the
- * next project and a footer whose Contact link leads to the office through the night. Where the opening media is
- * taller than two thirds of the screen (on a computer), the content rises over its bottom, behind a dark fade, so that
- * the tag, title and lede show in the screen's bottom third and the page reads as one to scroll.
+ * A case study (main spec §4, layout B chosen on 2 November 2026): its own header (back to the projects, number,
+ * languages), the opening media, tag, title and lede, then the facts beside the content, results first, then the
+ * context, what was done and the challenges; a band to the live site for the projects that ask for it, the next project
+ * and a footer whose Contact link leads to the office through the night. Where the opening media is taller than two
+ * thirds of the screen (on a computer), the content rises over its bottom, behind a dark fade, so that the tag, title
+ * and lede show in the screen's bottom third and the page reads as one to scroll. The case studies sit side by side
+ * (src/motion/slide.ts): the page carries the ring's order and, for a swipe, its two neighbours.
  */
-import { Image } from 'astro:assets';
+import { getImage, Image } from 'astro:assets';
 import { render } from 'astro:content';
 import CaseStars from './CaseStars.astro';
 import LanguageSwitch from './LanguageSwitch.astro';
@@ -15,21 +17,24 @@ import ProjectFacts from './ProjectFacts.astro';
 import { config } from '../config';
 import { fragments, pathFor, t, type Locale } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { projectNumber, projectTag, type Project } from '../lib/projects';
+import { coverWidths, projectNumber, projectTag, type Project } from '../lib/projects';
+import { neighbours } from '../lib/ring';
 import { withBase } from '../lib/url';
 
 interface Props {
   locale: Locale;
   project: Project;
-  next: Project;
-  total: number;
+  /** Every project, in order: the ring this one sits in. */
+  projects: Project[];
 }
 
-const { locale, project, next, total } = Astro.props;
+const { locale, project, projects } = Astro.props;
 const label = t(locale);
-const { title, lede, summary, coverAlt } = project.text.data;
-const { cover, coverFocus, order } = project.data;
+const { title, lede, summary, coverAlt, period, stats, outcomes, did, challenges } = project.text.data;
+const { cover, coverFocus, order, band, links } = project.data;
 const { Content } = await render(project.text);
+const total = projects.length;
+const { previous, next } = neighbours(projects, projects.indexOf(project));
 
 const path = pathFor({ id: 'project', slug: project.slug }, locale);
 const home = pathFor({ id: 'home' }, locale);
@@ -37,35 +42,69 @@ const home = pathFor({ id: 'home' }, locale);
 const back = withBase(`${home}#${project.slug}`);
 const contact = withBase(`${home}#${fragments.contact[locale]}`);
 const numberText = label('case.number').replace('{n}', String(order)).replace('{total}', String(total));
-const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width).concat(cover.width);
+const projectPath = (other: Project): string => withBase(pathFor({ id: 'project', slug: other.slug }, locale));
+const ring = JSON.stringify(projects.map(projectPath));
+
+/** A neighbour, for a swipe: its page, and its cover's sources, loaded ahead so that the page slides in with it. */
+const peek = async (other: Project) => {
+  const image = await getImage({ src: other.data.cover, widths: coverWidths(other.data.cover), sizes: '100vw' });
+  return { href: projectPath(other), title: other.text.data.title, srcset: image.srcSet.attribute, src: image.src };
+};
+const peeks = [
+  { side: 'previous', label: label('case.previous'), ...(await peek(previous)) },
+  { side: 'next', label: label('case.next'), ...(await peek(next)) },
+] as const;
+/** Figures keep together: "2 000+" never breaks. */
+const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 ---
 
 <Base locale={locale} title={`${title} · ${config.name}`} description={summary}>
-  <header class="case-header" slot="header">
-    <a class="back" href={back}>
-      <span aria-hidden="true">←</span> {label('case.back')}
-    </a>
-    <div class="aside">
-      <p class="number">
-        <span aria-hidden="true">
-          {projectNumber(order)} / {projectNumber(total)}
-        </span>
-        <span class="visually-hidden">{numberText}</span>
-      </p>
-      <div class="desktop-only">
-        <LanguageSwitch locale={locale} path={path} />
+  <Fragment slot="header">
+    <header class="case-header">
+      <a class="back" href={back}>
+        <span aria-hidden="true">←</span> {label('case.back')}
+      </a>
+      <div class="aside">
+        <p class="number">
+          <span class="digits" aria-hidden="true">
+            {projectNumber(order)} / {projectNumber(total)}
+          </span>
+          {/* On a touch screen, the projects' dots tell that the case studies sit side by side, to swipe through. */}
+          <span class="dots" aria-hidden="true">
+            {projects.map((other) => (
+              <span class:list={{ current: other === project }} />
+            ))}
+          </span>
+          <span class="visually-hidden">{numberText}</span>
+        </p>
+        <div class="desktop-only">
+          <LanguageSwitch locale={locale} path={path} />
+        </div>
       </div>
+    </header>
+    {/* What a swipe shows coming in from the edge: the neighbour it leads to. */}
+    <div class="peeks" aria-hidden="true">
+      {peeks.map(({ side, label: text, title: name, href, srcset, src }) => (
+        <span class:list={['peek', side]} data-peek={side} data-href={href} data-srcset={srcset} data-src={src}>
+          <span class="peek-label">{text}</span>
+          <span class="peek-title">
+            {side === 'previous' && <span class="peek-arrow">←</span>}
+            {name}
+            {side === 'next' && <span class="peek-arrow">→</span>}
+          </span>
+        </span>
+      ))}
     </div>
-  </header>
+  </Fragment>
 
-  <div class="case-page" data-case-slug={project.slug}>
+  <div class="case-page" data-case-slug={project.slug} data-ring={ring}>
     <CaseStars />
     <article class="case">
       <figure class="cover">
         <Image
           src={cover}
           alt={coverAlt}
-          widths={coverWidths}
+          widths={coverWidths(cover)}
           sizes="100vw"
           loading="eager"
           fetchpriority="high"
@@ -76,15 +115,85 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
 
       <div class="sheet">
         <div class="intro">
-          <p class="tag">{projectTag(project)}</p>
           <h1>{title}</h1>
+          <p class="tag">{projectTag(project)}</p>
           <p class="lede">{lede ?? summary}</p>
         </div>
 
-        <ProjectFacts locale={locale} project={project} />
-
         <div class="case-content">
-          <Content />
+          <div class="case-grid">
+            <ProjectFacts locale={locale} project={project} />
+
+            <div class="case-main">
+              <section class="results" aria-labelledby="case-results">
+                <h2 id="case-results">{label('case.results')}</h2>
+                {stats.length > 0 && (
+                  <dl class="stats">
+                    {stats.map(({ value, label: counted }) => (
+                      <div>
+                        <dt>{keep(value)}</dt>
+                        <dd>{counted}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                {outcomes.length > 0 && (
+                  <ul class:list={['outcomes', { alone: stats.length === 0 }]}>
+                    {outcomes.map((outcome) => (
+                      <li>{outcome}</li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section aria-labelledby="case-context">
+                <h2 id="case-context">{label('case.context')}</h2>
+                <div class="context">
+                  <Content />
+                </div>
+              </section>
+
+              <section aria-labelledby="case-did">
+                <h2 id="case-did">{label(period ? 'case.doing' : 'case.did')}</h2>
+                <ul class="did">
+                  {did.map((item) => (
+                    <li>
+                      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M3 8.5l3 3 7-7" />
+                      </svg>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section aria-labelledby="case-challenges">
+                <h2 id="case-challenges">{label('case.challenges')}</h2>
+                <ul class="challenges">
+                  {challenges.map(({ title: name, text }) => (
+                    <li>
+                      <strong>{name}</strong>
+                      <span>{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
+          </div>
+
+          {band && links.live && (
+            <div class="band">
+              <p>{label('case.online').replace('{title}', title)}</p>
+              <a class="band-button pill-button" href={links.live} target="_blank" rel="noopener">
+                {label('case.link.live')}{' '}
+                <span class="arrow-swap" aria-hidden="true">
+                  <span>↗</span>
+                  <span>↗</span>
+                </span>
+                <span class="visually-hidden">{label('case.newTab')}</span>
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </article>
@@ -103,6 +212,15 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
 </Base>
 
 <style>
+  /*
+   * A swipe moves the page sideways (src/motion/swipe.ts): what it pushes past the screen's right edge must not widen
+   * the page, else a phone widens its layout viewport, taking the fixed header along.
+   */
+  :global(html:has([data-case-slug])),
+  :global(body:has([data-case-slug])) {
+    overflow-x: clip;
+  }
+
   /* The header stays at the top while the page scrolls. */
   .case-header {
     position: fixed;
@@ -170,6 +288,131 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
 
   .number {
     color: rgb(243 243 241 / 75%);
+  }
+
+  .dots {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+  }
+
+  .dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgb(243 243 241 / 32%);
+  }
+
+  .dots .current {
+    width: 18px;
+    background: var(--color-text);
+  }
+
+  /* The neighbours a swipe brings in, waiting beyond the screen's edges (src/motion/swipe.ts). */
+  .peeks {
+    display: none;
+  }
+
+  /* A swipe moves the page sideways: never the document's width. */
+  :global(body:has(.case-page)) {
+    overflow-x: clip;
+  }
+
+  @media (pointer: coarse) {
+    .digits {
+      display: none;
+    }
+
+    .dots {
+      display: flex;
+    }
+
+    .peeks {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: block;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .case-header,
+    .case-page,
+    .case-footer {
+      touch-action: pan-y pinch-zoom;
+    }
+  }
+
+  .peek {
+    position: absolute;
+    top: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(60vw, 280px);
+    translate: 0 -50%;
+    opacity: 0;
+  }
+
+  .peek.next {
+    left: 100%;
+    padding-left: 24px;
+  }
+
+  .peek.previous {
+    right: 100%;
+    align-items: flex-end;
+    padding-right: 24px;
+    text-align: right;
+  }
+
+  .peek-label {
+    font-size: var(--size-label);
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .peek-title {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: var(--tracking-project);
+  }
+
+  .peek-arrow {
+    transition: translate 250ms var(--ease-ui);
+  }
+
+  /*
+   * Once loaded (src/motion/swipe.ts), the neighbour's page itself, as it opens: right beside this one, at its top,
+   * still, its content in place.
+   */
+  .peek[data-filled] {
+    top: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    text-align: start;
+    translate: none;
+    opacity: 1;
+  }
+
+  /* Far enough, the swipe leads there on release: the arrow says so. */
+  .peek.next[data-armed] .peek-arrow {
+    translate: 6px 0;
+  }
+
+  .peek.previous[data-armed] .peek-arrow {
+    translate: -6px 0;
   }
 
   /* The stars stay within the page: the last ones would otherwise lengthen a short page. */
@@ -249,6 +492,48 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     .cover::before {
       animation: case-fade 700ms linear var(--case-delay, 250ms) both;
     }
+
+    /*
+     * Under the title, the content follows in turn, each block rising a little as it fades in: the facts, then each
+     * section, a beat apart. On a direct visit it starts with the rise; after a dive, as soon as the page shows.
+     */
+    .case-content :global(.facts),
+    .case-main > section,
+    .case-content .band {
+      animation: case-follow 850ms cubic-bezier(0.22, 1, 0.36, 1)
+        calc(var(--follow-delay, calc(var(--case-delay, 250ms) + 380ms)) + var(--follow-step, 0) * 90ms) both;
+    }
+
+    .case-main > section:nth-child(1) {
+      --follow-step: 1;
+    }
+
+    .case-main > section:nth-child(2) {
+      --follow-step: 2;
+    }
+
+    .case-main > section:nth-child(3) {
+      --follow-step: 3;
+    }
+
+    .case-main > section:nth-child(4) {
+      --follow-step: 4;
+    }
+
+    .case-content .band {
+      --follow-step: 5;
+    }
+
+    :global(html[data-dive-landed]) .case-content {
+      --follow-delay: 60ms;
+    }
+  }
+
+  @keyframes case-follow {
+    from {
+      opacity: 0;
+      translate: 0 28px;
+    }
   }
 
   @keyframes case-rise {
@@ -266,6 +551,32 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
   :global(html[data-dive-landed]) .sheet,
   :global(html[data-dive-landed]) .cover::before {
     animation: none;
+  }
+
+  /*
+   * From another case study, the page slides in from beside it (src/motion/slide.ts), whole: its content in place, its
+   * cover with it rather than flying on its own, and the header staying, its number changing in place.
+   */
+  :global(html[data-slid]) .case-header,
+  :global(html[data-slid]) .sheet,
+  :global(html[data-slid]) .cover::before,
+  :global(html[data-slid]) .case-content :global(.facts),
+  :global(html[data-slid]) .case-main > section,
+  :global(html[data-slid]) .case-content .band {
+    animation: none;
+  }
+
+  :global(html[data-slide]) .case-header {
+    view-transition-name: case-header;
+  }
+
+  /* The dots apart from it: the page that comes in shows them live, its current dot stretching out of the last one. */
+  :global(html[data-slide]) .dots {
+    view-transition-name: case-dots;
+  }
+
+  :global(html[data-slide]) .cover img {
+    view-transition-name: none !important;
   }
 
   :global(html[data-dive-landed]) .cover img {
@@ -305,6 +616,11 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     color: var(--color-muted);
   }
 
+  /* Under the title, close to it: it reads as the title's line. */
+  h1 + .tag {
+    margin-top: -10px;
+  }
+
   h1 {
     font-size: 88px;
     line-height: 0.95;
@@ -319,26 +635,33 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
 
   .case-content {
     position: relative;
-    padding-top: 64px;
   }
 
-  /* The Markdown body: each `##` is a section (src/lib/markdown/sections.ts), each challenge an article. */
-  .case-content :global(.case-section) {
+  /* The facts in a column of their own, which stays in view beside the content. */
+  .case-grid {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
-    gap: 24px 48px;
+    gap: 48px;
     max-width: 1100px;
     margin-inline: auto;
     padding: 64px var(--gutter) 0;
     box-sizing: content-box;
   }
 
-  .case-content :global(.case-section:first-child) {
-    padding-top: 64px;
+  /* Each section in a form of its own, to read at a glance: figures, a paragraph, ticks, rows. */
+  .case-main {
+    display: flex;
+    flex-direction: column;
+    gap: 72px;
   }
 
-  .case-content :global(h2) {
-    padding-top: 4px;
+  .case-main section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  h2 {
     font-family: var(--font-text);
     font-size: var(--size-label);
     font-weight: 500;
@@ -348,69 +671,149 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
     color: var(--color-muted);
   }
 
-  .case-content :global(.case-body) {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+  ul,
+  dl {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .case-content :global(.case-body > p) {
-    max-width: 36em;
-    font-size: 18px;
-    line-height: 1.65;
+  .results {
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--color-line);
   }
 
-  .case-content :global(.case-body > p + .challenge) {
-    margin-top: 24px;
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 32px 24px;
   }
 
-  .case-content :global(.challenge) {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 28px;
-    border-radius: var(--radius-card);
-    background: rgb(22 22 24 / 70%);
-    box-shadow: 0 0 0 1px rgb(243 243 241 / 8%);
+  /* Four figures fit side by side, "< 30 min" and "2 months" included. */
+  .stats dt {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 2.9vw, 40px);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: var(--tracking-title);
+    white-space: nowrap;
   }
 
-  .case-content :global(.challenge-number) {
-    font-size: var(--size-label);
-    font-weight: 500;
-    letter-spacing: var(--tracking-label);
+  .stats dd {
+    max-width: 14em;
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.45;
     color: var(--color-muted);
   }
 
-  .case-content :global(.challenge h3) {
+  .outcomes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 36em;
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  .stats + .outcomes {
+    margin-top: 12px;
+  }
+
+  /* Without figures, the results said in a sentence take their place, larger. */
+  .outcomes.alone {
+    gap: 18px;
+    max-width: 28em;
+    font-family: var(--font-display);
     font-size: 24px;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: var(--tracking-subtitle);
+  }
+
+  .context :global(p) {
+    max-width: 34em;
+    font-size: 19px;
+    line-height: 1.6;
+  }
+
+  .did {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 32px;
+  }
+
+  .did li {
+    display: flex;
+    gap: 12px;
+    font-size: 17px;
+    line-height: 1.45;
+  }
+
+  .did svg {
+    flex: none;
+    margin-top: 4px;
+    fill: none;
+    stroke: var(--color-text);
+    stroke-width: 1.6;
+  }
+
+  .challenges li {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 8px 32px;
+    padding-block: 20px;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .challenges strong {
+    font-family: var(--font-display);
+    font-size: 20px;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.3;
+  }
+
+  .challenges span {
+    font-size: 16px;
+    line-height: 1.55;
+    color: rgb(243 243 241 / 75%);
+  }
+
+  /* The way to the live site, once more at the end of the read. */
+  .band {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px 32px;
+    max-width: 1100px;
+    margin: 96px auto 0;
+    padding: 40px var(--gutter);
+    box-sizing: content-box;
+    border-block: 1px solid var(--color-line);
+  }
+
+  .band p {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.15;
     letter-spacing: var(--tracking-project);
   }
 
-  .case-content :global(.challenge dl) {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 12px 24px;
-    margin: 0;
-  }
-
-  .case-content :global(.challenge dt) {
-    padding-top: 4px;
-    font-size: var(--size-label);
-    font-weight: 500;
-    letter-spacing: var(--tracking-label);
-    text-transform: uppercase;
-    color: var(--color-muted);
-    font-style: normal;
-  }
-
-  .case-content :global(.challenge dd) {
-    margin: 0;
-    max-width: 36em;
-    font-size: 17px;
-    line-height: 1.6;
-    font-style: normal;
+  .band-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 28px;
+    border-radius: 999px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .case-footer {
@@ -435,6 +838,16 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
       display: none;
     }
 
+    /* On a phone, the header sits above the banner rather than over it: the banner shows whole (2 November 2026). */
+    .case {
+      padding-top: var(--cover-top);
+    }
+
+    .case-header::before {
+      height: calc(var(--header-height) + 16px);
+      mask-image: linear-gradient(to bottom, #000 75%, transparent);
+    }
+
     .case-footer {
       justify-content: space-between;
     }
@@ -456,26 +869,48 @@ const coverWidths = [640, 960, 1280, 1920].filter((width) => width < cover.width
       font-size: 18px;
     }
 
-    .case-content {
+    .case-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 56px;
       padding-top: 32px;
     }
 
-    .case-content :global(.case-section) {
+    .case-main {
+      gap: 56px;
+    }
+
+    .results {
+      padding-bottom: 40px;
+    }
+
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats dt {
+      font-size: 38px;
+    }
+
+    .outcomes.alone {
+      font-size: 21px;
+    }
+
+    .context :global(p) {
+      font-size: 18px;
+    }
+
+    .did,
+    .challenges li {
       grid-template-columns: minmax(0, 1fr);
-      padding-top: 48px;
     }
 
-    .case-content :global(.challenge) {
-      padding: 24px;
+    .band {
+      margin-top: 72px;
+      padding-block: 32px;
     }
 
-    .case-content :global(.challenge dl) {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 4px;
-    }
-
-    .case-content :global(.challenge dd + dt) {
-      margin-top: 12px;
+    .band p {
+      font-size: 24px;
     }
   }
 </style>

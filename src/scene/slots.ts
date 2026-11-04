@@ -1,5 +1,5 @@
 /**
- * Where the 8 projects sit along the journey (journey spec §5), by slot, in the order of the projects: the side, the
+ * Where the projects sit along the journey (journey spec §5), by slot, in the order of the projects: the side, the
  * offset from the centre of the screen when the card is sharp (in % of its width and height), the card's sharp width
  * (in % of the screen's width) and its rotation (Y, Z, in degrees). The static home (step 5) uses the side and the
  * width; the journey (step 6) uses all of it.

@@ -2,21 +2,21 @@ import { expect, test } from '@playwright/test';
 import { trackErrors } from './helpers';
 
 const homes = [
-  { lang: 'fr', path: './', dir: 'projets', projects: 'Projets', first: 'La Fabrique des Mondes' },
-  { lang: 'en', path: 'en/', dir: 'en/projects', projects: 'Projects', first: 'La Fabrique des Mondes' },
+  { lang: 'fr', path: './', dir: 'projets', projects: 'Projets', first: 'Lyrix' },
+  { lang: 'en', path: 'en/', dir: 'en/projects', projects: 'Projects', first: 'Lyrix' },
 ] as const;
 
 for (const { lang, path, dir, projects, first } of homes) {
-  test(`the ${lang} home shows the opening, the 8 projects and the contact`, async ({ page }) => {
+  test(`the ${lang} home shows the opening, the 7 projects and the contact`, async ({ page }) => {
     const errors = trackErrors(page);
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1, name: 'Grégoire Tinnes' })).toBeVisible();
     await expect(page.getByRole('img', { name: /planet|planète/i })).toBeVisible();
 
     const cards = page.getByRole('list', { name: projects });
-    await expect(cards.getByRole('listitem')).toHaveCount(8);
+    await expect(cards.getByRole('listitem')).toHaveCount(7);
     const card = page.getByRole('listitem').filter({ hasText: first }).first();
-    await expect(card.getByRole('link')).toHaveAttribute('href', new RegExp(`/${dir}/la-fabrique-des-mondes/$`));
+    await expect(card.getByRole('link')).toHaveAttribute('href', new RegExp(`/${dir}/lyrix/$`));
     await expect(card.getByRole('heading', { level: 3, name: first })).toBeVisible();
 
     await expect(page.getByRole('heading', { level: 2, name: projects })).toBeAttached();

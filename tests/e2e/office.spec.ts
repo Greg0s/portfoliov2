@@ -7,7 +7,7 @@ const OFFICE = './?office=layers#contact';
 /** Opens the contact and waits for the camera to rest at the desk, with the office laid out. */
 async function openOffice(page: Page, path = OFFICE): Promise<void> {
   await page.goto(path);
-  await expect(page.locator('[data-journey-root]')).toHaveAttribute('data-anchor', '9', { timeout: 20_000 });
+  await expect(page.locator('[data-journey-root]')).toHaveAttribute('data-anchor', '8', { timeout: 20_000 });
   await expect(page.locator('html')).toHaveAttribute('data-office', 'live', { timeout: 20_000 });
 }
 
