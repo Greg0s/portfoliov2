@@ -17,21 +17,6 @@ export function smoothstep(edge0: number, edge1: number, x: number): number {
 /** Cards never come closer than this in front of the focus plane: 3.6 times their sharp size. */
 const NEAREST = 0.72;
 
-/** Within this distance of the focus plane, the card is the sharp one; a little more keeps it (hysteresis). */
-const FOCUS = 0.1;
-const FOCUS_KEEP = 0.13;
-
-/** The card in focus at depth `D`, or -1 between two cards; `current` is the card in focus until now. */
-export function focusedCard(cards: readonly CardPlace[], depth: number, current = -1): number {
-  const kept = cards[current];
-  if (kept && Math.abs(kept.z - depth) < FOCUS_KEEP) return current;
-  let focus = -1;
-  for (const card of cards) {
-    if (Math.abs(card.z - depth) < FOCUS) focus = card.index;
-  }
-  return focus;
-}
-
 export interface CardLook {
   /** Depth in front of the focus plane, in perspective units (negative: behind it). */
   depth: number;
@@ -77,34 +62,6 @@ export function diveLook(
   return { x: x / scale, y: y / scale, depth: 1 - 1 / scale };
 }
 
-export interface CartelPlace {
-  /** Anchor point of the cartel, in px from the top left of the screen. */
-  x: number;
-  y: number;
-  width: number;
-}
-
-/**
- * Where a card's cartel sits (journey spec §5): on desktop, beside the card's inner edge, on the centre's side, at
- * most 300 px wide; on mobile, under the card, as wide as the card.
- */
-export function cartelPlace(card: CardPlace, look: CardLook, view: View): CartelPlace {
-  const { scale, depth } = look;
-  if (view.mobile) {
-    return {
-      x: view.vpX + (card.x - card.width / 2) * scale,
-      y: view.vpY + (card.y + card.height / 2) * scale + 18,
-      width: card.width * scale,
-    };
-  }
-  const angle = (Math.abs(card.rotateY) * Math.PI) / 180;
-  // The card's inner edge, turned toward the centre, is a little further away than its middle.
-  const innerScale = 1 / (1 - depth + ((card.width / 2) * Math.sin(angle)) / view.perspective);
-  const halfWidth = (card.width / 2) * Math.cos(angle);
-  const inner = (card.onLeft ? card.x + halfWidth : card.x - halfWidth) * innerScale;
-  return { x: view.vpX + inner + (card.onLeft ? 36 : -36), y: view.vpY + card.y * scale, width: 300 };
-}
-
 export interface PlanetLook {
   /** Scale of the planet against its size on the opening. */
   scale: number;
@@ -128,11 +85,6 @@ export function planetLook(cameraDepth: number, sky: number, arrival: number): P
     haloOpacity: smoothstep(0.04, 0.25, scale),
     glowOpacity: smoothstep(0.06, 0.02, scale) * (1 - smoothstep(0, 0.08, arrival)),
   };
-}
-
-/** The opening's text stays sharp while the planet starts receding, then fades out, rising a few px. */
-export function introFade(cameraDepth: number): number {
-  return smoothstep(0.55, 1.1, cameraDepth);
 }
 
 /** Scale of the far stars: they barely move. */

@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { trackErrors } from './helpers';
 
-// The journey's anchors: 0 is the opening, 1 to 7 the projects in order, 8 the contact.
-const LAST = 7;
-const CONTACT = LAST + 1;
+// The journey's anchors: 0 is the opening, 1 the ring of projects around the planet, 2 the contact.
+const RING = 1;
+const CONTACT = 2;
 
 /** The anchor the journey rests on, once it has settled there. */
 async function expectAnchor(page: Page, anchor: number): Promise<void> {
@@ -17,17 +17,23 @@ async function openJourney(page: Page, path = './'): Promise<void> {
   await expect(page.locator('[data-journey-root]')).not.toHaveAttribute('data-anchor', '');
 }
 
-/** A swipe of a finger, `distance` px up (a negative distance swipes down). */
-async function swipe(page: Page, distance: number): Promise<void> {
+/** The project in front on the ring, once it has turned there. */
+async function expectFront(page: Page, project: number): Promise<void> {
+  await expect(page.locator(`[data-project="${String(project)}"]`)).toHaveClass(/\blit\b/, { timeout: 10_000 });
+}
+
+/** A swipe of a finger, `distance` px up (a negative distance swipes down), or to the left with `sideways`. */
+async function swipe(page: Page, distance: number, sideways = false): Promise<void> {
   const cdp = await page.context().newCDPSession(page);
-  const x = 195;
-  const y = distance > 0 ? 650 : 250;
+  const x = sideways ? (distance > 0 ? 340 : 50) : 195;
+  const y = sideways ? 450 : distance > 0 ? 650 : 250;
   const steps = 10;
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
   for (let i = 1; i <= steps; i += 1) {
+    const moved = (distance * i) / steps;
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ x, y: y - (distance * i) / steps }],
+      touchPoints: [sideways ? { x: x - moved, y } : { x, y: y - moved }],
     });
     await page.waitForTimeout(16);
   }
@@ -78,7 +84,7 @@ test('a gesture plays the rest of the arrival faster', async ({ page }) => {
 });
 
 test('the arrival leaves out a visit that starts elsewhere than the opening, and ?still=1', async ({ page }) => {
-  for (const path of ['./#contact', './?still=1', './#la-fabrique-des-mondes']) {
+  for (const path of ['./#contact', './?still=1', './#lyrix']) {
     await page.goto(path);
     await expect(page.locator('html')).toHaveAttribute('data-journey', 'on');
     await expect(page.locator('html')).not.toHaveAttribute('data-arrival', /.*/);
@@ -95,7 +101,7 @@ test('before its scripts run, the home shows the opening alone', async ({ page }
   await expect(page.locator('.journey')).toBeHidden();
 });
 
-test('the live planet takes over its image after a gesture, and leaves it to the image as it recedes', async ({
+test('the live planet takes over its image after a gesture, stays in the ring, and is let go at the contact', async ({
   page,
 }) => {
   test.slow();
@@ -106,26 +112,34 @@ test('the live planet takes over its image after a gesture, and leaves it to the
   await page.mouse.move(200, 200);
   await expect(page.locator('html')).toHaveAttribute('data-planet', 'live', { timeout: 60_000 });
   await expect(page.locator('.planet-canvas')).toHaveCount(1);
+  // The ring keeps it sharp in its middle; the contact leaves it behind, and its canvas goes.
   await page.keyboard.press('ArrowDown');
-  await expectAnchor(page, 1);
-  await expect(page.locator('html')).toHaveAttribute('data-planet', 'image');
+  await expectAnchor(page, RING);
+  await expect(page.locator('html')).toHaveAttribute('data-planet', 'live');
+  await page.keyboard.press('End');
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('html')).not.toHaveAttribute('data-planet', /.*/);
+  await expect(page.locator('.planet-canvas')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
 test('the language switch keeps the project the journey has scrolled to', async ({ page, isMobile }) => {
   test.skip(isMobile, 'the arrow keys and the header are the desktop ones');
   await openJourney(page, './#perfmanager');
-  await expectAnchor(page, 4);
-  // The address still says #perfmanager: the journey moved on without it.
-  await page.keyboard.press('ArrowDown');
-  await expectAnchor(page, 5);
-  const slug = await page.locator('[data-project="4"]').getAttribute('id');
+  await expectAnchor(page, RING);
+  const perfmanager = Number(await page.locator('#perfmanager').getAttribute('data-project'));
+  await expectFront(page, perfmanager);
+  // The address still says #perfmanager: the ring turned on without it.
+  await page.keyboard.press('ArrowRight');
+  await expectFront(page, perfmanager + 1);
+  const slug = await page.locator(`[data-project="${String(perfmanager + 1)}"]`).getAttribute('id');
   await page
     .getByRole('banner')
     .getByRole('link', { name: /English/ })
     .click();
   await expect(page).toHaveURL(new RegExp(`/en/#${String(slug)}$`));
-  await expectAnchor(page, 5);
+  await expectAnchor(page, RING);
+  await expectFront(page, perfmanager + 1);
 });
 
 test('?gl=0 keeps the planet as an image', async ({ page }) => {
@@ -136,57 +150,88 @@ test('?gl=0 keeps the planet as an image', async ({ page }) => {
   await expect(page.locator('.planet-image')).toHaveCSS('background-image', /planet-/);
 });
 
-test('the wheel goes anchor by anchor to the contact, and back', async ({ page, isMobile }) => {
+test('the wheel goes anchor by anchor to the contact, and back; sideways, it turns the ring', async ({
+  page,
+  isMobile,
+}) => {
   test.skip(isMobile, 'phones have no wheel');
-  test.slow();
   await openJourney(page);
   await page.mouse.move(720, 450);
-  for (let anchor = 1; anchor <= CONTACT; anchor += 1) {
-    await page.mouse.wheel(0, 120);
-    await expectAnchor(page, anchor);
-    if (anchor <= LAST) await expect(page.locator(`[data-project="${String(anchor - 1)}"]`)).toHaveClass(/\blit\b/);
-  }
+  await page.mouse.wheel(0, 120);
+  await expectAnchor(page, RING);
+  await expectFront(page, 0);
+  await page.mouse.wheel(120, 0);
+  await expectFront(page, 1);
+  await page.mouse.wheel(0, 120);
+  await expectAnchor(page, CONTACT);
   await page.mouse.wheel(0, -120);
-  await expectAnchor(page, LAST);
+  await expectAnchor(page, RING);
+  await expectFront(page, 1);
 });
 
 test('a swipe goes anchor by anchor to the contact, and a short touch stays', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the swipe is a phone gesture');
-  test.slow();
   await openJourney(page);
   for (let anchor = 1; anchor <= CONTACT; anchor += 1) {
     await swipe(page, 300);
     await expectAnchor(page, anchor);
   }
   await swipe(page, -300);
-  await expectAnchor(page, LAST);
+  await expectAnchor(page, RING);
   await swipe(page, 20);
   await page.waitForTimeout(800);
-  await expectAnchor(page, LAST);
+  await expectAnchor(page, RING);
+});
+
+test('a swipe across the ring turns it to the next or the previous project, the arrows too', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'the swipe is a phone gesture');
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  await expectFront(page, 0);
+  await swipe(page, 160, true);
+  await expectFront(page, 1);
+  await swipe(page, -160, true);
+  await expectFront(page, 0);
+  await swipe(page, -160, true);
+  await expectFront(page, 6);
+  // Across, the page stays on the ring.
+  await page.waitForTimeout(800);
+  await expectAnchor(page, RING);
+  await page.getByRole('button', { name: 'Projet suivant' }).tap();
+  await expectFront(page, 0);
 });
 
 test('a flick lands one anchor further, its fling held while the page glides there', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the swipe is a phone gesture');
   await openJourney(page, './#perfmanager');
-  await expectAnchor(page, 4);
+  await expectAnchor(page, RING);
   await swipe(page, 400);
   // What is left of the finger's fling would carry the page past the next anchor once the glide is over.
   await expect(page.locator('html')).toHaveCSS('overflow-y', 'hidden');
-  await expectAnchor(page, 5);
+  await expectAnchor(page, CONTACT);
   await expect(page.locator('html')).not.toHaveCSS('overflow-y', 'hidden');
   await page.waitForTimeout(1500);
-  await expectAnchor(page, 5);
+  await expectAnchor(page, CONTACT);
 });
 
-test('the keys go anchor by anchor to the contact, and to either end', async ({ page }) => {
-  test.slow();
+test('the keys go anchor by anchor to the contact, and to either end; left and right turn the ring', async ({
+  page,
+}) => {
   await openJourney(page);
-  for (let anchor = 1; anchor <= CONTACT; anchor += 1) {
-    await page.keyboard.press(anchor % 2 ? 'ArrowDown' : 'PageDown');
-    await expectAnchor(page, anchor);
-  }
+  await page.keyboard.press('ArrowDown');
+  await expectAnchor(page, RING);
+  await page.keyboard.press('ArrowRight');
+  await expectFront(page, 1);
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await expectFront(page, 6);
+  await page.keyboard.press('PageDown');
+  await expectAnchor(page, CONTACT);
   await page.keyboard.press('ArrowUp');
-  await expectAnchor(page, LAST);
+  await expectAnchor(page, RING);
   await page.keyboard.press('Home');
   await expectAnchor(page, 0);
   await page.keyboard.press('End');
@@ -197,8 +242,8 @@ test('a project or contact link lands on its anchor', async ({ page }) => {
   await openJourney(page, './#lyrix');
   const lyrix = page.getByRole('listitem').filter({ hasText: 'Lyrix' });
   const index = Number(await lyrix.getAttribute('data-project'));
-  await expectAnchor(page, index + 1);
-  await expect(lyrix).toHaveClass(/\blit\b/);
+  await expectAnchor(page, RING);
+  await expectFront(page, index);
 
   await openJourney(page, './#contact');
   await expectAnchor(page, CONTACT);
@@ -214,16 +259,62 @@ test('the focus goes from card to card, with its cartel, and Enter opens the cas
     await page.keyboard.press('Tab');
   }
   await expect(card).toBeFocused();
-  await expectAnchor(page, 1);
-  await expect(first).toHaveClass(/\blit\b/);
+  await expectAnchor(page, RING);
+  await expectFront(page, 0);
   await expect(first.locator('.cartel')).toBeVisible();
 
+  // The next card turns the ring to the front.
   await page.keyboard.press('Tab');
-  await expectAnchor(page, 2);
   await expect(page.locator('[data-project="1"]').getByRole('link')).toBeFocused();
+  await expectFront(page, 1);
+  await expectAnchor(page, RING);
 
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/projets\/[^/]+\/$/);
+});
+
+test('the arrows turn the ring, and count the project in front', async ({ page }) => {
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  const next = page.getByRole('button', { name: 'Projet suivant' });
+  const previous = page.getByRole('button', { name: 'Projet précédent' });
+  const count = page.locator('.showcase-count .now');
+  await expect(count).toHaveText('01');
+  await next.click();
+  await expectFront(page, 1);
+  await expect(count).toHaveText('02');
+  await previous.click();
+  await previous.click();
+  await expectFront(page, 6);
+  await expect(count).toHaveText('07');
+});
+
+test('the card in front shows the cursor under the mouse, and a click opens its case study', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'phones have no mouse');
+  await openJourney(page, './#lyrix');
+  await expectAnchor(page, RING);
+  const lyrix = page.locator('#lyrix');
+  await expect(lyrix).toHaveClass(/\blit\b/);
+  const box = await lyrix.locator('a.card').boundingBox();
+  if (!box) throw new Error('the card has no box');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
+  await expect(page.locator('[data-cursor]')).toHaveClass(/\bon\b/);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(page).toHaveURL(/\/projets\/lyrix\/$/);
+});
+
+test('a card behind turns to the front at its click, rather than open', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'phones turn the ring with a swipe');
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  const second = page.locator('[data-project="1"] a.card');
+  await second.click({ force: true });
+  await expectFront(page, 1);
+  await expect(page).not.toHaveURL(/\/projets\/[^/]+\/$/);
 });
 
 test('with reduced motion, the home stays a still list', async ({ page }) => {
@@ -242,7 +333,7 @@ test('with reduced motion, the home stays a still list', async ({ page }) => {
 test('?lite=1 keeps the list, for slow machines', async ({ page }) => {
   await page.goto('./?lite=1');
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
-  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(LAST);
+  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(7);
 });
 
 test('a journey kept under 20 frames per second over the projects gives way to the list, on the project shown', async ({
@@ -258,7 +349,7 @@ test('a journey kept under 20 frames per second over the projects gives way to t
   });
   await openJourney(page, './?lite=auto#lyrix');
   for (let i = 0; i < 12 && (await page.locator('html').getAttribute('data-journey')) === 'on'; i += 1) {
-    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(1500);
   }
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on', { timeout: 20_000 });
@@ -293,10 +384,14 @@ test('the frames of the journey never force a layout', async ({ page }, testInfo
       }
     }).observe({ type: 'long-animation-frame' });
   });
-  for (let anchor = 1; anchor <= CONTACT; anchor += 1) {
-    await page.keyboard.press('ArrowDown');
-    await expectAnchor(page, anchor);
+  await page.keyboard.press('ArrowDown');
+  await expectAnchor(page, RING);
+  for (let project = 1; project < 4; project += 1) {
+    await page.keyboard.press('ArrowRight');
+    await expectFront(page, project);
   }
+  await page.keyboard.press('ArrowDown');
+  await expectAnchor(page, CONTACT);
   const frames = await page.evaluate(
     () => (window as unknown as { journeyFrames: { duration: number; forced: number }[] }).journeyFrames,
   );
@@ -412,5 +507,5 @@ test('once the device is found too slow, the visit goes on in the light version'
   });
   await page.goto('./');
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
-  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(LAST);
+  await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(7);
 });

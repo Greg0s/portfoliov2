@@ -5,22 +5,20 @@
  * worlds and the stars. The HTML stays the one of the list (no JavaScript, "reduce motion"): the journey only places
  * it, so a screen reader reads the projects in order, then the contact.
  */
-import { anchors, cameraDepth, endClock, endProgress, endProgressAt, LAST_PROJECT, SCREENS } from './anchors';
+import { anchors, cameraDepth, endClock, endProgress, endProgressAt, RING, RING_DEPTH, SCREENS } from './anchors';
 import {
   cardLook,
-  cartelPlace,
   cssTransform,
   diveLook,
   farStarsScale,
-  focusedCard,
-  introFade,
+  projectCss,
   planetLook,
   smoothstep,
   still as noSway,
   worldLook,
   type Sway,
 } from './camera';
-import { sceneFor, type Scene, type View } from './layout';
+import { sceneFor, type CardPlace, type Scene, type View } from './layout';
 import { setJourney } from './registry';
 import {
   anchorAt,
@@ -50,6 +48,8 @@ import { frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } fr
 import { lowerResolution } from '../renderer';
 import { blurFilter } from './blur';
 import { coverTop } from '../../lib/cover';
+import { createShowcase } from '../showcase/showcase';
+import type { Pose } from '../showcase/ring';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
 const LIGHT = {
@@ -108,6 +108,9 @@ const SWAY_REST_MS = 600;
  */
 const TRACK_SLACK = 200;
 const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
+const easeInOutSine = (t: number): number => (1 - Math.cos(Math.PI * t)) / 2;
+/** The glide between the opening and the ring of projects, in ms: about the old glide to the first project. */
+const SHOWCASE_GLIDE_MS = 1150;
 
 interface CardParts {
   item: HTMLElement;
@@ -162,6 +165,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const html = document.documentElement;
   const styles = styler();
   const set = styles.set;
+  // The projects share one stop, the ring around the planet (`src/scene/showcase/`): the journey has three anchors,
+  // the opening, the ring and the contact.
+  const LAST_PROJECT = RING;
+  const SHOWCASE_AT = RING;
   // Firefox sorts everything in one 3D scene plane by plane: a card's dark shadow, in the card's own plane, would
   // now and then be drawn over the card. There each card is flattened into its own picture, the perspective of its
   // turn given by its own frame, seen from the vanishing point at the card's distance: the same drawing, in one plane.
@@ -199,7 +206,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const fragmentAnchor = new Map<string, number>();
   if (opening?.id) fragmentAnchor.set(opening.id, 0);
   if (world3d.id) fragmentAnchor.set(world3d.id, 1);
-  cards.forEach(({ item }, i) => fragmentAnchor.set(item.id, i + 1));
+  cards.forEach(({ item }) => fragmentAnchor.set(item.id, 1));
+  // Each project's card, by its fragment.
+  const cardIndex = new Map<string, number>();
+  cards.forEach(({ item }, i) => cardIndex.set(item.id, i));
   if (contact?.id) fragmentAnchor.set(contact.id, anchors.length - 1);
   // And the other way: each anchor's first fragment (the projects' rather than the first project's).
   const anchorFragment = new Map<number, string>();
@@ -207,6 +217,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   let scene: Scene;
   let worlds: WorldParts[] = [];
+  /** Whether the next frame must be drawn, even at rest. */
+  let redraw = false;
+  const showcase = createShowcase(
+    world3d,
+    cards.map(({ item }) => item.querySelector('h3')?.textContent.trim() ?? ''),
+    () => {
+      redraw = true;
+    },
+  );
   /** The screen's height the track was laid out for, in px. */
   let screen = 0;
   /** The screen's height the track's length was last set for: it follows the address bar, unlike `screen`. */
@@ -238,8 +257,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   } | null = null;
   /** The sway and the cards' float coming to rest for the dive (`forward`), or back once it is over. */
   let rest: { forward: boolean; start: number } | null = null;
-  /** Whether the next frame must be drawn, even at rest. */
-  let redraw = false;
   let direction = 0;
   let lastScroll = window.scrollY;
   // The scroll position as last known, so that drawing a frame never reads it back (which would force a layout).
@@ -270,14 +287,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     set(world3d, 'perspective-origin', `${view.vpX.toFixed(1)}px ${view.vpY.toFixed(1)}px`);
     set(world3d, '--vp-x', `${view.vpX.toFixed(1)}px`);
     set(world3d, '--vp-y', `${view.vpY.toFixed(1)}px`);
-    scene.cards.forEach((place, i) => {
-      const link = cards[i]?.link;
-      if (!link) return;
-      set(link, 'width', `${place.width.toFixed(1)}px`);
-      set(link, 'height', `${place.height.toFixed(1)}px`);
-      set(link, 'left', `${(-place.width / 2).toFixed(1)}px`);
-      set(link, 'top', `${(-place.height / 2).toFixed(1)}px`);
+    const cardWidth = showcase.ring(view).card;
+    cards.forEach(({ link }) => {
+      const cardHeight = (cardWidth * 9) / 16;
+      set(link, 'width', `${cardWidth.toFixed(1)}px`);
+      set(link, 'height', `${cardHeight.toFixed(1)}px`);
+      set(link, 'left', `${(-cardWidth / 2).toFixed(1)}px`);
+      set(link, 'top', `${(-cardHeight / 2).toFixed(1)}px`);
     });
+    showcase.resize(view);
 
     const framing = view.mobile ? 'mobile' : 'desktop';
     worlds = scene.worlds.flatMap((world, i) => {
@@ -345,8 +363,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   // It loads once the ambient motions start, while the camera is near the opening, and is let go from the middle of
   // the journey on, so that its GPU memory is free before the office.
-  const PLANET_KEEP = anchors[3] ?? 0.3;
-  const PLANET_FREE = anchors[4] ?? 0.4;
+  // It stays while the ring shows.
+  const PLANET_KEEP = SHOWCASE_AT + 0.02;
+  const PLANET_FREE = SHOWCASE_AT + 0.2;
   /** The planet's blur, in px, past which it is only a blurred light: the image shows instead. */
   const PLANET_SHARP = 3;
   let livePlanet: LivePlanet | null = null;
@@ -520,8 +539,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     if (Math.abs(to - from) < 2) return;
     direction = Math.sign(to - from);
     setSnap(false);
-    const duration = glideDuration(to - from);
-    const ease = speed > 0 ? easeFrom((speed * duration) / Math.abs(to - from)) : easeInOutCubic;
+    // Between the opening and the showcase, one long, even move: the camera draws back and turns toward the ring.
+    const toShowcase = Math.min(from, to) < 2 && Math.abs(Math.max(from, to) - (positions[1] ?? 0)) < 2;
+    const duration = toShowcase ? SHOWCASE_GLIDE_MS : glideDuration(to - from);
+    const ease = toShowcase
+      ? easeInOutSine
+      : speed > 0
+        ? easeFrom((speed * duration) / Math.abs(to - from))
+        : easeInOutCubic;
     glide = { from, to, start: -1, duration, ease };
   }
 
@@ -579,9 +604,21 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   };
   // The wheel goes anchor by anchor: one gesture, one anchor, whatever the device sends.
   const gestureOf = wheelGestures();
+  const sidewaysOf = wheelGestures();
+  /** Whether the camera is on the showcase's stop, or going there. */
+  const atShowcase = (): boolean => Math.abs(target - SHOWCASE_AT) < 0.01;
   const onWheel = (event: WheelEvent): void => {
     // A pinch on a trackpad, or ctrl and the wheel, zooms the page.
-    if (event.ctrlKey || event.deltaY === 0) return;
+    if (event.ctrlKey) return;
+    // Sideways, on the showcase, the wheel goes from project to project.
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+      if (!atShowcase()) return;
+      event.preventDefault();
+      const way = sidewaysOf(event.deltaX, event.timeStamp);
+      if (way !== 0) showcase.step(way);
+      return;
+    }
+    if (event.deltaY === 0) return;
     event.preventDefault();
     const started = gestureOf(event.deltaY, event.timeStamp);
     if (started === 0) return;
@@ -593,6 +630,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   // the anchor it started on; a shorter touch comes back to it. The snapping waits while the finger is down, so that
   // it never starts a move the glide would then undo.
   let touchStartY = 0;
+  let touchStartX = 0;
+  let touchX = 0;
+  /** Whether the finger turns the ring rather than the page. */
+  let sideways = false;
   let touchY = 0;
   let touchFrom = 0;
   let touchTime = 0;
@@ -608,11 +649,21 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     touching = true;
     touchStartY = event.touches[0]?.clientY ?? 0;
     touchY = touchStartY;
+    touchStartX = event.touches[0]?.clientX ?? 0;
+    touchX = touchStartX;
+    sideways = false;
     touchTime = event.timeStamp;
     touchSpeed = 0;
   };
   const onTouchMove = (event: TouchEvent): void => {
     const y = event.touches[0]?.clientY ?? touchY;
+    touchX = event.touches[0]?.clientX ?? touchX;
+    // On the ring, a finger going sideways turns it, following the finger.
+    const across = touchStartX - touchX;
+    if (!sideways && atShowcase() && Math.abs(across) > 12 && Math.abs(across) > 1.2 * Math.abs(touchStartY - y)) {
+      sideways = true;
+    }
+    if (sideways) showcase.drag(across / (scene.view.width * 0.9));
     if (y !== touchY) direction = Math.sign(touchY - y);
     // The finger's speed, smoothed, in px/ms (positive: scrolling down).
     const dt = Math.max(1, event.timeStamp - touchTime);
@@ -628,7 +679,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       return;
     }
     const moved = touchStartY - touchY;
-    if (Math.abs(moved) > 40) {
+    if (sideways) {
+      // A swipe of more than a few px brings the next project, or the previous one; the page stays on the ring.
+      const across = touchStartX - touchX;
+      showcase.release(Math.abs(across) > 40 ? Math.sign(across) : 0);
+      sideways = false;
+      glideTo(settleAnchor(touchFrom, positions, 0));
+    } else if (Math.abs(moved) > 40) {
       const way = Math.sign(moved);
       glideTo(stepAnchor(touchFrom, positions, way), Math.max(0, touchSpeed * way));
     } else {
@@ -643,6 +700,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const element = event.target instanceof HTMLElement ? event.target : null;
     if (element?.closest('input, textarea, select, [contenteditable], [role="dialog"]')) return;
     if (isMenuOpen()) return;
+    if (atShowcase() && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+      event.preventDefault();
+      showcase.step(event.key === 'ArrowLeft' ? -1 : 1);
+      return;
+    }
     const at = glide ? glide.to : window.scrollY;
     let index: number | undefined;
     if (event.key === 'ArrowDown' || event.key === 'PageDown' || (event.key === ' ' && !event.shiftKey)) {
@@ -666,8 +728,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const element = event.target instanceof Element ? event.target : null;
     const item = element?.closest<HTMLElement>('[data-project]');
     if (item) {
-      const index = Number(item.dataset.project);
-      if (focus !== index) glideTo(index + 1);
+      if (!atShowcase()) glideTo(1);
+      showcase.select(Number(item.dataset.project));
+      return;
+    }
+    if (element?.closest('.showcase-ui')) {
+      if (!atShowcase()) glideTo(1);
       return;
     }
     if (contact && element && contact.contains(element)) glideTo(positions.length - 1);
@@ -684,11 +750,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const link = element?.closest<HTMLAnchorElement>('a.card');
     const item = link?.closest<HTMLElement>('[data-project]');
     if (!item) return;
+    // A card that is not in front comes in front first; the one in front opens.
     const index = Number(item.dataset.project);
     if (index !== focus) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      glideTo(index + 1);
+      if (!atShowcase()) glideTo(1);
+      showcase.select(index);
     }
   };
 
@@ -701,8 +769,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   // A fragment in the address (an old link, a case study's way back) lands directly on its anchor.
   const onHash = (): void => {
-    const index = fragmentAnchor.get(decodeURIComponent(location.hash.slice(1)));
-    if (index !== undefined) jumpTo(index);
+    const id = decodeURIComponent(location.hash.slice(1));
+    const index = fragmentAnchor.get(id);
+    if (index === undefined) return;
+    const card = cardIndex.get(id);
+    if (card !== undefined) showcase.select(card, true);
+    jumpTo(index);
   };
 
   let resizeFrame = 0;
@@ -742,6 +814,158 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   const pointer = followPointer(window);
   const ambient = ambientClock();
+
+  // ---------- The showcase ----------
+
+  /** The showcase's plane, where its cards are sharp: the first project's depth. */
+  const SHOWCASE_Z = RING_DEPTH;
+  let showcasePoses: Pose[] = [];
+
+  /**
+   * Places the showcase's cards and the cartel of the one in front, the whole showcase at its plane's depth: it comes
+   * from behind the camera at the stop, and recedes toward the planet past it, as the cards of the journey do. Returns
+   * the planet the showcase holds at its ring's centre, if any.
+   */
+  function drawShowcase(
+    view: View,
+    depth: number,
+    sway: Sway,
+    time: number,
+    floatRest: number,
+    k: number,
+    diving: number,
+    others: number,
+  ): { x: number; y: number; diameter: number } {
+    const ring = showcase.ring(view);
+    const approach = ringApproach(depth, view, sway);
+    let plane = cardLook({ z: SHOWCASE_Z } as CardPlace, depth);
+    const relative = SHOWCASE_Z - depth;
+    let presence = 1 - smoothstep(0.08, 0.45, Math.abs(relative));
+    if (approach) {
+      // On the way to the ring, the ring is already around the planet, larger while the camera is still close: it
+      // comes into view as the camera draws back, once the opening's text has gone.
+      plane = {
+        depth: 0,
+        scale: 1,
+        opacity: smoothstep(0.4, 0.95, approach.t),
+        blur: 10 * (1 - smoothstep(0.5, 1, approach.t)),
+      };
+      presence = smoothstep(0.7, 1, approach.t);
+      set(world3d, 'transform-origin', '0 0');
+      set(
+        world3d,
+        'transform',
+        `translate(${approach.ox.toFixed(2)}px, ${approach.oy.toFixed(2)}px) scale(${approach.zoom.toFixed(4)})`,
+      );
+    } else set(world3d, 'transform', 'none');
+    // The card in front is lit (its cartel, its hover, its click) as soon as the ring has nearly stopped on it.
+    const selected = showcase.selected();
+    const inFront = Math.abs(showcase.offsetOf(selected)) < 0.04 && presence > 0.9;
+    focus = diving >= 0 ? diving : inFront ? selected : -1;
+    const cardWidth = ring.card;
+    const cardHeight = (cardWidth * 9) / 16;
+    showcasePoses = scene.cards.map((_, i) => showcase.pose(i, view));
+    showcasePoses.forEach((pose, i) => {
+      const parts = cards[i];
+      const place = scene.cards[i];
+      if (!parts || !place) return;
+      const z = Math.min(pose.z + plane.depth, 0.72);
+      const scale = 1 / (1 - z);
+      const lit = focus === i && diving < 0;
+      const lift = options.still ? 0 : 10 * swing(time, place.floatDuration, place.floatDelay) * (1 - floatRest);
+      set(parts.float, 'transform', `translateY(${lift.toFixed(2)}px)`);
+      if (i === diving && dive) {
+        const card = { ...place, x: pose.x, y: pose.y, width: cardWidth * pose.scale, height: cardHeight * pose.scale };
+        const flight = diveLook(card, { depth: z, scale, opacity: 1, blur: 0 }, view, k, dive.top);
+        set(parts.place, 'transform', cssTransform(flight.x, flight.y, flight.depth, view, sway));
+        cardPerspective(parts, flight.x, flight.y, flight.depth, lift, view);
+        set(parts.link, 'opacity', '1');
+        set(parts.link, 'filter', 'none');
+        set(parts.link, 'pointer-events', 'none');
+        set(
+          parts.link,
+          'transform',
+          `rotateY(${(pose.rotateY * (1 - k)).toFixed(2)}deg) rotateZ(${(pose.rotateZ * (1 - k)).toFixed(2)}deg) translateZ(${(dive.lift * (1 - k)).toFixed(2)}px) scale(${pose.scale.toFixed(4)})`,
+        );
+        set(parts.link, 'transition', 'box-shadow 450ms ease');
+        set(parts.link, 'box-shadow', '0 0 0 0 rgb(255 255 255 / 0%), 0 40px 80px -24px rgb(0 0 0 / 0%)');
+        set(parts.link, 'border-radius', `${(dive.radius * (1 - k)).toFixed(2)}px`);
+      } else {
+        // A card the mouse is over, beside the one in front, lights up a little: a click brings it in front.
+        const over = hovered === i && !lit && presence > 0.9;
+        const opacity = Math.min(1, pose.opacity * (over ? 1.6 : 1) + (over ? 0.12 : 0)) * plane.opacity * others;
+        const blur = Math.max(pose.blur * (over ? 0.5 : 1), plane.blur);
+        set(parts.place, 'transform', cssTransform(pose.x, pose.y, z, view, sway));
+        cardPerspective(parts, pose.x, pose.y, z, lift, view);
+        set(parts.link, 'opacity', opacity.toFixed(3));
+        set(parts.link, 'filter', opacity > 0.004 ? blurFilter(blur) : 'none');
+        set(parts.link, 'pointer-events', opacity > 0.12 && diving < 0 && presence > 0.5 ? 'auto' : 'none');
+        set(
+          parts.link,
+          'transform',
+          `rotateY(${pose.rotateY.toFixed(2)}deg) rotateZ(${pose.rotateZ.toFixed(2)}deg) translateZ(${lit && hovered === i ? String(HOVER_LIFT) : '0'}px) scale(${pose.scale.toFixed(4)})`,
+        );
+        set(parts.link, 'transition', '');
+        set(parts.link, 'box-shadow', '');
+        set(parts.link, 'border-radius', '');
+      }
+      parts.item.classList.toggle('lit', lit);
+      if (!parts.cartel) return;
+      // The cartel of the card in front: beside it on desktop, under it on a phone. It fades in as the ring settles,
+      // rising a few px.
+      const o = showcase.offsetOf(i);
+      const shown = (1 - smoothstep(0.03, 0.3, Math.abs(o))) * presence * others * (diving >= 0 ? 0 : 1);
+      const at = projectCss(pose.x, pose.y + lift, z, view, sway);
+      const half = (cardWidth * pose.scale * at.scale) / 2;
+      const rise = 10 * smoothstep(0, 0.3, Math.abs(o));
+      let x: number;
+      let y: number;
+      let cartelWidth = 300;
+      if (view.mobile) {
+        x = at.x - half;
+        y = at.y + (half * 9) / 16 + 22 + rise;
+        cartelWidth = half * 2;
+      } else {
+        x = at.x + half * Math.cos((pose.rotateY * Math.PI) / 180) + 40;
+        y = at.y + rise;
+      }
+      const back = (view.perspective - CARTEL_Z) / view.perspective;
+      const bx = view.vpX + (x - view.vpX) * back;
+      const by = view.vpY + (y - view.vpY) * back;
+      set(parts.cartel, 'translate', `${bx.toFixed(1)}px ${by.toFixed(1)}px ${String(CARTEL_Z)}px`);
+      set(parts.cartel, 'scale', back.toFixed(4));
+      set(parts.cartel, '--cartel-width', `${cartelWidth.toFixed(1)}px`);
+      set(parts.cartel, 'opacity', shown.toFixed(3));
+      set(parts.cartel, 'transform', view.mobile ? 'none' : 'translate(0, -50%)');
+    });
+    return { x: ring.cx, y: ring.cy, diameter: ring.planet };
+  }
+
+  /**
+   * The ring's planet on its way from the opening to the stop (depth 0 to `SHOWCASE_Z`), as one move of the camera
+   * drawing back and turning: the planet, sharp all the way, shrinks by the same ratio for each step of depth and
+   * slides to the ring's centre as it shrinks, as a camera receding toward that point would see it. `zoom`, `ox` and
+   * `oy` map the ring as drawn at the stop onto this moment (screen = zoom · stop + offset). Null past the stop.
+   */
+  function ringApproach(
+    depth: number,
+    view: View,
+    sway: Sway,
+  ): { t: number; sP: number; x: number; y: number; zoom: number; ox: number; oy: number; diameter: number } | null {
+    const held = showcase.ring(view);
+    if (planetSize <= 0 || depth > SHOWCASE_Z) return null;
+    const ringScale = held.planet / planetSize;
+    const ring = projectCss(held.cx, held.cy, 0, view, sway);
+    const t = Math.max(0, depth / SHOWCASE_Z);
+    const sP = Math.pow(ringScale, t);
+    const k = Math.abs(1 - ringScale) > 1e-3 ? (1 - sP) / (1 - ringScale) : t;
+    const fromX = view.vpX + planetRest.x + sway.dx;
+    const fromY = view.vpY + planetRest.y + sway.dy;
+    const x = fromX + (ring.x - fromX) * k;
+    const y = fromY + (ring.y - fromY) * k;
+    const zoom = sP / ringScale;
+    return { t, sP, x, y, zoom, ox: x - zoom * ring.x, oy: y - zoom * ring.y, diameter: held.planet };
+  }
 
   // ---------- Drawing a frame ----------
 
@@ -802,87 +1026,45 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       tiltY: moving.tiltY * swing0,
     };
 
-    // The cards and their cartels.
-    focus = diving >= 0 ? diving : focusedCard(scene.cards, depth, focus);
-    scene.cards.forEach((place, i) => {
-      const parts = cards[i];
-      if (!parts) return;
-      const look = cardLook(place, depth);
-      // During the dive, no card is lit: the cartel and the ring leave, as the rest fades out.
-      const lit = focus === i && diving < 0;
-      const lift = options.still ? 0 : 12 * swing(time, place.floatDuration, place.floatDelay) * (1 - floatRest);
-      set(parts.float, 'transform', `translateY(${lift.toFixed(2)}px)`);
-      if (i === diving && dive) {
-        const flight = diveLook(place, look, view, k, dive.top);
-        set(parts.place, 'transform', cssTransform(flight.x, flight.y, flight.depth, view, sway));
-        cardPerspective(parts, flight.x, flight.y, flight.depth, lift, view);
-        set(parts.link, 'opacity', '1');
-        set(parts.link, 'filter', 'none');
-        set(parts.link, 'pointer-events', 'none');
-        set(
-          parts.link,
-          'transform',
-          `rotateY(${(place.rotateY * (1 - k)).toFixed(2)}deg) rotateZ(${(place.rotateZ * (1 - k)).toFixed(2)}deg) translateZ(${(dive.lift * (1 - k)).toFixed(2)}px)`,
-        );
-        // The card follows the flight frame by frame, its shadow fading out.
-        set(parts.link, 'transition', 'box-shadow 450ms ease');
-        set(parts.link, 'box-shadow', '0 0 0 0 rgb(255 255 255 / 0%), 0 40px 80px -24px rgb(0 0 0 / 0%)');
-        set(parts.link, 'border-radius', `${(dive.radius * (1 - k)).toFixed(2)}px`);
-      } else {
-        const opacity = look.opacity * others;
-        const shown = opacity > 0.004;
-        set(parts.place, 'transform', cssTransform(place.x, place.y, look.depth, view, sway));
-        cardPerspective(parts, place.x, place.y, look.depth, lift, view);
-        set(parts.link, 'opacity', opacity.toFixed(3));
-        set(parts.link, 'filter', shown ? blurFilter(look.blur) : 'none');
-        set(parts.link, 'pointer-events', opacity > 0.3 && diving < 0 ? 'auto' : 'none');
-        set(
-          parts.link,
-          'transform',
-          `rotateY(${place.rotateY.toFixed(2)}deg) rotateZ(${place.rotateZ.toFixed(2)}deg) translateZ(${lit && hovered === i ? String(HOVER_LIFT) : '0'}px)`,
-        );
-        set(parts.link, 'transition', '');
-        set(parts.link, 'box-shadow', '');
-        set(parts.link, 'border-radius', '');
-      }
-      parts.item.classList.toggle('lit', lit);
-      if (parts.cartel) {
-        const cartel = cartelPlace(place, look, view);
-        // Brought forward, out of reach of the turned card: in the same 3D scene, the card and its shadow would
-        // otherwise cut through the cartel, half of the shadow drawn over the text. Placed and scaled back so that
-        // the perspective shows it where and how big it was.
-        const back = (view.perspective - CARTEL_Z) / view.perspective;
-        const x = view.vpX + (cartel.x - view.vpX) * back;
-        const y = view.vpY + (cartel.y - view.vpY) * back;
-        set(parts.cartel, 'translate', `${x.toFixed(1)}px ${y.toFixed(1)}px ${String(CARTEL_Z)}px`);
-        set(parts.cartel, 'scale', back.toFixed(4));
-        set(parts.cartel, '--cartel-width', `${cartel.width.toFixed(1)}px`);
-      }
-    });
+    // The cards on their ring, and the cartel of the one in front.
+    const held = drawShowcase(view, depth, sway, time, floatRest, k, diving, others);
 
-    // The small worlds.
+    // The small worlds give way to the ring's own stellar bodies around its stop.
+    const worldsK = smoothstep(0.15, 0.6, Math.abs(SHOWCASE_Z - depth));
     scene.worlds.forEach((world, i) => {
       const parts = worlds[i];
       if (!parts) return;
       const look = worldLook(world, depth);
-      const shown = look.opacity >= 0.01;
+      const shown = look.opacity * worldsK >= 0.01;
       set(parts.body, 'visibility', shown ? 'visible' : 'hidden');
       if (!shown) return;
       set(parts.place, 'transform', cssTransform(world.x, world.y, look.depth, view, sway));
-      set(parts.body, 'opacity', (look.opacity * (0.55 + 0.45 * light.stars) * starsK * others).toFixed(3));
+      set(parts.body, 'opacity', (look.opacity * (0.55 + 0.45 * light.stars) * starsK * others * worldsK).toFixed(3));
       set(parts.body, 'filter', blurFilter(look.blur));
       const s = options.still ? 0 : swing(time, world.floatDuration, world.floatDelay);
       set(parts.body, 'translate', `${(4 * s).toFixed(2)}px ${(-3 * s).toFixed(2)}px`);
     });
 
-    // The planet recedes to a point of light, drifting toward the vanishing point.
-    const planetState = planetLook(depth, light.sky, arrival);
-    const sP = planetState.scale;
-    const mid = tiltOn
-      ? { x: pointer.pointer.x * 14 * (1 - sP) * swing0, y: pointer.pointer.y * 8 * (1 - sP) * swing0 }
-      : { x: 0, y: 0 };
-    const dx = planetRest.x * (sP - 1) + mid.x + sway.dx;
-    const dy = planetRest.y * (sP - 1) + mid.y + sway.dy;
+    // The planet: from the opening, it comes to the ring's centre, sharp all the way (see `ringApproach`); past the
+    // ring, it recedes with it to a point of light, drifting toward the vanishing point.
+    const approach = ringApproach(depth, view, sway);
+    let sP: number;
+    let dx: number;
+    let dy: number;
+    let blurPlanet = 0;
+    if (approach) {
+      sP = approach.sP;
+      dx = approach.x - view.vpX - planetRest.x;
+      dy = approach.y - view.vpY - planetRest.y;
+    } else {
+      const past = depth - SHOWCASE_Z;
+      const at = projectCss(held.x, held.y, -past, view, sway);
+      sP = (held.diameter / Math.max(1, planetSize)) * at.scale;
+      dx = at.x - view.vpX - planetRest.x;
+      dy = at.y - view.vpY - planetRest.y;
+      blurPlanet = 12 * smoothstep(0.1, 0.8, past);
+    }
+    const planetState = { ...planetLook(Math.pow(sP, -1 / 1.3) - 1, light.sky, arrival), scale: sP, blur: blurPlanet };
     const group = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) rotate(${sway.roll.toFixed(3)}deg)`;
     if (decorGroup) set(decorGroup, 'transform', `${group} scale(${sP.toFixed(4)})`);
     if (decor) set(decor, 'opacity', (planetState.decorOpacity * others).toFixed(3));
@@ -904,11 +1086,30 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(glow, 'opacity', (planetState.glowOpacity * others).toFixed(3));
     }
     drawPlanet(now, u, planetState.blur, moment);
+    {
+      const relative = SHOWCASE_Z - depth;
+      const ring = projectCss(held.x, held.y, 0, view, sway);
+      // The planet's disc hides the back of the ring: as drawn at the stop on the way there, where it is past it.
+      const disc = approach
+        ? { x: ring.x, y: ring.y, r: held.diameter / 2 }
+        : { x: view.vpX + planetRest.x + dx, y: view.vpY + planetRest.y + dy, r: (planetSize * sP) / 2 };
+      showcase.draw({
+        view,
+        sway,
+        shift: approach ? 0 : Math.min(relative, 0.72),
+        presence:
+          (approach ? smoothstep(0.4, 0.95, approach.t) : 1 - smoothstep(0.08, 0.45, Math.abs(relative))) * others,
+        zoom: approach ? { k: approach.zoom, x: approach.ox, y: approach.oy } : null,
+        time,
+        planet: disc,
+      });
+    }
     // The office loads from the first project on.
     if (u >= (anchors[1] ?? 0) - 0.01 && html.dataset.office !== 'live') html.dataset.office = 'near';
 
     // The opening's text stays, then fades out rising; the call to action leaves at the first move.
-    const fade = introFade(depth);
+    // It is gone before the ring's cards come into view.
+    const fade = smoothstep(0.04, 0.36, depth / SHOWCASE_Z);
     if (intro) {
       set(intro, 'opacity', ((1 - fade) * others).toFixed(3));
       set(intro, 'transform', `translateY(${(-16 * fade).toFixed(1)}px)`);
@@ -994,7 +1195,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   const OFFICE_EARLY_DELAY = 2500;
   let ambientAt = 0;
   // Not ready by the middle of the journey, its layers get ready too.
-  const OFFICE_WARM = anchors[5] ?? 0.5;
+  const OFFICE_WARM = SHOWCASE_AT;
   // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
   const officeMode = new URLSearchParams(location.search).get('office');
   let officeView: OfficeView | null = null;
@@ -1267,8 +1468,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     const frame = lastFrame > 0 ? now - lastFrame : 0;
     const elapsed = delta >= 64 && lastFrame > 0 ? Math.min(250, frame) : delta;
     lastFrame = now;
-    const onProjects = current >= (anchors[1] ?? 0) && current <= LAST_PROJECT;
-    if (frame > 0 && onProjects && !hold && (glide || current !== target)) {
+    // The way to the ring and the ring itself, while the camera moves or the ring turns.
+    const onProjects = current > 0 && current <= LAST_PROJECT + 1 / range;
+    const moving = glide !== null || current !== target || !showcase.settled();
+    if (frame > 0 && onProjects && !hold && moving) {
       const verdict = journeySampler?.add(frame);
       if (verdict === 'slow') {
         // Kept too slow: a scene still being prepared may be the cause, and gets its pause first.
@@ -1281,6 +1484,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       }
       if (lagSampler?.add(frame) === 'slow' && preparing() && !lagHeld) lagDue = true;
     }
+    // A visitor heading for the contact needs the office now, before the camera leaves the ring: one long frame may
+    // carry it past.
+    if (target > LAST_PROJECT && !officeView && !officeFailed) loadOffice();
     if (hold) {
       const waited = now - hold.start;
       const waiting = hold.reason === 'arrival' ? officeComing() : preparing();
@@ -1304,11 +1510,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     }
     if (liteDue && !glide && current === target && !hold) {
       liteDue = false;
-      options.onLite?.(anchorFragment.get(nearestAnchor(window.scrollY, positions)) ?? null);
+      options.onLite?.(here());
       return;
     }
     pointer.update(delta);
     followCamera(elapsed);
+    if (showcase.update(elapsed)) redraw = true;
     const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
     // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds.
     if (atRest && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
@@ -1317,20 +1524,41 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     draw(now);
   });
 
+  /** The fragment of the anchor nearest the scroll: on the ring, the project in front once it turned. */
+  function here(): string | null {
+    const index = nearestAnchor(window.scrollY, positions);
+    const selected = showcase.selected();
+    if (index === 1 && selected > 0) return cards[selected]?.item.id ?? null;
+    return anchorFragment.get(index) ?? null;
+  }
+
+  /** The card of project `id`, if it is one. */
+  const cardOf = (id: string): number | undefined => cardIndex.get(id);
+
   setJourney({
     has: (id) => fragmentAnchor.has(id),
-    here: () => anchorFragment.get(nearestAnchor(window.scrollY, positions)) ?? null,
+    here,
     isAt: (id) => {
       const index = fragmentAnchor.get(id);
+      const card = cardIndex.get(id);
+      if (card !== undefined && (showcase.selected() !== card || !showcase.settled())) return false;
       return index !== undefined && anchorAt(scrolled, positions) === index && current === target;
     },
     jumpTo: (id) => {
       const index = fragmentAnchor.get(id);
+      const card = cardIndex.get(id);
+      if (card !== undefined) showcase.select(card, true);
       if (index !== undefined) jumpTo(index);
     },
     glideTo,
+    turn: (way) => {
+      showcase.step(way);
+      redraw = true;
+    },
+    turned: () => showcase.settled(),
     dive: (id) => {
-      const index = fragmentAnchor.get(id);
+      const card = cardOf(id);
+      const index = card === undefined ? undefined : card + 1;
       const parts = index === undefined ? undefined : cards[index - 1];
       if (index === undefined || !parts || dive) return null;
       const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
@@ -1345,7 +1573,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       });
     },
     undive: (id) => {
-      const index = fragmentAnchor.get(id);
+      const card = cardOf(id);
+      const index = card === undefined ? undefined : card + 1;
       const parts = index === undefined ? undefined : cards[index - 1];
       if (index === undefined || !parts) return null;
       const radius = parseFloat(getComputedStyle(parts.link).borderTopLeftRadius) || 0;
@@ -1381,6 +1610,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     root.removeEventListener('click', onClick, true);
     root.removeEventListener('pointerover', onOver);
     setJourney(null);
+    showcase.stop();
     stars?.dispose();
     renderer?.dispose();
     freePlanet();

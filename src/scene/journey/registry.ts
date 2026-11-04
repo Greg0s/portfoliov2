@@ -14,6 +14,10 @@ export interface JourneyHandle {
   jumpTo(id: string): void;
   /** Glides to the anchor at `index` (0 is the opening, the last one the contact), as a key press would. */
   glideTo(index: number): void;
+  /** Turns the ring of projects by `way` cards (1 the next one, -1 the previous one), as an arrow would. */
+  turn(way: number): void;
+  /** Whether the ring of projects has stopped turning. */
+  turned(): boolean;
   /**
    * The dive (journey spec §6): the card of project `id` flies onto the case study's opening media, full width and
    * flush with the top, while the rest fades out. Resolves once it is there, where it stays; null if `id` is no project.
