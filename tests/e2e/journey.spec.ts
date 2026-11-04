@@ -42,6 +42,50 @@ test('the journey starts on the opening and logs no error', async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+test('a visit starts in the dark, then the planet, the name, the job, the header and the call show', async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto('./');
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-arrival', /^(waiting|playing)$/);
+  await expect(page.locator('.night')).toBeVisible();
+  // Once played, the opening is back to its own text and styles.
+  await expect(html).not.toHaveAttribute('data-arrival', /.*/, { timeout: 10_000 });
+  await expect(page.locator('.night')).toBeHidden();
+  const name = page.getByRole('heading', { level: 1, name: 'Grégoire Tinnes' });
+  await expect(name).toBeVisible();
+  expect(await name.evaluate((element) => element.innerHTML)).toBe('Grégoire Tinnes');
+  await expect(page.locator('.opening .job')).toHaveText('Développeur créatif');
+  const opacity = (selector: string): Promise<string> =>
+    page
+      .locator(selector)
+      .first()
+      .evaluate((element) => getComputedStyle(element).opacity);
+  expect(await opacity('.header')).toBe('1');
+  expect(await opacity('.opening .planet-image')).toBe('1');
+  expect(await opacity('.opening .cta-text')).toBe('0.8');
+  expect(errors).toEqual([]);
+});
+
+test('a gesture plays the rest of the arrival faster', async ({ page }) => {
+  await page.goto('./');
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-arrival', 'playing');
+  await page.mouse.click(20, 450);
+  // Six times faster: what is left of its 4.6 s plays in less than 0.8 s.
+  await expect(html).not.toHaveAttribute('data-arrival', /.*/, { timeout: 1500 });
+});
+
+test('the arrival leaves out a visit that starts elsewhere than the opening, and ?still=1', async ({ page }) => {
+  for (const path of ['./#contact', './?still=1', './#la-fabrique-des-mondes']) {
+    await page.goto(path);
+    await expect(page.locator('html')).toHaveAttribute('data-journey', 'on');
+    await expect(page.locator('html')).not.toHaveAttribute('data-arrival', /.*/);
+    await expect(page.locator('.night')).toBeHidden();
+  }
+});
+
 test('before its scripts run, the home shows the opening alone', async ({ page }) => {
   await page.route(/\/_astro\/.*\.js$/, (route) => route.abort());
   await page.goto('./');
@@ -187,8 +231,7 @@ test('with reduced motion, the home stays a still list', async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
   await expect(page.locator('.scene-canvas')).toHaveCount(0);
-  // Only the job title changes, in a fade (main spec §5.5): it is left out of the pictures.
-  const shot = async (): Promise<Buffer> => page.screenshot({ mask: [page.locator('[data-jobs]')] });
+  const shot = async (): Promise<Buffer> => page.screenshot();
   await page.waitForTimeout(3000);
   const before = await shot();
   await page.waitForTimeout(1000);
@@ -202,7 +245,7 @@ test('?lite=1 keeps the list, for slow machines', async ({ page }) => {
   await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(LAST);
 });
 
-test('a journey kept under 25 frames per second over the projects gives way to the list, on the project shown', async ({
+test('a journey kept under 20 frames per second over the projects gives way to the list, on the project shown', async ({
   page,
 }) => {
   test.slow();
@@ -214,7 +257,7 @@ test('a journey kept under 25 frames per second over the projects gives way to t
     window.requestAnimationFrame = (callback) => raf(() => setTimeout(() => raf(callback), 54));
   });
   await openJourney(page, './?lite=auto#lyrix');
-  for (let i = 0; i < 6 && (await page.locator('html').getAttribute('data-journey')) === 'on'; i += 1) {
+  for (let i = 0; i < 12 && (await page.locator('html').getAttribute('data-journey')) === 'on'; i += 1) {
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(1500);
   }
@@ -275,7 +318,7 @@ test('?mesure=1 plays the journey and gives its frame rates', async ({ page, isM
   await expectAnchor(page, CONTACT);
 });
 
-test('nothing of the office loads before the first project', async ({ page }) => {
+test('nothing of the office loads while the opening plays its arrival', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
   await openJourney(page);
@@ -343,6 +386,23 @@ test('?office=live arrives at the seat in the live office, and logs no error', a
   await expect(page.locator('.office-canvas')).toHaveCount(1);
   await expect(page.locator('.office-layers')).toHaveCount(0);
   await expect(page.locator('.office-screen')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('the arrival waits a few seconds at most for the live office, showing that it loads', async ({ page }) => {
+  test.slow();
+  const errors = trackErrors(page);
+  // Forced live, the office takes far longer than that to get ready without a GPU: the wait runs to its end.
+  await openJourney(page, './?office=live&pause=1');
+  const home = page.locator('[data-journey-root]');
+  await page.keyboard.press('End');
+  await expect(home).toHaveAttribute('data-loading', 'arrival', { timeout: 20_000 });
+  await expect(page.locator('.loading')).toHaveCSS('opacity', '1');
+  const held = Date.now();
+  await expect(home).not.toHaveAttribute('data-loading', { timeout: 10_000 });
+  expect(Date.now() - held).toBeLessThan(4500);
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('html')).toHaveAttribute('data-office-arrival', /.+/);
   expect(errors).toEqual([]);
 });
 

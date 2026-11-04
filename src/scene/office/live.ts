@@ -39,7 +39,7 @@ import { FRAMINGS, makeCamera, type Framing } from './framings';
 import { createOffice, type Office } from './office';
 import type { TownGeometry } from './town';
 import type { Moment } from '../time';
-import { cappedPixelRatio } from '../renderer';
+import { scenePixelRatio } from '../renderer';
 import { atRest, watchMoves } from '../rest';
 
 export interface PictureSource {
@@ -241,7 +241,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   renderer.debug.checkShaderErrors = import.meta.env.DEV;
   // The drawing buffer, made at its size in a step of its own: resizing it later, with the view, held the page
   // (a quarter of a second on a laptop, without a graphics card).
-  const pixelRatio = (): number => cappedPixelRatio(window.devicePixelRatio || 1, framing === 'mobile');
+  const pixelRatio = (): number => scenePixelRatio(window.devicePixelRatio || 1, framing === 'mobile');
   renderer.setPixelRatio(pixelRatio());
   renderer.setSize(options.size.width, options.size.height, false);
   await breathe('canvas');

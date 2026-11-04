@@ -283,6 +283,12 @@ export function startMeasure(root: HTMLElement): () => void {
         officeReadyMs: markAt('journey:office-ready'),
       },
       slow: slowScenes(),
+      // The loading pauses (`lag`: the moves lagged while a scene was being prepared; `arrival`: the live office was
+      // not ready yet), when they began, from the page's start, and how long they lasted.
+      holds: performance
+        .getEntriesByType('measure')
+        .filter((entry) => entry.name.startsWith('journey:hold-'))
+        .map((entry) => ({ reason: entry.name.slice(13), atMs: round(entry.startTime), ms: round(entry.duration) })),
       // The worst ones, in the order they came.
       hitches: [...hitches]
         .sort((a, b) => b.ms - a.ms)

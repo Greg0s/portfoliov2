@@ -1,5 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { blurFilter } from '../../src/scene/journey/blur';
 import {
   anchors,
   cameraDepth,
@@ -253,5 +254,16 @@ describe('anchor to anchor', () => {
     expect(ease(1)).toBeCloseTo(1, 12);
     for (let t = 0; t < 1; t += 0.01) expect(ease(t)).toBeLessThanOrEqual(1);
     expect((ease(0.001) - ease(0)) / 0.001).toBeCloseTo(2, 1);
+  });
+});
+
+describe('the blur of the cards', () => {
+  it('goes by steps the eye cannot tell apart, and none when sharp', () => {
+    expect(blurFilter(0.03)).toBe('none');
+    expect(blurFilter(0.52)).toBe('blur(0.50px)');
+    expect(blurFilter(0.54)).toBe('blur(0.50px)');
+    expect(blurFilter(2.6)).toBe('blur(2.50px)');
+    expect(blurFilter(6.3)).toBe('blur(6.50px)');
+    expect(blurFilter(17.4)).toBe('blur(17.00px)');
   });
 });

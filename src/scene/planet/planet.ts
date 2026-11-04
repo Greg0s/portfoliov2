@@ -24,7 +24,7 @@ import {
 import { addLights, CENTER, mixMoments } from './lights';
 import { isMesh, loadPlanetModel, meshIn, type PlanetModel } from './load';
 import { createWind, type WindState } from './wind';
-import { cappedPixelRatio } from '../renderer';
+import { scenePixelRatio } from '../renderer';
 import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
 import type { Arrays } from '../workers/relief';
@@ -327,7 +327,7 @@ async function assemble(
   let fade: { from: Moment; to: Moment; elapsed: number } | null = null;
 
   const resize = (size: number, mobile: boolean): void => {
-    renderer.setPixelRatio(cappedPixelRatio(window.devicePixelRatio || 1, mobile));
+    renderer.setPixelRatio(scenePixelRatio(window.devicePixelRatio || 1, mobile));
     renderer.setSize(size, size, false);
   };
   resize(options.size, options.mobile);

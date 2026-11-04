@@ -30,6 +30,10 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
     <div class="cursor" data-cursor aria-hidden="true">
       <span>{label('card.see')}</span>
     </div>
+    <div class="loading" aria-hidden="true">
+      <span class="loading-ring"></span>
+      <span>{label('journey.loading')}</span>
+    </div>
   </div>
   <div class="track" data-track aria-hidden="true" style={`--screens: ${String(SCREENS)}`}></div>
 </div>
@@ -46,7 +50,8 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
   }
 
   .track,
-  .cursor {
+  .cursor,
+  .loading {
     display: none;
   }
 
@@ -139,5 +144,50 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
   :global(html[data-journey='on']) .cursor:global(.on) {
     opacity: 1;
     scale: 1;
+  }
+
+  /* The loading pause (`journey.ts`): while a scene finishes getting ready, for a few seconds at most. It shows only
+     past its first moments, so that a short pause never flashes. */
+  :global(html[data-journey='on']) .loading {
+    position: absolute;
+    inset: auto 0 calc(40px + env(safe-area-inset-bottom));
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--color-muted);
+    font-family: var(--font-display);
+    font-size: var(--size-label);
+    font-weight: 500;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  :global(html[data-journey='on']) .home[data-loading] .loading {
+    opacity: 1;
+    transition-delay: 250ms;
+  }
+
+  .loading-ring {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--color-line-strong);
+    border-top-color: var(--color-text);
+    border-radius: 50%;
+    animation: loading-turn 900ms linear infinite;
+  }
+
+  .home:not([data-loading]) .loading-ring {
+    animation-play-state: paused;
+  }
+
+  @keyframes loading-turn {
+    to {
+      rotate: 1turn;
+    }
   }
 </style>
