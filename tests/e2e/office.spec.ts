@@ -179,23 +179,26 @@ test.describe('on phones', () => {
     await expect(page.locator('.office-screen .desktop')).not.toHaveAttribute('data-bin-live');
   });
 
-  test('the screen plays the pages by itself, the email left out, then rests on the desktop', async ({ page }) => {
-    test.setTimeout(60_000);
+  test('a tap on the screen opens the pages in turn, the next tap closes, the email left out', async ({ page }) => {
     const errors = trackErrors(page);
     const requested = captures(page);
     await openOffice(page);
     const desktop = page.locator('.office-screen .desktop');
     const active = desktop.locator('[data-tab][data-active]');
-    // 2.5 s after the camera rests, Firefox opens; then a page every 4 s.
-    await expect(desktop).toHaveAttribute('data-open', 'firefox', { timeout: 5000 });
-    for (const tab of ['LinkedIn', 'GitHub', 'CV', 'Instagram']) {
-      await expect(active).toHaveAttribute('data-tab', tab, { timeout: 5000 });
+    // Away from the taskbar's clock and the Recycle Bin: the middle of the screen.
+    const tapScreen = async (): Promise<void> => {
+      const box = await page.locator('.office-screen').boundingBox();
+      if (!box) throw new Error('no screen');
+      await page.touchscreen.tap(box.x + box.width * 0.5, box.y + box.height * 0.45);
+    };
+    for (const tab of ['LinkedIn', 'GitHub', 'CV', 'Instagram', 'LinkedIn']) {
+      await tapScreen();
+      await expect(desktop).toHaveAttribute('data-open', 'firefox');
+      await expect(active).toHaveAttribute('data-tab', tab);
+      await tapScreen();
+      await expect(desktop).toHaveAttribute('data-open', '');
     }
-    // Back on the desktop for 6 s, never through the mail app, then again.
-    await expect(desktop).toHaveAttribute('data-open', '', { timeout: 5000 });
     await expect(desktop).not.toHaveAttribute('data-mail-seen');
-    await expect(desktop).toHaveAttribute('data-open', 'firefox', { timeout: 7000 });
-    await expect(active).toHaveAttribute('data-tab', 'LinkedIn');
     expect(requested.some((url) => url.includes('instagram'))).toBe(true);
     expect(errors).toEqual([]);
   });

@@ -50,10 +50,10 @@ describe('the wind', () => {
     expect(wind.rate()).toBe(1);
   });
 
-  it('sways the fox from its pose: the tail ±4°, the ears ±3°, the left one behind the right one', () => {
+  it('sways the fox from its pose: the tail ±8°, the ears ±3°, the left one behind the right one', () => {
     expect(foxAngles(0).tailDeg).toBeCloseTo(0);
     expect(foxAngles(0).earsDeg[1]).toBeCloseTo(0);
-    expect(foxAngles(1050).tailDeg).toBeCloseTo(4);
+    expect(foxAngles(1050).tailDeg).toBeCloseTo(8);
     expect(foxAngles(650).earsDeg[1]).toBeCloseTo(3);
     expect(foxAngles(650).earsDeg[0]).toBeLessThan(3);
     const state = createWind(() => 0.5).advance(1000);

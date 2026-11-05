@@ -6,10 +6,9 @@
  * windows shrink back 0.6 s after the mouse leaves the links. The Recycle Bin asks whether to empty itself, hands
  * « Oui » over to the office (which goes dark and draws new pictures, and a new wallpaper), then owns up that nothing
  * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones, with no mouse to hover the links,
- * the screen plays the pages by itself (Grégoire's wish, 5 November 2026): 2.5 s after the camera comes to rest,
- * Firefox opens on LinkedIn, then shows GitHub, the CV and Instagram, 4 s each, scrolling from 0.6 s; then it shrinks
- * back, the desktop stays alone 6 s, and it starts again. Each capture loads during the page before; with Save-Data on, nothing plays. The taskbar's
- * clock shows the visitor's time.
+ * a tap on the screen opens the pages in turn (Grégoire's choice, 5 November 2026): the first tap opens LinkedIn as a
+ * hover would, the next one shrinks Firefox back, the third opens GitHub, and so on through the CV and Instagram, then
+ * LinkedIn again; the email is left out. The taskbar's clock shows the visitor's time.
  */
 
 /** The links' pages; the email opens the mail app. */
@@ -21,12 +20,8 @@ const VIEW_H = 670;
 const SCROLL_AFTER = 1100;
 const CLOSE_AFTER = 600;
 const DONE_AFTER = 450;
-/** The phones' tour of the pages (the email left out). */
-export const TOUR: readonly ScreenPage[] = ['LinkedIn', 'GitHub', 'CV', 'Instagram'];
-export const TOUR_START = 2500;
-export const TOUR_PAGE = 4000;
-export const TOUR_REST = 6000;
-const TOUR_SCROLL_AFTER = 600;
+/** The pages a tap on the phones' screen opens in turn (the email left out). */
+export const TAP_PAGES: readonly ScreenPage[] = ['LinkedIn', 'GitHub', 'CV', 'Instagram'];
 
 export interface ScreenOptions {
   /** Phones: the desktop alone, the Recycle Bin inactive. */
@@ -161,30 +156,25 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     links.addEventListener('focusout', leave);
   }
 
-  // ---- The phones' tour: each page in turn, then the desktop alone, while the camera rests at the desk.
-  // Not when the visitor asked to save data: the captures weigh about 600 kB.
-  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
-  const touring = options.mobile && !options.still && !options.reduce && !saveData;
-  let tourTimer = 0;
-  const tour = (step: number): void => {
-    const page = TOUR[step];
-    if (page === undefined) {
+  // ---- The phones' taps on the screen: a page, then the desktop, then the next page.
+  let nextTap = 0;
+  const tap = (): void => {
+    if (!live) return;
+    if (open) {
       show('');
-      tourTimer = window.setTimeout(() => {
-        tour(0);
-      }, TOUR_REST);
+      // The next page's capture loads while the desktop shows.
+      const next = pages.get(TAP_PAGES[nextTap] ?? '');
+      if (next) load(next);
       return;
     }
-    show(page, TOUR_SCROLL_AFTER);
-    const next = pages.get(TOUR[step + 1] ?? '');
-    if (next) load(next);
-    tourTimer = window.setTimeout(() => {
-      tour(step + 1);
-    }, TOUR_PAGE);
+    const page = TAP_PAGES[nextTap] ?? 'LinkedIn';
+    nextTap = (nextTap + 1) % TAP_PAGES.length;
+    show(page);
   };
-  const stopTour = (): void => {
-    window.clearTimeout(tourTimer);
-  };
+  if (options.mobile) {
+    element.addEventListener('click', tap);
+    element.style.cursor = 'pointer';
+  }
 
   // ---- The Recycle Bin.
   let dialog: '' | 'ask' | 'done' = '';
@@ -235,14 +225,8 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     setLive(next) {
       if (next === live) return;
       live = next;
-      stopTour();
-      if (live && touring) {
-        const first = pages.get(TOUR[0] ?? '');
-        if (first) load(first);
-        tourTimer = window.setTimeout(() => {
-          tour(0);
-        }, TOUR_START);
-      }
+      // The screen takes the phones' taps only once the camera is at rest.
+      if (options.mobile) element.style.pointerEvents = live ? 'auto' : 'none';
       if (!live) {
         show('');
         if (dialog) setDialog('');
@@ -269,7 +253,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
       window.clearTimeout(scrollTimer);
       window.clearTimeout(closeTimer);
       window.clearTimeout(doneTimer);
-      stopTour();
+      element.removeEventListener('click', tap);
       window.clearInterval(clockTimer);
       links.removeEventListener('pointerover', enter);
       links.removeEventListener('pointerout', leave);

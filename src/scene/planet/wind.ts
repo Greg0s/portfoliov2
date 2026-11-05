@@ -2,7 +2,7 @@
  * The wind on the planet (main spec §6.3, as validated on the mockup): a wave runs through the scarf's ribbon from the
  * neck to its free end in 6 s, the rose sways from −1.2° to 2.4° and back in 3 s each way, and every 7 to 14 s a gust
  * quickens both, 1.6 times, for 2.2 s. The gust eases in and out over a few hundred ms, so nothing jolts. The fox
- * takes the same wind (Grégoire's wish, 5 November 2026): its tail sways ±4° in 4.2 s loops, and its ears ±3° in 2.6 s
+ * takes the same wind (Grégoire's wish, 5 November 2026): its tail sways ±8° in 4.2 s loops (±4° at first, made more visible on 5 November), and its ears ±3° in 2.6 s
  * loops, the left one a little behind the right, so that they never move as one.
  */
 
@@ -12,7 +12,7 @@ const GUST_RATE = 1.6;
 const GUST_LENGTH = 2200;
 const GUST_EASE = 400;
 const TAIL_LOOP = 4200;
-const TAIL_SWING = 4;
+const TAIL_SWING = 8;
 const EAR_LOOP = 2600;
 const EAR_SWING = 3;
 /** How far behind the right ear the left one moves, in loops. */
