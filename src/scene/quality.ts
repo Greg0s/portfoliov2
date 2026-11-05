@@ -100,11 +100,23 @@ export function markSlow(scene: string): void {
   }
 }
 
+/** What `drawsInSoftware()` found, kept for the page's life: the device does not change. */
+let software: boolean | null = null;
+
+/**
+ * Notes what draws a WebGL 2 context the page already made (the journey's stars): `drawsInSoftware()` then answers
+ * from it, without making a context of its own, which takes long (seconds on a page drawn in software).
+ */
+export function noteContext(gl: WebGL2RenderingContext): void {
+  software ??= isSoftwareRenderer(gl);
+}
+
 /** Whether this device draws WebGL 2 in software, or not at all: a live scene would hold the page. */
 export function drawsInSoftware(): boolean {
+  if (software !== null) return software;
   const probe = document.createElement('canvas').getContext('webgl2');
-  if (!probe) return true;
-  const software = isSoftwareRenderer(probe);
+  if (!probe) return (software = true);
+  software = isSoftwareRenderer(probe);
   probe.getExtension('WEBGL_lose_context')?.loseContext();
   return software;
 }

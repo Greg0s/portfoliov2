@@ -6,6 +6,7 @@
 import { PerspectiveCamera, Scene, ShaderChunk, WebGLRenderer } from 'three';
 import { cameraPosition, projectionMatrix } from './journey/camera3d';
 import type { View } from './journey/layout';
+import { noteContext } from './quality';
 
 // A first visit, again and again (`?froid=1`, and the fast measurement run): the browser keeps the programs it linked
 // in a cache of its own, which makes every later visit fast. A comment that changes at each visit, in the code every
@@ -73,6 +74,7 @@ export function createRenderer(container: HTMLElement, view: View): Renderer {
 
   const gl = new WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'high-performance' });
   gl.setClearColor(0x000000, 0);
+  noteContext(gl.getContext() as WebGL2RenderingContext);
   const scene = new Scene();
   // The camera's projection comes from the journey's CSS camera; Three.js never recomputes it on its own.
   const camera = new PerspectiveCamera();

@@ -1,7 +1,7 @@
 /**
  * The ring of projects (see `ring.ts`): the one stop of the journey where all the projects wait together. It keeps
  * the selection (which project is in front, turning from one to the next on a soft spring), poses the cards for the
- * journey, which places them in its 3D scene, draws the ring's dust and stellar bodies on a canvas behind the cards,
+ * journey, which places them in its 3D scene, draws the ring's dust and small planets on a canvas behind the cards,
  * and shows the arrows with the counter between them.
  */
 import { projectCss, type Sway } from '../journey/camera';
@@ -54,7 +54,8 @@ export interface Showcase {
   release(way: number): void;
   /** Turns the ring on by `delta` ms; true while it turns. */
   update(delta: number): boolean;
-  pose(i: number, view: View): Pose;
+  /** Card `i`'s pose; with `at`, for the ring turned to the selection `at` rather than where it is. */
+  pose(i: number, view: View, at?: number): Pose;
   ring(view: View): Ring;
   draw(frame: Frame): void;
   resize(view: View): void;
@@ -62,7 +63,7 @@ export interface Showcase {
 }
 
 interface Body {
-  kind: 'orb' | 'ringed' | 'star' | 'moon';
+  kind: 'orb' | 'ringed' | 'moon';
   theta: number;
   r: number;
   dy: number;
@@ -184,7 +185,10 @@ export function createShowcase(
   // ---------- The sky ----------
 
   let ratio = 1;
+  /** Whether both canvases are cleared and hidden, away from the ring. */
+  let blank = false;
   function resize(view: View): void {
+    blank = false;
     ratio = Math.min(2, window.devicePixelRatio || 1);
     for (const element of [canvas, farCanvas]) {
       element.width = Math.round(view.width * ratio);
@@ -206,15 +210,17 @@ export function createShowcase(
       alpha: 0.25 + rand() * 0.65,
     };
   });
-  const kinds: Body['kind'][] = ['orb', 'ringed', 'star', 'moon', 'orb', 'star', 'ringed', 'orb'];
+  // The five-pointed stars Grégoire took out (4 November 2026) leave their places empty: the other bodies stay where
+  // they were, drawn from the same random sequence.
+  const kinds: (Body['kind'] | null)[] = ['orb', 'ringed', null, 'moon', 'orb', null, 'ringed', 'orb'];
   const bodies: Body[] = Array.from({ length: n * 2 }, (_, k) => ({
-    kind: kinds[k % kinds.length] ?? 'orb',
+    kind: kinds[k % kinds.length] ?? null,
     theta: (2 * Math.PI * (Math.floor(k / 2) + (k % 2 ? 0.36 : 0.62))) / n + (rand() - 0.5) * 0.08,
     r: 1 + (rand() - 0.5) * 0.16,
     dy: (rand() - 0.5) * 50,
     size: 6 + rand() * 12,
     alpha: 0.55 + rand() * 0.35,
-  }));
+  })).flatMap((item) => (item.kind ? [{ ...item, kind: item.kind }] : []));
 
   function body(
     ctx: CanvasRenderingContext2D,
@@ -234,17 +240,7 @@ export function createShowcase(
     ctx.beginPath();
     ctx.arc(x, y, r * 3, 0, Math.PI * 2);
     ctx.fill();
-    if (kind === 'star') {
-      ctx.fillStyle = '#f3f3f1';
-      ctx.beginPath();
-      for (let k = 0; k < 10; k += 1) {
-        const a = -Math.PI / 2 + (k * Math.PI) / 5;
-        const rr = (k % 2 ? 0.42 : 1) * r;
-        ctx.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a));
-      }
-      ctx.closePath();
-      ctx.fill();
-    } else {
+    {
       const disc = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
       disc.addColorStop(0, '#ffffff');
       disc.addColorStop(1, 'rgb(200 200 196)');
@@ -377,23 +373,39 @@ export function createShowcase(
       }
       return true;
     },
-    pose: (i, view) => ringPose(i, turn.x, n, view),
+    pose: (i, view, at = turn.x) => ringPose(i, at, n, view),
     ring: ringFor,
     draw(frame) {
       if (!context) return;
       const ctx = context;
       const far = farContext ?? ctx;
+      const shown = frame.presence >= 0.004;
+      const opacity = shown ? frame.presence.toFixed(3) : '0';
+      if (canvas.style.opacity !== opacity) {
+        canvas.style.opacity = opacity;
+        farCanvas.style.opacity = opacity;
+      }
+      const uiOpacity = smooth(0.6, 0.95, frame.presence).toFixed(3);
+      if (ui.style.opacity !== uiOpacity) ui.style.opacity = uiOpacity;
+      const uiVisibility = frame.presence > 0.01 ? 'visible' : 'hidden';
+      if (ui.style.visibility !== uiVisibility) ui.style.visibility = uiVisibility;
+      // Only the arrows take the pointer: the rest of the layer lets it through to the cards.
+      const pointer = frame.presence > 0.9 ? 'auto' : 'none';
+      if (arrows && arrows.style.pointerEvents !== pointer) arrows.style.pointerEvents = pointer;
+      // Away from the ring (the opening, the office), its two screen-sized canvases are cleared once, then left alone
+      // and out of the page's drawing, rather than cleared at every frame.
+      if (!shown && blank) return;
       for (const each of [ctx, far]) {
         each.setTransform(1, 0, 0, 1, 0, 0);
         each.clearRect(0, 0, canvas.width, canvas.height);
       }
-      canvas.style.opacity = frame.presence.toFixed(3);
-      farCanvas.style.opacity = canvas.style.opacity;
-      ui.style.opacity = smooth(0.6, 0.95, frame.presence).toFixed(3);
-      ui.style.visibility = frame.presence > 0.01 ? 'visible' : 'hidden';
-      // Only the arrows take the pointer: the rest of the layer lets it through to the cards.
-      if (arrows) arrows.style.pointerEvents = frame.presence > 0.9 ? 'auto' : 'none';
-      if (frame.presence < 0.004) return;
+      blank = !shown;
+      const visibility = shown ? '' : 'hidden';
+      if (canvas.style.visibility !== visibility) {
+        canvas.style.visibility = visibility;
+        farCanvas.style.visibility = visibility;
+      }
+      if (!shown) return;
       const zoom = frame.zoom ?? { k: 1, x: 0, y: 0 };
       for (const each of [ctx, far])
         each.setTransform(ratio * zoom.k, 0, 0, ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
