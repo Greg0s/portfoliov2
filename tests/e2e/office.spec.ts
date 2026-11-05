@@ -157,7 +157,6 @@ test.describe('on phones', () => {
   }) => {
     test.skip(browserName !== 'chromium', 'the clipboard permission is a Chromium one');
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    const requested = captures(page);
     await openOffice(page);
     const email = page.locator('[data-email]').first();
     await email.locator(':scope > a').tap();
@@ -175,9 +174,29 @@ test.describe('on phones', () => {
     await page.locator('.contact').tap({ position: { x: 24, y: (section?.height ?? 600) - 80 } });
     await expect(email).not.toHaveAttribute('data-bubble-open');
 
-    // The links open directly, and no capture of the screen loads.
+    // The links open directly, and the Recycle Bin stays still.
     await expect(page.locator('a[data-screen-page="LinkedIn"]')).toHaveAttribute('href', /linkedin\.com/);
     await expect(page.locator('.office-screen .desktop')).not.toHaveAttribute('data-bin-live');
-    expect(requested).toEqual([]);
+  });
+
+  test('the screen plays the pages by itself, the email left out, then rests on the desktop', async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = trackErrors(page);
+    const requested = captures(page);
+    await openOffice(page);
+    const desktop = page.locator('.office-screen .desktop');
+    const active = desktop.locator('[data-tab][data-active]');
+    // 2.5 s after the camera rests, Firefox opens; then a page every 4 s.
+    await expect(desktop).toHaveAttribute('data-open', 'firefox', { timeout: 5000 });
+    for (const tab of ['LinkedIn', 'GitHub', 'CV', 'Instagram']) {
+      await expect(active).toHaveAttribute('data-tab', tab, { timeout: 5000 });
+    }
+    // Back on the desktop for 6 s, never through the mail app, then again.
+    await expect(desktop).toHaveAttribute('data-open', '', { timeout: 5000 });
+    await expect(desktop).not.toHaveAttribute('data-mail-seen');
+    await expect(desktop).toHaveAttribute('data-open', 'firefox', { timeout: 7000 });
+    await expect(active).toHaveAttribute('data-tab', 'LinkedIn');
+    expect(requested.some((url) => url.includes('instagram'))).toBe(true);
+    expect(errors).toEqual([]);
   });
 });

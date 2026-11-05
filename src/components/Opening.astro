@@ -273,8 +273,10 @@ const images = [
       gap: 8px;
     }
 
+    /* The name on two lines, as on a computer (Grégoire's wish, 5 November 2026): a word per line, a little larger. */
     h1 {
-      font-size: 48px;
+      width: min-content;
+      font-size: clamp(48px, 14vw, 60px);
     }
 
     .cta {

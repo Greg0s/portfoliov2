@@ -1,6 +1,6 @@
 /**
  * The live planet (main spec §6): Grégoire's model, its generated relief and hair, the museum spot of the visitor's
- * moment, the wind in the scarf and the rose. It draws in its own small canvas inside the opening's planet, seen from
+ * moment, the wind in the scarf, the rose and the fox's ears and tail. It draws in its own small canvas inside the opening's planet, seen from
  * above with the prototype's camera, so that it lands exactly on its fallback image and takes the opening's float,
  * recession and blur from the CSS like the image did. The journey draws it while it is sharp enough to be seen
  * (`handoff.ts`).
@@ -23,6 +23,7 @@ import {
 } from 'three';
 import { addLights, CENTER, mixMoments } from './lights';
 import { isMesh, loadPlanetModel, meshIn, type PlanetModel } from './load';
+import { foxWind } from './fox';
 import { createWind, type WindState } from './wind';
 import { scenePixelRatio } from '../renderer';
 import { drawsInSoftware } from '../quality';
@@ -314,6 +315,7 @@ async function assemble(
   await pause('environment');
   const blow = scarfWind(model);
   const sway = roseSway(model);
+  const fox = foxWind(model);
   blow(0, 0);
 
   const camera = new PerspectiveCamera(20, 1, 0.1, 400);
@@ -322,7 +324,7 @@ async function assemble(
   camera.lookAt(CENTER);
 
   const wind = createWind();
-  let windState: WindState = { scarfPhase: 0, roseDeg: 0 };
+  let windState: WindState = { scarfPhase: 0, roseDeg: 0, tailDeg: 0, earsDeg: [0, 0] };
   let moving = 0;
   let fade: { from: Moment; to: Moment; elapsed: number } | null = null;
 
@@ -361,6 +363,7 @@ async function assemble(
         const amount = MathUtils.smoothstep(moving, 0, WIND_RISE);
         blow(windState.scarfPhase, amount);
         sway(windState.roseDeg * amount);
+        fox(windState.tailDeg * amount, [windState.earsDeg[0] * amount, windState.earsDeg[1] * amount]);
       }
       if (fade) {
         fade.elapsed += Math.max(delta, 16);

@@ -5,8 +5,11 @@
  * back. A page left under the mouse scrolls slowly down after 1.1 s, to its end in 5 to 12 s (at most 140 px/s); the
  * windows shrink back 0.6 s after the mouse leaves the links. The Recycle Bin asks whether to empty itself, hands
  * « Oui » over to the office (which goes dark and draws new pictures, and a new wallpaper), then owns up that nothing
- * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones the
- * desktop shows alone, and no capture loads. The taskbar's clock shows the visitor's time.
+ * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones, with no mouse to hover the links,
+ * the screen plays the pages by itself (Grégoire's wish, 5 November 2026): 2.5 s after the camera comes to rest,
+ * Firefox opens on LinkedIn, then shows GitHub, the CV and Instagram, 4 s each, scrolling from 0.6 s; then it shrinks
+ * back, the desktop stays alone 6 s, and it starts again. Each capture loads during the page before; with Save-Data on, nothing plays. The taskbar's
+ * clock shows the visitor's time.
  */
 
 /** The links' pages; the email opens the mail app. */
@@ -18,6 +21,12 @@ const VIEW_H = 670;
 const SCROLL_AFTER = 1100;
 const CLOSE_AFTER = 600;
 const DONE_AFTER = 450;
+/** The phones' tour of the pages (the email left out). */
+export const TOUR: readonly ScreenPage[] = ['LinkedIn', 'GitHub', 'CV', 'Instagram'];
+export const TOUR_START = 2500;
+export const TOUR_PAGE = 4000;
+export const TOUR_REST = 6000;
+const TOUR_SCROLL_AFTER = 600;
 
 export interface ScreenOptions {
   /** Phones: the desktop alone, the Recycle Bin inactive. */
@@ -106,7 +115,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     scroll.style.transform = `translateY(${String(-by)}px)`;
   };
 
-  function show(page: ScreenPage | ''): void {
+  function show(page: ScreenPage | '', scrollAfter = SCROLL_AFTER): void {
     window.clearTimeout(closeTimer);
     if (page === open) return;
     open = page;
@@ -124,7 +133,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     if (!options.still && !options.reduce) {
       scrollTimer = window.setTimeout(() => {
         scrollDown(node);
-      }, SCROLL_AFTER);
+      }, scrollAfter);
     }
   }
 
@@ -151,6 +160,31 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     links.addEventListener('focusin', enter);
     links.addEventListener('focusout', leave);
   }
+
+  // ---- The phones' tour: each page in turn, then the desktop alone, while the camera rests at the desk.
+  // Not when the visitor asked to save data: the captures weigh about 600 kB.
+  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+  const touring = options.mobile && !options.still && !options.reduce && !saveData;
+  let tourTimer = 0;
+  const tour = (step: number): void => {
+    const page = TOUR[step];
+    if (page === undefined) {
+      show('');
+      tourTimer = window.setTimeout(() => {
+        tour(0);
+      }, TOUR_REST);
+      return;
+    }
+    show(page, TOUR_SCROLL_AFTER);
+    const next = pages.get(TOUR[step + 1] ?? '');
+    if (next) load(next);
+    tourTimer = window.setTimeout(() => {
+      tour(step + 1);
+    }, TOUR_PAGE);
+  };
+  const stopTour = (): void => {
+    window.clearTimeout(tourTimer);
+  };
 
   // ---- The Recycle Bin.
   let dialog: '' | 'ask' | 'done' = '';
@@ -201,6 +235,14 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     setLive(next) {
       if (next === live) return;
       live = next;
+      stopTour();
+      if (live && touring) {
+        const first = pages.get(TOUR[0] ?? '');
+        if (first) load(first);
+        tourTimer = window.setTimeout(() => {
+          tour(0);
+        }, TOUR_START);
+      }
       if (!live) {
         show('');
         if (dialog) setDialog('');
@@ -227,6 +269,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
       window.clearTimeout(scrollTimer);
       window.clearTimeout(closeTimer);
       window.clearTimeout(doneTimer);
+      stopTour();
       window.clearInterval(clockTimer);
       links.removeEventListener('pointerover', enter);
       links.removeEventListener('pointerout', leave);

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { HANDOFF_FADE, planetHandoff } from '../../src/scene/planet/handoff';
 import { MOMENT_FADE, mixMoments, momentColors } from '../../src/scene/planet/lights';
-import { createWind, roseAngle, SCARF_LOOP } from '../../src/scene/planet/wind';
+import { createWind, foxAngles, roseAngle, SCARF_LOOP } from '../../src/scene/planet/wind';
 import { frameSampler, JOURNEY_MIN_FPS, SLOW_WINDOWS, WINDOW_TIME, type FrameSampler } from '../../src/scene/quality';
 import { craterPlanet, crumpledBall, type Arrays, type Calm } from '../../src/scene/workers/relief';
 
@@ -48,6 +48,16 @@ describe('the wind', () => {
     const state = wind.advance(SCARF_LOOP / 4);
     expect(state.scarfPhase).toBeCloseTo(0.25);
     expect(wind.rate()).toBe(1);
+  });
+
+  it('sways the fox from its pose: the tail ±4°, the ears ±3°, the left one behind the right one', () => {
+    expect(foxAngles(0).tailDeg).toBeCloseTo(0);
+    expect(foxAngles(0).earsDeg[1]).toBeCloseTo(0);
+    expect(foxAngles(1050).tailDeg).toBeCloseTo(4);
+    expect(foxAngles(650).earsDeg[1]).toBeCloseTo(3);
+    expect(foxAngles(650).earsDeg[0]).toBeLessThan(3);
+    const state = createWind(() => 0.5).advance(1000);
+    expect(state.tailDeg).toBeCloseTo(foxAngles(1000).tailDeg);
   });
 
   it('quickens 1.6 times in a gust, smoothly, then calms down', () => {
