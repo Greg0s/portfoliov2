@@ -49,6 +49,7 @@ import { lowerResolution } from '../renderer';
 import { blurFilter } from './blur';
 import { coverTop } from '../../lib/cover';
 import { createShowcase } from '../showcase/showcase';
+import { holdStill } from '../rest';
 import type { Pose } from '../showcase/ring';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
@@ -375,6 +376,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let livePlanet: LivePlanet | null = null;
   let handoff: Handoff | null = null;
   let planetLoading = false;
+  /** Whether the live planet could not be made (no WebGL 2, no model): its image stays. */
+  let planetFailed = false;
   let lastPlanetDraw = 0;
   // Its first seconds on screen are measured: kept too slow, it gives way to its image for the rest of the visit.
   let planetSampler: FrameSampler | null = null;
@@ -383,7 +386,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let planetSlow = !planetForced && isSlow('planet');
 
   function loadPlanet(): void {
-    if (planetLoading || !planet) return;
+    if (planetLoading || planetFailed || !planet) return;
     const container = planet;
     planetLoading = true;
     void Promise.all([import('../planet/planet'), import('../planet/handoff')])
@@ -413,6 +416,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       })
       .catch(() => {
         // Without WebGL or the model, the fallback image stays.
+        if (!stopped && planetLoading) planetFailed = true;
       });
   }
 
@@ -937,9 +941,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       let y: number;
       let cartelWidth = 300;
       if (view.mobile) {
-        x = at.x - half;
+        // As wide as the card in front at rest, whatever the swipe does to this card: its text never reflows under
+        // the finger (Grégoire, 4 November 2026). It follows the card's centre and its lower edge.
+        const frontHalf = frontCardHalf(view, plane.depth);
+        x = at.x - frontHalf;
         y = at.y + (half * 9) / 16 + 22 + rise;
-        cartelWidth = half * 2;
+        cartelWidth = frontHalf * 2;
       } else {
         x = at.x + half * Math.cos((pose.rotateY * Math.PI) / 180) + 40;
         y = at.y + rise;
@@ -954,6 +961,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       set(parts.cartel, 'transform', view.mobile ? 'none' : 'translate(0, -50%)');
     });
     return { x: ring.cx, y: ring.cy, diameter: ring.planet };
+  }
+
+  /** Half the width on screen of the card in front of the ring, at rest and without sway, for the plane at `depth`. */
+  function frontCardHalf(view: View, depth: number): number {
+    const front = showcase.pose(0, view, 0);
+    const z = Math.min(front.z + depth, 0.72);
+    const at = projectCss(front.x, front.y, z, view);
+    // In whole px: the camera's sway never makes it breathe either.
+    return Math.round(showcase.ring(view).card * front.scale * at.scale) / 2;
   }
 
   /**
@@ -1224,11 +1240,19 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let standIn: OfficeView | null = null;
   let standInLoading = false;
   let officeAbort: AbortController | null = null;
+  /** When the live office started getting ready, in ms. */
+  let officeStartedAt = 0;
+  /** How long the live office gets to be ready before its layers get ready too, in ms. */
+  const STAND_IN_DELAY = 2500;
+  /** Whether the live planet is still to be put together here: the ring shows it, so it comes before the office. */
+  const planetComing = (): boolean =>
+    options.webgl && !planetSlow && !planetFailed && !livePlanet && current <= PLANET_KEEP;
 
   function loadOffice(): void {
     if (officeLoading || !office) return;
     const host = office;
     officeLoading = true;
+    officeStartedAt = performance.now();
     officeFraming = scene.view.mobile ? 'mobile' : 'desktop';
     const layers = officeSlow;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
@@ -1338,10 +1362,25 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         !scene.view.mobile &&
         ambientAt > 0 &&
         now - ambientAt > OFFICE_EARLY_DELAY &&
-        !(planetLoading && !livePlanet && !planetSlow && options.webgl);
+        !(planetLoading && !livePlanet && !planetSlow && !planetFailed && options.webgl);
       const from = early ? 0 : OFFICE_START - 0.01;
-      if (!officeFailed && (u >= OFFICE_WARM - 0.01 || (u >= from && !planetMeasured))) loadOffice();
-      if (u >= OFFICE_WARM - 0.01 && officeLoading && !officeSlow && officeMode !== 'live') loadStandIn();
+      // On the ring, the planet, which shows there, is put together first: back from a case study, the planet, the
+      // office and its layers all got ready at once, and held the ring's first seconds (Grégoire, 4 November 2026). A
+      // visitor heading for the contact gets the office at once (see the frame loop).
+      if (!officeFailed && !planetComing() && (u >= OFFICE_WARM - 0.01 || (u >= from && !planetMeasured))) {
+        loadOffice();
+      }
+      // Its layers get ready too only if the live office is slow to come: a few seconds after it started, or as soon
+      // as the visitor heads for the contact.
+      if (
+        u >= OFFICE_WARM - 0.01 &&
+        officeLoading &&
+        !officeSlow &&
+        officeMode !== 'live' &&
+        (target > LAST_PROJECT || now - officeStartedAt > STAND_IN_DELAY)
+      ) {
+        loadStandIn();
+      }
       if (arrival <= 0) return;
       if (!html.dataset.officeArrival) arrivedWith(standIn ? 'layers' : 'image');
       if (!standIn) return;
@@ -1453,7 +1492,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
 
   /** Whether a scene is still being prepared: the planet, the live office or its layers. */
   const preparing = (): boolean =>
-    (planetLoading && !livePlanet && !planetSlow) ||
+    (planetLoading && !livePlanet && !planetSlow && !planetFailed) ||
     (officeLoading && !officeView && !officeFailed) ||
     standInLoading ||
     officeReplacing;
@@ -1479,6 +1518,19 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     journeySampler?.reset();
     lagSampler?.reset();
     if (next !== null) glideTo(next);
+  }
+
+  /**
+   * While the ring turns (an arrow, a key, a finger), the scenes' long work waits, as it does for a scroll: a click on
+   * an arrow is no scroll, and a shader linked meanwhile would stop the turn for a frame or more.
+   */
+  let turning: (() => void) | null = null;
+  function holdWhileTurning(on: boolean): void {
+    if (on && !turning) turning = holdStill();
+    else if (!on && turning) {
+      turning();
+      turning = null;
+    }
   }
 
   const stopTick = onTick((now, delta) => {
@@ -1533,6 +1585,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     pointer.update(delta);
     followCamera(elapsed);
     if (showcase.update(elapsed)) redraw = true;
+    holdWhileTurning(!showcase.settled());
     const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
     // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds. The frame where the
     // camera comes to rest is always drawn, so that it says where it rests.
@@ -1612,6 +1665,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     stopped = true;
     stopTick();
     stopGlideTick();
+    holdWhileTurning(false);
     endGlide();
     pointer.stop();
     ambient.stop();
