@@ -5,8 +5,10 @@
  * back. A page left under the mouse scrolls slowly down after 1.1 s, to its end in 5 to 12 s (at most 140 px/s); the
  * windows shrink back 0.6 s after the mouse leaves the links. The Recycle Bin asks whether to empty itself, hands
  * « Oui » over to the office (which goes dark and draws new pictures, and a new wallpaper), then owns up that nothing
- * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones the
- * desktop shows alone, and no capture loads. The taskbar's clock shows the visitor's time.
+ * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones, with no mouse to hover the links,
+ * a tap on the screen opens the pages in turn (Grégoire's choice, 5 November 2026): the first tap opens LinkedIn as a
+ * hover would, the next one shrinks Firefox back, the third opens GitHub, and so on through the CV and Instagram, then
+ * LinkedIn again; the email is left out. The taskbar's clock shows the visitor's time.
  */
 
 /** The links' pages; the email opens the mail app. */
@@ -18,6 +20,8 @@ const VIEW_H = 670;
 const SCROLL_AFTER = 1100;
 const CLOSE_AFTER = 600;
 const DONE_AFTER = 450;
+/** The pages a tap on the phones' screen opens in turn (the email left out). */
+export const TAP_PAGES: readonly ScreenPage[] = ['LinkedIn', 'GitHub', 'CV', 'Instagram'];
 
 export interface ScreenOptions {
   /** Phones: the desktop alone, the Recycle Bin inactive. */
@@ -106,7 +110,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     scroll.style.transform = `translateY(${String(-by)}px)`;
   };
 
-  function show(page: ScreenPage | ''): void {
+  function show(page: ScreenPage | '', scrollAfter = SCROLL_AFTER): void {
     window.clearTimeout(closeTimer);
     if (page === open) return;
     open = page;
@@ -124,7 +128,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     if (!options.still && !options.reduce) {
       scrollTimer = window.setTimeout(() => {
         scrollDown(node);
-      }, SCROLL_AFTER);
+      }, scrollAfter);
     }
   }
 
@@ -150,6 +154,26 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     links.addEventListener('pointerout', leave);
     links.addEventListener('focusin', enter);
     links.addEventListener('focusout', leave);
+  }
+
+  // ---- The phones' taps on the screen: a page, then the desktop, then the next page.
+  let nextTap = 0;
+  const tap = (): void => {
+    if (!live) return;
+    if (open) {
+      show('');
+      // The next page's capture loads while the desktop shows.
+      const next = pages.get(TAP_PAGES[nextTap] ?? '');
+      if (next) load(next);
+      return;
+    }
+    const page = TAP_PAGES[nextTap] ?? 'LinkedIn';
+    nextTap = (nextTap + 1) % TAP_PAGES.length;
+    show(page);
+  };
+  if (options.mobile) {
+    element.addEventListener('click', tap);
+    element.style.cursor = 'pointer';
   }
 
   // ---- The Recycle Bin.
@@ -201,6 +225,8 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     setLive(next) {
       if (next === live) return;
       live = next;
+      // The screen takes the phones' taps only once the camera is at rest.
+      if (options.mobile) element.style.pointerEvents = live ? 'auto' : 'none';
       if (!live) {
         show('');
         if (dialog) setDialog('');
@@ -227,6 +253,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
       window.clearTimeout(scrollTimer);
       window.clearTimeout(closeTimer);
       window.clearTimeout(doneTimer);
+      element.removeEventListener('click', tap);
       window.clearInterval(clockTimer);
       links.removeEventListener('pointerover', enter);
       links.removeEventListener('pointerout', leave);
