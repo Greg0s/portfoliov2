@@ -3,7 +3,7 @@
  * A case study (main spec §4, layout B chosen on 2 November 2026): its own header (back to the projects, number,
  * languages), the opening media, tag, title and lede, then the facts beside the content, results first, then the
  * context, what was done and the challenges; a band to the live site for the projects that ask for it, the next project
- * and a footer whose Contact link leads to the office through the night. Where the opening media is taller than two
+ * and, on a phone, a footer with the languages (the Contact link it held went on 6 November 2026). Where the opening media is taller than two
  * thirds of the screen (on a computer), the content rises over its bottom, behind a dark fade, so that the tag, title
  * and lede show in the screen's bottom third and the page reads as one to scroll. The case studies sit side by side
  * (src/motion/slide.ts): the page carries the ring's order and, for a swipe, its two neighbours.
@@ -15,7 +15,7 @@ import LanguageSwitch from './LanguageSwitch.astro';
 import NextProject from './NextProject.astro';
 import ProjectFacts from './ProjectFacts.astro';
 import { config } from '../config';
-import { fragments, pathFor, t, type Locale } from '../i18n';
+import { pathFor, t, type Locale } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { coverWidths, projectNumber, projectTag, type Project } from '../lib/projects';
 import { neighbours } from '../lib/ring';
@@ -40,7 +40,6 @@ const path = pathFor({ id: 'project', slug: project.slug }, locale);
 const home = pathFor({ id: 'home' }, locale);
 // Back to the projects lands on this project's card in the journey.
 const back = withBase(`${home}#${project.slug}`);
-const contact = withBase(`${home}#${fragments.contact[locale]}`);
 const numberText = label('case.number').replace('{n}', String(order)).replace('{total}', String(total));
 const projectPath = (other: Project): string => withBase(pathFor({ id: 'project', slug: other.slug }, locale));
 const ring = JSON.stringify(projects.map(projectPath));
@@ -202,12 +201,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
   </div>
 
   <footer class="case-footer" slot="footer">
-    <div class="mobile-only">
-      <LanguageSwitch locale={locale} path={path} />
-    </div>
-    <a href={contact} data-cut>
-      {label('nav.contact')}
-    </a>
+    <LanguageSwitch locale={locale} path={path} />
   </footer>
 </Base>
 
@@ -816,21 +810,17 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     white-space: nowrap;
   }
 
+  /* Only a phone needs it: on a computer, the languages are in the header (6 November 2026). */
   .case-footer {
     position: relative;
-    display: flex;
+    display: none;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: flex-end;
     gap: 12px;
     padding: 28px var(--gutter);
     border-top: 1px solid rgb(243 243 241 / 10%);
     font-size: 13px;
     color: var(--color-muted);
-  }
-
-  .mobile-only {
-    display: none;
   }
 
   @media (width < 768px) {
@@ -849,11 +839,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     }
 
     .case-footer {
-      justify-content: space-between;
-    }
-
-    .mobile-only {
-      display: block;
+      display: flex;
     }
 
     .intro {
