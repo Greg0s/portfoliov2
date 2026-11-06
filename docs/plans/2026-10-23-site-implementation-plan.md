@@ -181,8 +181,8 @@ collection.
 **Status**: built (`feat/content`, on top of `feat/design-system`); the drafts wait for Grégoire's review. As built:
 Astro 7's default Markdown processor (Sätteri) runs no remark plugins, so the site uses the `unified` processor of
 `@astrojs/markdown-remark` for `remark-directive` and `:::challenge`; a rehype plugin wraps each `##` of a case study in
-its section. A case study brings its own header and footer through the layout's `header` and `footer` slots; its
-Contact link goes through the blackout to the home's `#contact` (the veil persists across the client router's swap).
+its section. A case study brings its own header and footer through the layout's `header` and `footer` slots; the
+footer's Contact link was removed on 6 November 2026, and the footer now only shows on a phone, for the languages.
 `links` gains `gallery` (Behance for Le Petit Prince and Obaine). The challenges are styled by `CaseStudy.astro`, no
 `Challenge.astro` is needed. The case study's images and videos section waits for Grégoire's media (main spec §8.2);
 the wall has no picture yet, since the canvas only holds versions under 600 px: `pnpm optimize-media` makes the web

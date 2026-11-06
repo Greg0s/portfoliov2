@@ -80,10 +80,10 @@ test('a case study declares its alternates and switches language on the same pro
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
 
-test('the Contact link of a case study leads to the contact through the night', async ({ page }) => {
+test('a case study ends on the next project, with no Contact link at the bottom', async ({ page }, testInfo) => {
   await page.goto('projets/lyrix/');
-  await page.getByRole('contentinfo').getByRole('link', { name: 'Contact' }).click();
-  await expect(page).toHaveURL(/\/portfoliov2\/#contact$/);
-  await expect(page.locator('#contact')).toBeInViewport();
-  await expect(page.locator('[data-veil]')).toHaveCSS('opacity', '0');
+  await expect(page.locator('.case-footer').getByRole('link', { name: 'Contact' })).toHaveCount(0);
+  // On a computer the footer is gone; on a phone it only holds the languages.
+  if (testInfo.project.name === 'mobile') await expect(page.locator('.case-footer')).toBeVisible();
+  else await expect(page.locator('.case-footer')).toBeHidden();
 });
