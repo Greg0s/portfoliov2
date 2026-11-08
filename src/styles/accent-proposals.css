@@ -1,10 +1,11 @@
 /*
- * The accent colour proposals (8 November 2026), behind `?accent=1…7` (src/lib/accent.ts): the site as it is, with
+ * The accent colour proposals (8 November 2026), behind `?accent=1…13` (src/lib/accent.ts): the site as it is, with
  * the "Musée de nuit" charter extended by one or more accent colours. Every proposal puts its accent in the same few
  * places, so that they compare: the moves (buttons, the "See the project" disc), where the visitor is (the current
  * section, the project's number, the dots), the marks (the tags, the ticks, the arrows), and the hover, focus and
- * selection. Nothing else changes: the stars, the cards' ring, the planet, the office and the moment's tint stay as
- * they are. Without the parameter, none of these rules applies.
+ * selection. The stars, the cards' ring, the planet, the office and the moment's tint stay as they are, unless
+ * `?lumiere=1` brings the accent into their light too (src/lib/accent-light.ts, and the end of this sheet). Without
+ * the parameters, none of these rules applies.
  *
  * Tokens:
  * - `--accent`: the solid accent, for text, icons and thin lines (at least 7.5:1 on the night background).
@@ -12,6 +13,7 @@
  * - `--accent-line`, `--accent-line-down`: the colour or gradient of a line, across (the email's underline) or down (the
  *   call's line).
  * - `--accent-ink`: the text on a fill.
+ * - `--accent-light`: the stops of the gradient, as a list of hex colours, for the 3D scenes' light (`?lumiere=1`).
  */
 
 html[data-accent] {
@@ -22,6 +24,9 @@ html[data-accent] {
   --accent-ink: #0c0c0d;
   --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
   --accent-glow: color-mix(in srgb, var(--accent) 38%, transparent);
+  --accent-light: var(--accent);
+  --accent-light-start: var(--accent);
+  --accent-light-end: var(--accent);
 }
 
 /* 1. The current portfolio (gregoiretinn.es): the green, turquoise and sky blue gradient of its menu and bubble. */
@@ -30,6 +35,9 @@ html[data-accent='1'] {
   --accent-fill: linear-gradient(90deg, #6db96e, #71c4bb 50%, #90d3f4);
   --accent-line: linear-gradient(90deg, #6db96e, #71c4bb 50%, #90d3f4);
   --accent-line-down: linear-gradient(#6db96e, #71c4bb 50%, #90d3f4);
+  --accent-light: #6db96e #71c4bb #90d3f4;
+  --accent-light-start: #6db96e;
+  --accent-light-end: #90d3f4;
 }
 
 /* 2. The scarf: the Little Prince's gold (his scarf and hair, `#F5C632` in the model). */
@@ -67,6 +75,91 @@ html[data-accent='7'] {
   --accent-fill: linear-gradient(90deg, #a9ce73, #f4c542 36%, #f7882f 68%, #e8869c);
   --accent-line: linear-gradient(90deg, #a9ce73, #f4c542 36%, #f7882f 68%, #e8869c);
   --accent-line-down: linear-gradient(#a9ce73, #f4c542 36%, #f7882f 68%, #e8869c);
+  --accent-light: #a9ce73 #f4c542 #f7882f #e8869c;
+  --accent-light-start: #a9ce73;
+  --accent-light-end: #e8869c;
+}
+
+/*
+ * The second round (8 November 2026): other gradients, from the planet, the office's sky and the night. The text
+ * colour is the gradient's middle, or its clearest stop; every stop reads on the night background (at least 7.5:1)
+ * and under the ink of a button.
+ */
+
+/* 8. The sunset: the scarf's gold into the fox's orange. */
+html[data-accent='8'] {
+  --accent: #f6a638;
+  --accent-fill: linear-gradient(90deg, #f4c542, #f7882f);
+  --accent-line: linear-gradient(90deg, #f4c542, #f7882f);
+  --accent-line-down: linear-gradient(#f4c542, #f7882f);
+  --accent-light: #f4c542 #f7882f;
+  --accent-light-start: #f4c542;
+  --accent-light-end: #f7882f;
+}
+
+/* 9. The dawn: the rose's pink into the peach of the planet's spot at dawn. */
+html[data-accent='9'] {
+  --accent: #f3a49e;
+  --accent-fill: linear-gradient(90deg, #e8869c, #ffc2a0);
+  --accent-line: linear-gradient(90deg, #e8869c, #ffc2a0);
+  --accent-line-down: linear-gradient(#e8869c, #ffc2a0);
+  --accent-light: #e8869c #ffc2a0;
+  --accent-light-start: #e8869c;
+  --accent-light-end: #ffc2a0;
+}
+
+/* 10. The office's sky, at the visitor's moment: its three lowest bands, lightened to read on the night. */
+html[data-accent='10'][data-moment='aube'] {
+  --accent: #d79fb0;
+  --accent-fill: linear-gradient(90deg, #a8a2e2, #d79fb0 50%, #f0c6a2);
+  --accent-line: linear-gradient(90deg, #a8a2e2, #d79fb0 50%, #f0c6a2);
+  --accent-line-down: linear-gradient(#a8a2e2, #d79fb0 50%, #f0c6a2);
+  --accent-light: #a8a2e2 #d79fb0 #f0c6a2;
+  --accent-light-start: #a8a2e2;
+  --accent-light-end: #f0c6a2;
+}
+
+html[data-accent='10'][data-moment='crepuscule'] {
+  --accent: #ef9466;
+  --accent-fill: linear-gradient(90deg, #cd88ad, #ef9466 50%, #f8b26b);
+  --accent-line: linear-gradient(90deg, #cd88ad, #ef9466 50%, #f8b26b);
+  --accent-line-down: linear-gradient(#cd88ad, #ef9466 50%, #f8b26b);
+  --accent-light: #cd88ad #ef9466 #f8b26b;
+  --accent-light-start: #cd88ad;
+  --accent-light-end: #f8b26b;
+}
+
+/* 11. The night: periwinkle into lilac into the rose, the cold of the sky warming toward the planet. */
+html[data-accent='11'] {
+  --accent: #b99be6;
+  --accent-fill: linear-gradient(90deg, #9aa5f2, #b99be6 50%, #e8869c);
+  --accent-line: linear-gradient(90deg, #9aa5f2, #b99be6 50%, #e8869c);
+  --accent-line-down: linear-gradient(#9aa5f2, #b99be6 50%, #e8869c);
+  --accent-light: #9aa5f2 #b99be6 #e8869c;
+  --accent-light-start: #9aa5f2;
+  --accent-light-end: #e8869c;
+}
+
+/* 12. The Little Prince: his coat's green into his scarf's gold. */
+html[data-accent='12'] {
+  --accent: #b7d77f;
+  --accent-fill: linear-gradient(90deg, #a9ce73, #f4c542);
+  --accent-line: linear-gradient(90deg, #a9ce73, #f4c542);
+  --accent-line-down: linear-gradient(#a9ce73, #f4c542);
+  --accent-light: #a9ce73 #f4c542;
+  --accent-light-start: #a9ce73;
+  --accent-light-end: #f4c542;
+}
+
+/* 13. The aurora: the current portfolio's turquoise into the night's lilac. */
+html[data-accent='13'] {
+  --accent: #71c4bb;
+  --accent-fill: linear-gradient(90deg, #71c4bb, #90b4f0 50%, #b8a5ec);
+  --accent-line: linear-gradient(90deg, #71c4bb, #90b4f0 50%, #b8a5ec);
+  --accent-line-down: linear-gradient(#71c4bb, #90b4f0 50%, #b8a5ec);
+  --accent-light: #71c4bb #90b4f0 #b8a5ec;
+  --accent-light-start: #71c4bb;
+  --accent-light-end: #b8a5ec;
 }
 
 /* Selection and focus. */
@@ -189,8 +282,20 @@ html[data-accent] body .contact .email > a {
   border-bottom-color: var(--accent);
 }
 
-html[data-accent='1'] body .contact .email > a,
-html[data-accent='7'] body .contact .email > a {
+html[data-accent]:is(
+    [data-accent='1'],
+    [data-accent='7'],
+    [data-accent='8'],
+    [data-accent='9'],
+    [data-accent='10'],
+    [data-accent='11'],
+    [data-accent='12'],
+    [data-accent='13']
+  )
+  body
+  .contact
+  .email
+  > a {
   border-image: var(--accent-line) 1;
 }
 
@@ -209,4 +314,27 @@ html[data-accent] body .contact .links a span {
   html[data-accent] body .header[data-section][data-site-header] :is(.name, .links > a):hover {
     color: var(--accent);
   }
+}
+
+/*
+ * The light (`?lumiere=1`): the 3D scenes read `--accent-light` (src/lib/accent-light.ts); the halos drawn in CSS
+ * around the planet take its colours here.
+ */
+html[data-accent][data-lumiere] body .opening .halo {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-light-start) 9%, transparent) 0%,
+    color-mix(in srgb, var(--accent-light-end) 4%, transparent) 38%,
+    transparent 68%
+  );
+}
+
+html[data-accent][data-lumiere][data-journey='on'] body .planet-glow {
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / 60%) 0%,
+    color-mix(in srgb, var(--accent-light-start) 45%, transparent) 30%,
+    color-mix(in srgb, var(--accent-light-end) 16%, transparent) 56%,
+    transparent 72%
+  );
 }

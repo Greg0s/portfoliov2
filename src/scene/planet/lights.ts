@@ -3,7 +3,17 @@
  * the fox from the top left, a near-null ambient light, a light cold back light, a very faint environment. The
  * visitor's moment changes the spot's and the sky's colours; at noon they cross-fade.
  */
-import { Color, DirectionalLight, HemisphereLight, SpotLight, Vector3, type Scene, type WebGLRenderer } from 'three';
+import {
+  Color,
+  DirectionalLight,
+  HemisphereLight,
+  SpotLight,
+  SRGBColorSpace,
+  Vector3,
+  type Scene,
+  type WebGLRenderer,
+} from 'three';
+import type { AccentLight } from '../../lib/accent-light';
 import { LightPMREMGenerator } from '../pmrem';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Moment } from '../time';
@@ -37,7 +47,13 @@ export interface PlanetLights {
   dispose(): void;
 }
 
-export function addLights(scene: Scene, renderer: WebGLRenderer, moment: Moment, shadowSize: number): PlanetLights {
+export function addLights(
+  scene: Scene,
+  renderer: WebGLRenderer,
+  moment: Moment,
+  shadowSize: number,
+  accent: AccentLight | null = null,
+): PlanetLights {
   const pmrem = new LightPMREMGenerator(renderer);
   const room = new RoomEnvironment();
   // Small: the environment is a faint glow (0.035), and its prefiltering's work on the GPU grows with its size.
@@ -58,7 +74,16 @@ export function addLights(scene: Scene, renderer: WebGLRenderer, moment: Moment,
   };
   directional(0xffffff, 0.35, [-6, 6, -8]);
   directional(0xffffff, 0.04, [7, 4, 4]);
-  directional(0xdfe6ff, 0.9, [-2, -6, -8]);
+  if (accent) {
+    // The accent colour proposals' light (`?lumiere=1`): two rim lights from behind the planet, the gradient's first
+    // stop on its left edge and its last on its right, instead of the cold back light.
+    const tint = (t: number): number => new Color().setRGB(...accent.at(t), SRGBColorSpace).getHex();
+    directional(tint(0), 4, [-4.5, -7, -2]);
+    directional(tint(1), 4, [4.5, -7, 2]);
+    directional(tint(0.5), 0.45, [-2, -6, -8]);
+  } else {
+    directional(0xdfe6ff, 0.9, [-2, -6, -8]);
+  }
 
   // The museum spot: a pool of light on the characters, the rest of the planet falls into darkness.
   const spot = new SpotLight(colors.spot, 7.5, 0, 0.165, 1, 0);

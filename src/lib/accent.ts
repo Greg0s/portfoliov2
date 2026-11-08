@@ -1,19 +1,28 @@
 /**
- * The accent colour proposals (8 November 2026), to compare before one is chosen: `?accent=1` to `?accent=7` sets
- * `data-accent` on the root element for the rest of the visit, `?accent=0` goes back to the site as it is. Without the
- * parameter, nothing changes. Self-contained: Base.astro inlines its source in the page head, so that the first paint
- * has the colours, and calls it again after each page swap of the client router.
+ * The accent colour proposals (8 November 2026), to compare before one is chosen: `?accent=1` to `?accent=13` sets
+ * `data-accent` on the root element for the rest of the visit, `?accent=0` goes back to the site as it is; with an
+ * accent, `?lumiere=1` sets `data-lumiere` too, which brings the accent into the 3D scenes' light
+ * (src/lib/accent-light.ts), and `?lumiere=0` takes it out. Without the parameters, nothing changes. Self-contained:
+ * Base.astro inlines its source in the page head, so that the first paint has the colours, and calls it again after
+ * each page swap of the client router.
  */
 export function applyAccent(): void {
-  const key = 'accent-proposal';
-  let value = new URLSearchParams(location.search).get('accent');
-  try {
-    if (value === null) value = sessionStorage.getItem(key);
-    else sessionStorage.setItem(key, value);
-  } catch {
-    // Storage may be unavailable (a private window): the parameter alone still works on the page it is on.
-  }
+  const params = new URLSearchParams(location.search);
   const root = document.documentElement;
-  if (value !== null && /^[1-7]$/.test(value)) root.dataset.accent = value;
-  else delete root.dataset.accent;
+  const pick = (name: string, key: string, valid: RegExp): string | undefined => {
+    let value = params.get(name);
+    try {
+      if (value === null) value = sessionStorage.getItem(key);
+      else sessionStorage.setItem(key, value);
+    } catch {
+      // Storage may be unavailable (a private window): the parameter alone still works on the page it is on.
+    }
+    return value !== null && valid.test(value) ? value : undefined;
+  };
+  const accent = pick('accent', 'accent-proposal', /^([1-9]|1[0-3])$/);
+  const light = accent === undefined ? undefined : pick('lumiere', 'accent-light', /^1$/);
+  if (accent === undefined) delete root.dataset.accent;
+  else root.dataset.accent = accent;
+  if (light === undefined) delete root.dataset.lumiere;
+  else root.dataset.lumiere = light;
 }

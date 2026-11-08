@@ -12,9 +12,11 @@ import {
   Quaternion,
   RectAreaLight,
   SpotLight,
+  SRGBColorSpace,
   Vector3,
   type Light,
 } from 'three';
+import type { AccentLight } from '../../lib/accent-light';
 import { DEG, ROOM, SCREEN } from './common';
 import type { OfficeMoment } from './moments';
 import type { Desk } from './objects';
@@ -32,7 +34,12 @@ const all = <T extends Light>(light: T): T => {
   return light;
 };
 
-export function buildLights(M: OfficeMoment, desk: Desk, shadowSize = 2048): OfficeLights {
+export function buildLights(
+  M: OfficeMoment,
+  desk: Desk,
+  shadowSize = 2048,
+  accent: AccentLight | null = null,
+): OfficeLights {
   const exterior = new Group();
   const hemiOut = all(new HemisphereLight());
   const sun = all(new DirectionalLight());
@@ -121,6 +128,15 @@ export function buildLights(M: OfficeMoment, desk: Desk, shadowSize = 2048): Off
     tone(bounce, m.room.bounce);
     back.color.set(m.room.window[0]);
     tone(screenLight, m.room.screen);
+    if (accent) {
+      // The accent colour proposals' light (`?lumiere=1`): the lamp warms toward the accent, the screen glows in the
+      // gradient's last stop.
+      const solid = new Color().setRGB(...accent.solid, SRGBColorSpace);
+      spot.color.lerp(solid, 0.6);
+      glow.color.lerp(solid, 0.75);
+      screenLight.color.setRGB(...accent.at(1), SRGBColorSpace);
+      screenLight.intensity *= 3;
+    }
   };
   set(M);
   return { exterior, interior, set };

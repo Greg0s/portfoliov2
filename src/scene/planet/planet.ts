@@ -21,6 +21,7 @@ import {
   type MeshStandardMaterial,
   type Object3D,
 } from 'three';
+import { accentLight } from '../../lib/accent-light';
 import { addLights, CENTER, mixMoments } from './lights';
 import { isMesh, loadPlanetModel, meshIn, type PlanetModel } from './load';
 import { foxWind } from './fox';
@@ -311,7 +312,7 @@ async function assemble(
   const scene = new Scene();
   scene.add(model.root);
   let moment = options.moment;
-  const lights = addLights(scene, renderer, moment, 2048);
+  const lights = addLights(scene, renderer, moment, 2048, accentLight());
   await pause('environment');
   const blow = scarfWind(model);
   const sway = roseSway(model);

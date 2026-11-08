@@ -31,6 +31,7 @@ import {
   type Object3D,
   type Texture,
 } from 'three';
+import { accentLight, cssRgb, mixRgb, type Rgb } from '../../lib/accent-light';
 import { FADE_PLANES, layerFade, type ArrivalState } from './arrival';
 import { breathe, DEG, endStep, isMesh, LAYERS, startStep } from './common';
 import { anchorsOf, placement, type Anchors, type Placement } from './corners';
@@ -283,11 +284,15 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
     sunHalo.lookAt(rest.position);
     office.scene.add(sunHalo);
   }
+  // The accent colour proposals' light (`?lumiere=1`) tints the lamp's halo as it tints the lamp.
+  const accent = accentLight();
+  const lampStop = (rgb: Rgb, alpha: number, plain: string): string =>
+    accent ? cssRgb(mixRgb(rgb, accent.solid, 0.55), alpha) : plain;
   const lampHalo = halo(
     glowTexture([
-      [0, 'rgba(255, 214, 150, 0.55)'],
-      [0.22, 'rgba(255, 184, 110, 0.22)'],
-      [0.48, 'rgba(255, 170, 90, 0.07)'],
+      [0, lampStop([1, 0.84, 0.59], 0.55, 'rgba(255, 214, 150, 0.55)')],
+      [0.22, lampStop([1, 0.72, 0.43], 0.22, 'rgba(255, 184, 110, 0.22)')],
+      [0.48, lampStop([1, 0.67, 0.35], 0.07, 'rgba(255, 170, 90, 0.07)')],
       [0.7, 'rgba(255, 170, 90, 0)'],
       [1, 'rgba(255, 170, 90, 0)'],
     ]),

@@ -29,6 +29,7 @@ import {
   type CanvasTexture,
 } from 'three';
 import { box, canvasTexture, DEG, LAYERS, onLayer, rng, std } from './common';
+import { cssRgb, mixRgb, type AccentLight } from '../../lib/accent-light';
 import type { OfficeMoment } from './moments';
 import {
   ACROSS,
@@ -57,12 +58,23 @@ function facadeTextures(
   seed: number,
   litRatio: number,
   style: keyof typeof WINDOWS = 'classic',
+  accent: AccentLight | null = null,
 ): { map: CanvasTexture; emissive: CanvasTexture } {
   const cols = 8;
   const rows = 8;
   const r = rng(seed);
   const lit: (string | null)[] = [];
   for (let i = 0; i < cols * rows; i += 1) lit.push(r() < litRatio ? (r() < 0.7 ? '#ffcf86' : '#ffe6b8') : null);
+  // The accent colour proposals' light (`?lumiere=1`): about two lit windows in five take a colour of the gradient.
+  if (accent) {
+    const hash = (i: number, salt: number): number => {
+      const x = Math.sin(i * 12.9898 + seed * 7.1 + salt) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    lit.forEach((on, i) => {
+      if (on && hash(i, 0.5) < 0.4) lit[i] = cssRgb(mixRgb(accent.at(hash(i, 3.3)), [1, 0.9, 0.75], 0.1));
+    });
+  }
   const cell = 64;
   const win = WINDOWS[style];
   const draw =
@@ -115,10 +127,10 @@ export interface Facades {
   dispose(): void;
 }
 
-function facadeMaterials(moment: OfficeMoment): Facades {
+function facadeMaterials(moment: OfficeMoment, accent: AccentLight | null): Facades {
   const M = moment.city;
-  const facade = facadeTextures(5, M.lit);
-  const ribbon = facadeTextures(6, M.lit * 0.8, 'ribbon');
+  const facade = facadeTextures(5, M.lit, 'classic', accent);
+  const ribbon = facadeTextures(6, M.lit * 0.8, 'ribbon', accent);
   const walls = new MeshStandardMaterial({
     vertexColors: true,
     map: facade.map,
@@ -342,10 +354,10 @@ export function allLitMaterials(): { walls: MeshBasicMaterial; blocks: MeshBasic
   };
 }
 
-export function buildCity(town: TownGeometry, moment: OfficeMoment): City {
+export function buildCity(town: TownGeometry, moment: OfficeMoment, accent: AccentLight | null = null): City {
   const M = moment.city;
   const g = new Group();
-  const facades = facadeMaterials(moment);
+  const facades = facadeMaterials(moment, accent);
   const walls = new Mesh(unpack(town.parts.walls), facades.walls);
   const blocks = new Mesh(unpack(town.parts.blocks), facades.blocks);
   g.add(walls, blocks);

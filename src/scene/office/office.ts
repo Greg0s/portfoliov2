@@ -7,9 +7,11 @@
  * nothing is drawn.
  */
 import {
+  Color,
   CustomBlending,
   Fog,
   Mesh,
+  MeshBasicMaterial,
   OneFactor,
   OneMinusSrcAlphaFactor,
   OrthographicCamera,
@@ -25,6 +27,7 @@ import {
   type Texture,
   type WebGLRenderer,
 } from 'three';
+import { accentLight } from '../../lib/accent-light';
 import { LightPMREMGenerator } from '../pmrem';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { buildCity, type City } from './city';
@@ -148,16 +151,22 @@ export async function createOffice(
     rectAreaReady = true;
   }
   const moment = MOMENTS[momentName];
+  const accent = accentLight();
   const scene = new Scene();
   await pause('scene');
   const room = buildRoom();
   await pause('room');
   const desk = await buildDesk(rose, pause);
-  const city = buildCity(town, moment);
+  const city = buildCity(town, moment, accent);
   await pause('city');
   scene.add(room, desk.group, city.group);
-  const roomLights = buildLights(moment, desk);
-  const deskLights = buildLights(moment, desk);
+  const roomLights = buildLights(moment, desk, 2048, accent);
+  const deskLights = buildLights(moment, desk, 2048, accent);
+  // The accent colour proposals' light (`?lumiere=1`): the lamp's diffuser in the accent's tint.
+  const bulb = desk.lamp.getObjectByName('bulb');
+  if (accent && bulb && isMesh(bulb) && bulb.material instanceof MeshBasicMaterial) {
+    bulb.material.color.lerp(new Color().setRGB(...accent.solid, SRGBColorSpace), 0.35);
+  }
   scene.add(roomLights.exterior, roomLights.interior, deskLights.interior);
   scene.fog = new Fog(moment.city.fog, 150, 2700);
 
