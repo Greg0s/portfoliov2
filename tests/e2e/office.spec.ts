@@ -26,6 +26,10 @@ test.describe('on desktop', () => {
 
   test('each link opens its page on the screen, and leaving closes it after 0.6 s', async ({ page }) => {
     const errors = trackErrors(page);
+    // With the data saver on, nothing of the screen is loaded ahead (src/scene/ahead.ts): its captures wait for a hover.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'connection', { value: { saveData: true } });
+    });
     const requested = captures(page);
     await openOffice(page);
     const desktop = page.locator('.office-screen .desktop');

@@ -68,6 +68,10 @@ export function initHome(): void {
   const root = document.querySelector<HTMLElement>('[data-journey-root]');
   if (!root) return;
   start(root);
+  // What the rest of the visit asks for, fetched ahead once the opening shows (once per document).
+  void import('../ahead').then(({ loadAhead }) => {
+    loadAhead(root);
+  });
   const stopWatching = onReducedMotionChange(() => {
     stop();
     start(root);
