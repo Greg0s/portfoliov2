@@ -454,6 +454,38 @@ test('?mesure=visite goes through a case study and back to the screen, and lists
   await expectAnchor(page, CONTACT);
 });
 
+test('back from a case study, the live planet and office come back at once, without being prepared again', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'one run is enough: the scenes are kept the same way on phones');
+  test.setTimeout(180_000);
+  const marks = (name: string): Promise<number> =>
+    page.evaluate((mark) => performance.getEntriesByName(mark, 'mark').length, name);
+  const linked = (): Promise<number> =>
+    page.evaluate(
+      () =>
+        performance.getEntriesByType('measure').filter((e) => /^(planet|office):(link|shader|compile)/.test(e.name))
+          .length,
+    );
+  await page.goto('./?planete=live&office=live&lite=0#lyrix');
+  await expectAnchor(page, RING);
+  await expect.poll(() => marks('journey:planet-ready'), { timeout: 120_000 }).toBe(1);
+  await expect.poll(() => marks('journey:office-ready'), { timeout: 120_000 }).toBe(1);
+  const before = await linked();
+
+  // The page draws in software here: the dive takes its time.
+  await page.locator('#lyrix a.card').click({ force: true });
+  await expect(page).toHaveURL(/projets\/lyrix\/$/, { timeout: 30_000 });
+  await page.getByRole('link', { name: 'Retour aux projets' }).click({ timeout: 30_000 });
+  await expectAnchor(page, RING);
+  await expect.poll(() => marks('journey:planet-ready'), { timeout: 10_000 }).toBe(2);
+  await expect.poll(() => marks('journey:office-ready'), { timeout: 10_000 }).toBe(2);
+  // Nothing compiled or linked again.
+  expect(await linked()).toBe(before);
+  await expect(page.locator('html')).toHaveAttribute('data-office', 'live');
+});
+
 test('nothing of the office loads while the opening plays its arrival', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
