@@ -19,6 +19,8 @@ import type { Cartel, WallPicture } from './wall';
 
 // Thrown when the device draws WebGL in software, or links its programs too slowly: the layers stand in.
 export { SlowOffice };
+// The framing a section's width calls for, which a kept scene must share.
+export { framingOf };
 
 export interface OfficeOptions {
   modelUrl: string;
@@ -46,6 +48,14 @@ export async function prepareOffice(
   host: HTMLElement,
   options: OfficeOptions,
 ): Promise<OfficeView> {
+  return viewOffice(section, host, await prepareOfficeScene(section, options), options);
+}
+
+/**
+ * The live scene alone, without the HTML laid over it: the costly part (the town, the programs linked, the textures on
+ * the GPU), which the journey keeps from one visit of the home to the next (`src/scene/keep.ts`).
+ */
+export async function prepareOfficeScene(section: HTMLElement, options: OfficeOptions): Promise<OfficeScene> {
   if (!options.forced && drawsInSoftware()) throw new SlowOffice();
   const framing = framingOf(section.clientWidth);
   const [reply, model] = await Promise.all([runGeometry({ kind: 'town' }), loadPlanetModel(options.modelUrl)]);
@@ -64,7 +74,7 @@ export async function prepareOffice(
     live.dispose();
     throw options.signal.reason;
   }
-  return viewOf(section, host, live, options);
+  return live;
 }
 
 /** The layers instead of the live scene: no WebGL, the same arrival in CSS. */
@@ -76,14 +86,22 @@ export async function prepareLayers(
     at?: number;
   },
 ): Promise<OfficeView> {
+  return viewOffice(section, host, await prepareLayersScene(section, host, options), options);
+}
+
+/** The layers alone, their pictures loaded and decoded, without the HTML laid over them. */
+export function prepareLayersScene(
+  section: HTMLElement,
+  host: HTMLElement,
+  options: Pick<OfficeOptions, 'moment'>,
+): Promise<OfficeScene> {
   const framing = framingOf(section.clientWidth);
-  const layers = await createLayersOffice({
+  return createLayersOffice({
     moment: options.moment,
     framing,
     frame: FRAMES[framing],
     base: host.dataset.layers ?? '',
   });
-  return viewOf(section, host, layers, options);
 }
 
 /** Points of the arrival where the room, then the desk, are half faded in. */
@@ -101,11 +119,19 @@ function fadingArrivals(framing: ReturnType<typeof framingOf>): number[] {
   return found;
 }
 
-async function viewOf(
+/**
+ * Lays the HTML of the office (the screen, the pictures, their cartels) over `scene`, a live scene or its layers, and
+ * draws it once out of sight.
+ */
+export async function viewOffice(
   section: HTMLElement,
   host: HTMLElement,
   scene: OfficeScene,
-  options: Pick<OfficeOptions, 'moment' | 'still'> & { at?: number },
+  options: Pick<OfficeOptions, 'moment' | 'still'> & {
+    at?: number;
+    /** A scene kept from a former visit of the home: already on the GPU, it needs no drawing out of sight. */
+    kept?: boolean;
+  },
 ): Promise<OfficeView> {
   // In a task of its own: a promise (a picture's decoding, a shader's compiling) can settle during a frame, and laying
   // the view in the page reads its size, which would force a layout in the middle of that frame.
@@ -135,7 +161,8 @@ async function viewOf(
   // frame, the journey's first read there (the glide's scroll) would have to do it in the middle of that frame.
   // Taking over on screen, it is drawn where the arrival is, and nowhere else: the other points would show.
   let done = 'view';
-  for (const arrival of options.at === undefined ? [1, ...fadingArrivals(framing), 0] : [options.at]) {
+  const draws = options.kept ? [] : options.at === undefined ? [1, ...fadingArrivals(framing), 0] : [options.at];
+  for (const arrival of draws) {
     await breathe(done);
     view.update(arrival, performance.now(), 16);
     section.getBoundingClientRect();

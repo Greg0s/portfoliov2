@@ -43,6 +43,7 @@ import type { Renderer } from '../renderer';
 import type { Handoff } from '../planet/handoff';
 import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
+import type { OfficeScene } from '../office/live';
 import { withBase } from '../../lib/url';
 import { frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
 import { lowerResolution } from '../renderer';
@@ -50,6 +51,16 @@ import { blurFilter } from './blur';
 import { coverTop } from '../../lib/cover';
 import { createShowcase } from '../showcase/showcase';
 import { holdStill } from '../rest';
+import {
+  hasKept,
+  keepOffice,
+  keepPlanet,
+  keepRenderer,
+  takeOffice,
+  takePlanet,
+  takeRenderer,
+  type KeptOffice,
+} from '../keep';
 import type { Pose } from '../showcase/ring';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
@@ -154,8 +165,11 @@ export interface JourneyOptions {
   onLite?: (fragment: string | null) => void;
 }
 
-/** Starts the journey in `root`; returns a function that stops it and gives the page back its list. */
-export function startJourney(root: HTMLElement, options: JourneyOptions): () => void {
+/**
+ * Starts the journey in `root`; returns a function that stops it and gives the page back its list. Stopped with `keep`
+ * (the home is left for another page), it keeps its scenes for the next visit of the home (`src/scene/keep.ts`).
+ */
+export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?: boolean) => void {
   const stageFound = root.querySelector<HTMLElement>('[data-stage]');
   const trackFound = root.querySelector<HTMLElement>('[data-track]');
   const spaceFound = root.querySelector<HTMLElement>('.journey');
@@ -329,16 +343,26 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let renderer: Renderer | null = null;
   let stars: StarField | null = null;
   let stopped = false;
+  /** Whether the scenes are kept as the journey stops (the home is left for another page), rather than let go. */
+  let keeping = false;
   let swayMatrixOf: ((sway: Sway) => Matrix4) | null = null;
   if (options.webgl) {
     void Promise.all([import('../renderer'), import('../stars/stars'), import('./camera3d')]).then(
       ([{ createRenderer }, { createStars }, { swayMatrix }]) => {
         if (stopped) return;
-        try {
-          renderer = createRenderer(stage, scene.view);
-        } catch {
-          // Without WebGL, the journey goes on without its stars.
-          return;
+        // The renderer of a former visit of the home, if any: its canvas comes back into this page.
+        const kept = takeRenderer();
+        if (kept) {
+          renderer = kept;
+          stage.prepend(kept.canvas);
+          kept.resize(scene.view);
+        } else {
+          try {
+            renderer = createRenderer(stage, scene.view);
+          } catch {
+            // Without WebGL, the journey goes on without its stars.
+            return;
+          }
         }
         stars = createStars(scene.stars, scene.view, renderer.pixelRatio);
         renderer.scene.add(stars.points);
@@ -389,23 +413,33 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     if (planetLoading || planetFailed || !planet) return;
     const container = planet;
     planetLoading = true;
+    // The planet of a former visit of the home, if any: ready at once.
+    const kept = takePlanet();
     void Promise.all([import('../planet/planet'), import('../planet/handoff')])
       .then(async ([{ createPlanet, SlowRenderer }, { planetHandoff }]) => {
-        const created = await createPlanet(container, {
-          modelUrl: withBase('/models/petit-prince.glb'),
-          forced: planetForced,
-          moment: html.dataset.moment === 'aube' ? 'aube' : 'crepuscule',
-          mobile: scene.view.mobile,
-          size: planetSize,
-        }).catch((error: unknown) => {
-          if (error instanceof SlowRenderer) {
-            planetSlow = true;
-            markSlow('planet');
-          }
-          throw error;
-        });
+        if (kept) {
+          container.append(kept.canvas);
+          kept.resize(planetSize, scene.view.mobile);
+        }
+        const created =
+          kept ??
+          (await createPlanet(container, {
+            modelUrl: withBase('/models/petit-prince.glb'),
+            forced: planetForced,
+            moment: html.dataset.moment === 'aube' ? 'aube' : 'crepuscule',
+            mobile: scene.view.mobile,
+            size: planetSize,
+          }).catch((error: unknown) => {
+            if (error instanceof SlowRenderer) {
+              planetSlow = true;
+              markSlow('planet');
+            }
+            throw error;
+          }));
         if (stopped || !planetLoading) {
-          created.dispose();
+          // Ready as the home is left: kept for the way back.
+          if (stopped && keeping) keepPlanet(created);
+          else created.dispose();
           return;
         }
         livePlanet?.dispose();
@@ -421,10 +455,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       });
   }
 
-  function freePlanet(): void {
+  function freePlanet(keep = false): void {
     planetLoading = false;
     handoff?.reset();
-    livePlanet?.dispose();
+    if (keep && livePlanet) keepPlanet(livePlanet);
+    else livePlanet?.dispose();
     livePlanet = null;
     handoff = null;
     delete html.dataset.planet;
@@ -438,7 +473,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       return;
     }
     if (!livePlanet || !handoff) {
-      if (ambient.started() && u <= PLANET_KEEP) loadPlanet();
+      // A planet kept from a former visit of the home is ready: it comes back at once.
+      if ((ambient.started() || hasKept().planet) && u <= PLANET_KEEP) loadPlanet();
       return;
     }
     const previousDraw = lastPlanetDraw;
@@ -1237,6 +1273,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
   let officeFailed = false;
   let lastOfficeDraw = 0;
   let officeFraming = '';
+  /** What the live office's view draws: its scene's framing, moment and kind, for keeping it. */
+  let officeScene: Omit<KeptOffice, 'scene'> = { framing: 'desktop', moment: 'crepuscule', kind: 'live' };
   /** The layers, ready to play the arrival if it comes before the live office, and what stops the live office then. */
   let standIn: OfficeView | null = null;
   let standInLoading = false;
@@ -1262,27 +1300,44 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     // Out of the frame: preparing reads the section's size, which would force a layout in the middle of a frame.
     void new Promise((resolve) => setTimeout(resolve))
       .then(() => import('../office/warmup'))
-      .then(async ({ prepareOffice, prepareLayers, SlowOffice }) => {
-        const created = await (layers
-          ? prepareLayers(host, host, { moment, still: options.still })
-          : prepareOffice(host, host, {
-              modelUrl: withBase('/models/petit-prince.glb'),
-              moment,
-              still: options.still,
-              forced: officeMode === 'live',
-              signal: abort.signal,
-            }).catch((error: unknown) => {
-              if (error instanceof SlowOffice) {
-                officeSlow = true;
-                markSlow('office');
-                return prepareLayers(host, host, { moment, still: options.still });
-              }
-              throw error;
-            }));
-        if (stopped || !officeLoading || abort.signal.aborted) {
-          created.dispose();
+      .then(async ({ prepareOfficeScene, prepareLayersScene, viewOffice, framingOf, SlowOffice }) => {
+        const framing = framingOf(host.clientWidth);
+        // The scene of a former visit of the home, if it fits: only its HTML is laid again.
+        let kind: 'live' | 'layers' = layers ? 'layers' : 'live';
+        const kept = takeOffice(framing, moment, kind);
+        const made: OfficeScene =
+          kept ??
+          (await (layers
+            ? prepareLayersScene(host, host, { moment })
+            : prepareOfficeScene(host, {
+                modelUrl: withBase('/models/petit-prince.glb'),
+                moment,
+                still: options.still,
+                forced: officeMode === 'live',
+                signal: abort.signal,
+              }).catch((error: unknown) => {
+                if (error instanceof SlowOffice) {
+                  officeSlow = true;
+                  markSlow('office');
+                  kind = 'layers';
+                  return prepareLayersScene(host, host, { moment });
+                }
+                throw error;
+              })));
+        /** Whether the home was left meanwhile: the scene is kept for the way back, or let go. */
+        const left = (scene: OfficeScene): boolean => {
+          if (!stopped && officeLoading && !abort.signal.aborted) return false;
+          if (stopped && keeping) keepOffice({ scene, framing, moment, kind });
+          else scene.dispose();
+          return true;
+        };
+        if (left(made)) return;
+        const created = await viewOffice(host, host, made, { moment, still: options.still, kept: kept !== null });
+        if (left(made)) {
+          created.release();
           return;
         }
+        officeScene = { framing, moment, kind };
         // Ready before the arrival: the layers standing by are no longer needed.
         freeStandIn();
         officeView = created;
@@ -1302,6 +1357,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       });
   }
 
+  /** The layers' framing and moment, when they take the live office's place: what keeping them needs. */
+  let standInScene: Omit<KeptOffice, 'scene'> = officeScene;
+
   /** Gets the layers ready to play the arrival in place of the live office, if it comes first. */
   function loadStandIn(): void {
     if (standIn || standInLoading || !office) return;
@@ -1309,7 +1367,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     standInLoading = true;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
     void import('../office/warmup')
-      .then(({ prepareLayers }) => prepareLayers(host, host, { moment, still: options.still }))
+      .then(({ prepareLayers, framingOf }) => {
+        standInScene = { framing: framingOf(host.clientWidth), moment, kind: 'layers' };
+        return prepareLayers(host, host, { moment, still: options.still });
+      })
       .then((created) => {
         if (stopped || !standInLoading || officeView) {
           created.dispose();
@@ -1329,12 +1390,15 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     standIn = null;
   }
 
-  function freeOffice(): void {
+  function freeOffice(keep = false): void {
     officeLoading = false;
-    officeAbort?.abort();
+    // Kept, a preparation under way goes on, for the way back.
+    if (!keep) officeAbort?.abort();
     officeAbort = null;
     freeStandIn();
-    officeView?.dispose();
+    if (keep && officeView) {
+      keepOffice({ scene: officeView.release(), ...officeScene });
+    } else officeView?.dispose();
     officeView = null;
     officeSampler = null;
     if (html.dataset.office === 'live') html.dataset.office = 'near';
@@ -1352,6 +1416,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
    */
   function drawOffice(now: number, u: number, arrival: number): void {
     if (!officeView) {
+      // An office kept from a former visit of the home has nothing left to link: it comes back at once.
+      if (hasKept().office && !officeFailed) loadOffice();
       // While the planet measures its first seconds on screen, the office's links would count against it.
       const planetMeasured =
         planetSampler !== null && html.dataset.planet !== undefined && html.dataset.planet !== 'image';
@@ -1389,6 +1455,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
       // are now in the browser's cache, so the next visit prepares it much faster.
       officeAbort?.abort();
       officeView = standIn;
+      officeScene = standInScene;
       standIn = null;
       html.dataset.office = 'live';
       html.dataset.officeScene = 'layers';
@@ -1430,7 +1497,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     officeReplacing = true;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
     void import('../office/warmup')
-      .then(({ prepareLayers }) => prepareLayers(host, host, { moment, still: options.still, at: arrival }))
+      .then(({ prepareLayers, framingOf }) => {
+        standInScene = { framing: framingOf(host.clientWidth), moment, kind: 'layers' };
+        return prepareLayers(host, host, { moment, still: options.still, at: arrival });
+      })
       .then((created) => {
         officeReplacing = false;
         if (stopped || !officeLoading) {
@@ -1439,6 +1509,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         }
         officeView?.dispose();
         officeView = created;
+        officeScene = standInScene;
         html.dataset.officeScene = 'layers';
         redraw = true;
       })
@@ -1662,8 +1733,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     },
   });
 
-  return () => {
+  return (keep = false) => {
     stopped = true;
+    keeping = keep;
     stopTick();
     stopGlideTick();
     holdWhileTurning(false);
@@ -1686,9 +1758,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
     setJourney(null);
     showcase.stop();
     stars?.dispose();
-    renderer?.dispose();
-    freePlanet();
-    freeOffice();
+    if (keep && renderer) keepRenderer(renderer);
+    else renderer?.dispose();
+    freePlanet(keep);
+    freeOffice(keep);
     markers.forEach((marker) => {
       marker.remove();
     });

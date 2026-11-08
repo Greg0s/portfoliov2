@@ -31,10 +31,10 @@ Grégoire l'a validée le 23 octobre 2026 : c'est la fin de l'étape 0 de la spe
 Grégoire veut que toute la visite se fasse sans ralentissement ni chargement (8 novembre 2026). L'étude du même jour a écarté l'écran de chargement au lancement (Lighthouse de l'accueil à 0,68–0,70, contre 0,93–0,95 quand le même volume se charge en arrière-plan après l'affichage) ; Grégoire a validé le plan suivant, une pull request par étape :
 
 1. **Mesurer toute la visite** : `?mesure=visite` joue une première visite pressée (cache des shaders contourné) de l'ouverture à l'écran du bureau, en passant par une étude de cas, deux « Projet suivant » et le retour à l'anneau, et liste chaque attente : pauses « Chargement », changements de page (durée, couverture prête ou non), planète et bureau prêts (avant et après le retour), ce qui a joué l'arrivée, captures de l'écran prêtes ou non. Fait ; attend les mesures de Grégoire (PC, Pixel 9).
-2. **Garder la planète, le bureau et les étoiles pendant les études de cas**, en pause, au lieu de les préparer de nouveau à chaque retour.
-3. **Une file de préchargement par priorités après l'affichage** : pages et couvertures des études (décodées), bureau, tirage du mur et du fond d'écran, captures de l'écran ; en pause pendant un défilement ou une plongée ; prudente avec l'économiseur de données ou une connexion lente.
+2. **Garder la planète, le bureau et les étoiles pendant les études de cas**, en pause, au lieu de les préparer de nouveau à chaque retour. Fait (`src/scene/keep.ts`) : sans carte graphique, la planète et le bureau sont de nouveau prêts moins d'une demi-seconde après le clic sur « Retour aux projets », au lieu de 20 secondes et plus de nouvelle préparation.
+3. **Une file de préchargement par priorités après l'affichage** : pages et couvertures des études (décodées), bureau, tirage du mur et du fond d'écran, captures de l'écran ; en pause pendant un défilement ou une plongée ; prudente avec l'économiseur de données ou une connexion lente. Fait (`src/scene/ahead.ts`) : tout le mur est chargé (plutôt que tiré d'avance), environ 1,5 Mo sur téléphone et 2,2 Mo sur ordinateur ; Lighthouse de l'accueil reste à 0,93–0,95.
 4. **Préparer le bureau dès le lancement partout**, sous l'arrivée.
-5. **Un garde-fou dans la CI** : rien du préchargement avant l'affichage de l'ouverture.
+5. **Un garde-fou dans la CI** : rien du préchargement avant l'affichage de l'ouverture. Fait avec l'étape 3 (`tests/e2e/ahead.spec.ts` : rien avant la fin du chargement de la page plus 1,5 s, et l'ordre des fichiers).
 
 Les vidéos des cartes entreront dans la même file, sous 600 Ko chacune.
 

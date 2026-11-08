@@ -45,6 +45,8 @@ export interface OfficeView {
   /** Puts the head at once where it leans (for captures). */
   setHead(x: number, y: number): void;
   resize(): void;
+  /** Takes the HTML away and gives back the scene under it, whole, for a later view (`src/scene/keep.ts`). */
+  release(): OfficeScene;
   dispose(): void;
 }
 
@@ -522,7 +524,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       head.x = head.tx = x;
       head.y = head.ty = y;
     },
-    dispose() {
+    release() {
       anims.forEach((a) => {
         a.cancel();
       });
@@ -530,8 +532,12 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       document.documentElement.removeEventListener('pointerleave', onLeave);
       desktop?.dispose();
       cartels.dispose();
-      live.dispose();
+      live.element.remove();
       root.remove();
+      return live;
+    },
+    dispose() {
+      view.release().dispose();
     },
   };
   return view;
