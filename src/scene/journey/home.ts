@@ -6,14 +6,15 @@
 import { applyJourneyMode, journeyOn, webglAllowed } from './mode';
 import { isStill, onReducedMotionChange } from '../../motion/reducedMotion';
 
-let stops: (() => void)[] = [];
+let stops: ((keep?: boolean) => void)[] = [];
 /** Counts the starts, so that a journey still loading when the home stops never starts. */
 let generation = 0;
 
-function stop(): void {
+/** Stops the home's scripts; `keep` keeps the journey's scenes for the next visit of the home (a page is left). */
+function stop(keep = false): void {
   generation += 1;
   stops.forEach((fn) => {
-    fn();
+    fn(keep);
   });
   stops = [];
 }
@@ -21,7 +22,13 @@ function stop(): void {
 function start(root: HTMLElement): void {
   applyJourneyMode();
   const still = isStill(location.search);
-  if (!journeyOn()) return;
+  if (!journeyOn()) {
+    // The list, without the journey: the scenes kept from a former visit of the home are let go.
+    void import('../keep').then(({ dropKept }) => {
+      dropKept();
+    });
+    return;
+  }
   // The journey's code loads with the page, but only runs here.
   const started = generation;
   void import('./journey').then(({ startJourney }) => {
@@ -67,7 +74,7 @@ export function initHome(): void {
   });
   const leave = (): void => {
     stopWatching();
-    stop();
+    stop(true);
     document.removeEventListener('astro:before-swap', leave);
   };
   document.addEventListener('astro:before-swap', leave);
