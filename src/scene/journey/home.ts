@@ -41,8 +41,16 @@ function start(root: HTMLElement): void {
         },
       }),
     );
-    // The measurement run, on a real device (`?mesure=1`, or `?mesure=rapide`): loaded only when asked for.
-    if (!['1', 'rapide'].includes(new URLSearchParams(location.search).get('mesure') ?? '')) return;
+    // The measurement runs, on a real device (`?mesure=1`, `?mesure=rapide`, `?mesure=visite`): loaded only when asked
+    // for. The full visit outlives the home: it goes through the case studies and back.
+    const mesure = new URLSearchParams(location.search).get('mesure') ?? '';
+    if (mesure === 'visite') {
+      void import('./visit').then(({ startVisit }) => {
+        startVisit();
+      });
+      return;
+    }
+    if (!['1', 'rapide'].includes(mesure)) return;
     void import('./measure').then(({ startMeasure }) => {
       if (started === generation && root.isConnected) stops.push(startMeasure(root));
     });

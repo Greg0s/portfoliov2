@@ -8,10 +8,10 @@ import { cameraPosition, projectionMatrix } from './journey/camera3d';
 import type { View } from './journey/layout';
 import { noteContext } from './quality';
 
-// A first visit, again and again (`?froid=1`, and the fast measurement run): the browser keeps the programs it linked
+// A first visit, again and again (`?froid=1`, and the fast and full-visit measurement runs): the browser keeps the programs it linked
 // in a cache of its own, which makes every later visit fast. A comment that changes at each visit, in the code every
 // material of the planet and the office shares, makes it miss.
-if (typeof location !== 'undefined' && /[?&](froid=1|mesure=rapide)\b/.test(location.search)) {
+if (typeof location !== 'undefined' && /[?&](froid=1|mesure=rapide|mesure=visite)\b/.test(location.search)) {
   ShaderChunk.common = `// ${String(Math.random())}\n${ShaderChunk.common}`;
 }
 

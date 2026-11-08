@@ -30,7 +30,7 @@ interface Summary {
 }
 
 /** A long animation frame, as Chromium reports it (not yet in TypeScript's DOM types). */
-interface LongFrame extends PerformanceEntry {
+export interface LongFrame extends PerformanceEntry {
   blockingDuration: number;
   renderStart: number;
   styleAndLayoutStart: number;
@@ -63,7 +63,7 @@ function markAt(name: string): number | null {
 }
 
 /** The scenes found too slow during the visit (`src/scene/quality.ts`). */
-function slowScenes(): string {
+export function slowScenes(): string {
   try {
     return sessionStorage.getItem('portfolio:slow') ?? '';
   } catch {
@@ -128,7 +128,7 @@ function refreshRate(): Promise<number> {
 }
 
 /** The GPU's name, when the browser tells it, and whether it links shaders out of the page's way. */
-function gpu(): { gpu: string; parallelCompile: boolean } {
+export function gpu(): { gpu: string; parallelCompile: boolean } {
   const gl = document.createElement('canvas').getContext('webgl2');
   const info = gl?.getExtension('WEBGL_debug_renderer_info');
   return {
@@ -137,7 +137,12 @@ function gpu(): { gpu: string; parallelCompile: boolean } {
   };
 }
 
-function panel(): { show(text: string): void; append(node: Node): void; remove(): void } {
+export function panel(): {
+  show(text: string): void;
+  append(node: Node): void;
+  remove(): void;
+  reattach(): void;
+} {
   const box = document.createElement('div');
   box.setAttribute('role', 'status');
   Object.assign(box.style, {
@@ -165,6 +170,9 @@ function panel(): { show(text: string): void; append(node: Node): void; remove()
     },
     remove: () => {
       box.remove();
+    },
+    reattach: () => {
+      if (!box.isConnected) document.body.append(box);
     },
   };
 }

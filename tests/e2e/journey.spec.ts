@@ -439,6 +439,21 @@ test('?mesure=1 plays the journey and gives its frame rates', async ({ page, isM
   await expectAnchor(page, CONTACT);
 });
 
+test('?mesure=visite goes through a case study and back to the screen, and lists the waits', async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.goto('./?mesure=visite');
+  const result = page.getByRole('status').filter({ hasText: '"pages"' });
+  await expect(result).toBeVisible({ timeout: 220_000 });
+  const text = (await result.textContent()) ?? '';
+  for (const step of ['ouverture', 'anneau', 'plongée', 'suivant 1', 'suivant 2', 'retour', 'contact', 'écran'])
+    expect(text).toContain(`"${step}"`);
+  const report = JSON.parse(text.replace(/Copier$/, '')) as { pages: { to: string }[]; screenPages: unknown[] };
+  expect(report.pages.map(({ to }) => to)).toHaveLength(4);
+  expect(report.pages.at(-1)?.to).toMatch(/\/$/);
+  expect(report.screenPages).toHaveLength(4);
+  await expectAnchor(page, CONTACT);
+});
+
 test('nothing of the office loads while the opening plays its arrival', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
