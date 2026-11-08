@@ -1,0 +1,212 @@
+/*
+ * The accent colour proposals (8 November 2026), behind `?accent=1…7` (src/lib/accent.ts): the site as it is, with
+ * the "Musée de nuit" charter extended by one or more accent colours. Every proposal puts its accent in the same few
+ * places, so that they compare: the moves (buttons, the "See the project" disc), where the visitor is (the current
+ * section, the project's number, the dots), the marks (the tags, the ticks, the arrows), and the hover, focus and
+ * selection. Nothing else changes: the stars, the cards' ring, the planet, the office and the moment's tint stay as
+ * they are. Without the parameter, none of these rules applies.
+ *
+ * Tokens:
+ * - `--accent`: the solid accent, for text, icons and thin lines (at least 7.5:1 on the night background).
+ * - `--accent-fill`: what fills a button or the cursor's disc, a colour or a gradient.
+ * - `--accent-line`, `--accent-line-down`: the colour or gradient of a line, across (the email's underline) or down (the
+ *   call's line).
+ * - `--accent-ink`: the text on a fill.
+ */
+
+html[data-accent] {
+  --accent: #fff;
+  --accent-fill: var(--accent);
+  --accent-line: var(--accent);
+  --accent-line-down: var(--accent);
+  --accent-ink: #0c0c0d;
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+/* 1. The current portfolio (gregoiretinn.es): the green, turquoise and sky blue gradient of its menu and bubble. */
+html[data-accent='1'] {
+  --accent: #71c4bb;
+  --accent-fill: linear-gradient(90deg, #6db96e, #71c4bb 50%, #90d3f4);
+  --accent-line: linear-gradient(90deg, #6db96e, #71c4bb 50%, #90d3f4);
+  --accent-line-down: linear-gradient(#6db96e, #71c4bb 50%, #90d3f4);
+}
+
+/* 2. The scarf: the Little Prince's gold (his scarf and hair, `#F5C632` in the model). */
+html[data-accent='2'] {
+  --accent: #f4c542;
+}
+
+/* 3. The fox: its orange, as the spot lights it (`#DB7002` in the model). */
+html[data-accent='3'] {
+  --accent: #f7882f;
+}
+
+/* 4. The rose: its petals' pink (`#CF6881` in the model), a little lighter to read on the night. */
+html[data-accent='4'] {
+  --accent: #e8869c;
+}
+
+/* 5. The coat: the Little Prince's green (`#A9CE73` in the model). */
+html[data-accent='5'] {
+  --accent: #a9ce73;
+}
+
+/* 6. The visitor's moment: the rose at dawn, the fox at dusk, like the tint at the top of the page (main spec §5.3). */
+html[data-accent='6'][data-moment='aube'] {
+  --accent: #e8869c;
+}
+
+html[data-accent='6'][data-moment='crepuscule'] {
+  --accent: #f7882f;
+}
+
+/* 7. The whole planet: its four colours in a row, the coat, the scarf, the fox and the rose; the scarf for text. */
+html[data-accent='7'] {
+  --accent: #f4c542;
+  --accent-fill: linear-gradient(90deg, #a9ce73, #f4c542 36%, #f7882f 68%, #e8869c);
+  --accent-line: linear-gradient(90deg, #a9ce73, #f4c542 36%, #f7882f 68%, #e8869c);
+  --accent-line-down: linear-gradient(#a9ce73, #f4c542 36%, #f7882f 68%, #e8869c);
+}
+
+/* Selection and focus. */
+html[data-accent] ::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+html[data-accent] :focus-visible {
+  outline-color: var(--accent);
+}
+
+/* Hover: the links take the accent rather than fading. */
+html[data-accent]
+  body
+  :is(.header .links > a, .header .name, .menu .links a, .contact .links a, .case-header .back, .facts .links a):hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+html[data-accent] body .languages a:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+/* The current language, underlined in the accent. */
+html[data-accent] body .languages [aria-current='page'] {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1.5px;
+}
+
+/* The header: the current section lights up in the accent, on a computer (Header.astro). */
+@media (width >= 768px) {
+  html[data-accent] body .header[data-section][data-site-header] :is(.name, .links > a)[aria-current] {
+    color: var(--accent);
+    text-shadow:
+      0 0 10px var(--accent-glow),
+      0 0 22px var(--accent-soft);
+  }
+}
+
+/* The opening: the job, and the moving part of the call's line. */
+html[data-accent] body .opening .job {
+  color: var(--accent);
+}
+
+html[data-accent] body .opening .cta-line span {
+  background: var(--accent-line-down);
+}
+
+/* The ring of projects: the cartel's tag, the counter's current number, the arrows pointed at, the disc. */
+html[data-accent] body .cartel .tag {
+  color: var(--accent);
+}
+
+html[data-accent] body .showcase-count .now {
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  html[data-accent] body .showcase-arrow:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}
+
+html[data-accent] body .showcase-arrow:focus-visible {
+  outline-color: var(--accent);
+}
+
+html[data-accent][data-journey='on'] body .cursor {
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+}
+
+html[data-accent] body .project .pill {
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+}
+
+/* The case studies: the number and the dots, the tag, the buttons, the ticks, the next project's arrow. */
+html[data-accent] body .case-header .number .now {
+  color: var(--accent);
+}
+
+html[data-accent] body .case-header .dots .current {
+  background-color: var(--accent);
+}
+
+html[data-accent] body .case .intro .tag {
+  color: var(--accent);
+}
+
+html[data-accent] body :is(.facts .button, .band .band-button) {
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+}
+
+html[data-accent] body :is(.facts .button, .band .band-button):hover {
+  background: linear-gradient(rgb(255 255 255 / 18%) 0 0), var(--accent-fill);
+  box-shadow: 0 0 0 5px var(--accent-soft);
+}
+
+html[data-accent] body .case-main .did svg {
+  stroke: var(--accent);
+}
+
+html[data-accent] body .next .arrow,
+html[data-accent] body .peek-arrow {
+  color: var(--accent);
+}
+
+/* The contact: its label, the email's underline, the copy button pointed at, the links' arrows. */
+html[data-accent] body .contact .text .label {
+  color: var(--accent);
+}
+
+html[data-accent] body .contact .email > a {
+  border-bottom-color: var(--accent);
+}
+
+html[data-accent='1'] body .contact .email > a,
+html[data-accent='7'] body .contact .email > a {
+  border-image: var(--accent-line) 1;
+}
+
+html[data-accent] body .contact .email .copy:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+html[data-accent] body .contact .links a span {
+  color: var(--accent);
+}
+
+/* The header's links pointed at, over the dimming of the links that are not the current section. */
+@media (width >= 768px) {
+  html[data-accent] body .header[data-section][data-site-header] :is(.name, .links > a):hover {
+    color: var(--accent);
+  }
+}

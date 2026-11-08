@@ -4,11 +4,13 @@ import Header from '../components/Header.astro';
 import Menu from '../components/Menu.astro';
 import { alternate, defaultLocale, locales, t, type Locale } from '../i18n';
 import { stripBase } from '../i18n';
+import { applyAccent } from '../lib/accent';
 import { withBase } from '../lib/url';
 import { applyMoment } from '../scene/time';
 import { fontFaceCss, preloadedFonts } from '../styles/fonts';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/accent-proposals.css';
 
 interface Props {
   locale: Locale;
@@ -26,6 +28,8 @@ const alternates = locales.map((lang) => ({ lang, href: absolute(lang === locale
 const xDefault = alternates.find(({ lang }) => lang === defaultLocale)?.href;
 // The moment is set before the first paint, from the same function the tests cover.
 const momentScript = `(${applyMoment.toString()})();`;
+// The accent colour proposals, before the first paint too (`?accent=1…7`).
+const accentScript = `(${applyAccent.toString()})();`;
 ---
 
 <!doctype html>
@@ -54,6 +58,7 @@ const momentScript = `(${applyMoment.toString()})();`;
     ))}
     <style is:inline set:html={fontFaceCss} />
     <script is:inline set:html={momentScript} />
+    <script is:inline set:html={accentScript} />
     <ClientRouter />
   </head>
   <body>
@@ -80,6 +85,7 @@ const momentScript = `(${applyMoment.toString()})();`;
   import { initSlide } from '../motion/slide';
   import { initSwipe } from '../motion/swipe';
   import { initSection } from '../motion/section';
+  import { applyAccent } from '../lib/accent';
   import { applyMoment, onMomentChange } from '../scene/time';
 
   // Module scripts run once per visit; the client router keeps the document, so delegated listeners stay.
@@ -91,6 +97,7 @@ const momentScript = `(${applyMoment.toString()})();`;
   initSection();
   // The router swaps the root element's attributes for the new page's: the moment is set again on each page.
   document.addEventListener('astro:after-swap', applyMoment);
+  document.addEventListener('astro:after-swap', applyAccent);
   onMomentChange((moment) => {
     document.documentElement.dataset.moment = moment;
   });
