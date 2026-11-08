@@ -412,6 +412,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): () => 
         livePlanet = created;
         handoff = planetHandoff(container, created.canvas);
         planetSampler = planetForced ? null : frameSampler();
+        performance.mark('journey:planet-ready');
         redraw = true;
       })
       .catch(() => {
