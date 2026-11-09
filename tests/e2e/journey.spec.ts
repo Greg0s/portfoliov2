@@ -445,8 +445,10 @@ test('?mesure=visite goes through a case study and back to the screen, and lists
   const result = page.getByRole('status').filter({ hasText: '"pages"' });
   await expect(result).toBeVisible({ timeout: 220_000 });
   const text = (await result.textContent()) ?? '';
-  for (const step of ['ouverture', 'anneau', 'plongée', 'suivant 1', 'suivant 2', 'retour', 'contact', 'écran'])
+  for (const step of ['ouverture', 'anneau', 'plongée', 'suivant 1', 'suivant 2', 'retour', 'contact'])
     expect(text).toContain(`"${step}"`);
+  // Each page of the screen is a step of its own.
+  expect(text.match(/"écran [^"]+": \{/g)).toHaveLength(4);
   const report = JSON.parse(text.replace(/Copier$/, '')) as { pages: { to: string }[]; screenPages: unknown[] };
   expect(report.pages.map(({ to }) => to)).toHaveLength(4);
   expect(report.pages.at(-1)?.to).toMatch(/\/$/);

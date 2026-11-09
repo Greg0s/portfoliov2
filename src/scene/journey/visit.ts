@@ -171,12 +171,13 @@ async function run(): Promise<void> {
   await wait(6000);
   const arrival = document.documentElement.dataset.officeArrival ?? '';
 
-  enter('écran');
   const mobile = matchMedia('(pointer: coarse)').matches;
   const element = document.querySelector<HTMLElement>('.office-screen .desktop');
   if (mobile && element) {
     // A tap opens a page, the next one closes it.
     for (let page = 0; page < 4; page += 1) {
+      // Each page its own step: which one holds the frames.
+      enter(`écran ${String(page + 1)}`);
       element.click();
       screen.push(await captureReady(`tap ${String(page + 1)}`));
       await wait(1500);
@@ -187,6 +188,7 @@ async function run(): Promise<void> {
     for (const link of document.querySelectorAll<HTMLElement>('[data-screen-page]')) {
       const name = link.dataset.screenPage ?? '';
       if (name === 'Email') continue;
+      enter(`écran ${name}`);
       link.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
       screen.push(await captureReady(name));
       await wait(1500);
@@ -204,8 +206,29 @@ async function run(): Promise<void> {
     const scripts = [...entry.scripts]
       .sort((a, b) => b.duration - a.duration)
       .slice(0, 2)
-      .map((s) => `${String(round(s.duration))} ${s.sourceFunctionName || '?'}@${s.sourceURL.split('/').pop() ?? ''}`);
-    return [`block ${String(round(entry.blockingDuration))}`, ...scripts].join(' | ');
+      .map(
+        (s) =>
+          `${String(round(s.duration))} ${s.invoker.slice(0, 40)} ${s.sourceFunctionName || '?'}@${s.sourceURL.split('/').pop() ?? ''}` +
+          (s.forcedStyleAndLayoutDuration > 1
+            ? ` (forced layout ${String(round(s.forcedStyleAndLayoutDuration))})`
+            : ''),
+      );
+    // Where the frame went: scripts, the frame's callbacks, then style, layout and paint. A hitch far longer than
+    // its frame waited on the compositor or the GPU.
+    const end = entry.startTime + entry.duration;
+    const phases = entry.renderStart
+      ? [
+          `script ${String(round(entry.scripts.reduce((sum, s) => sum + s.duration, 0)))}`,
+          `frame callbacks ${String(round(entry.styleAndLayoutStart - entry.renderStart))}`,
+          `style, layout and paint ${String(round(end - entry.styleAndLayoutStart))}`,
+        ]
+      : [];
+    return [
+      `frame ${String(round(entry.duration))}`,
+      `block ${String(round(entry.blockingDuration))}`,
+      ...phases,
+      ...scripts,
+    ].join(' | ');
   };
   const result = {
     date: new Date().toISOString(),
