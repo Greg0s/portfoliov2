@@ -8,7 +8,7 @@
 import { Image } from 'astro:assets';
 import Cartel from './Cartel.astro';
 import { pathFor, t, type Locale } from '../i18n';
-import { projectTag, type Project } from '../lib/projects';
+import { captureAttributes, projectTag, type Project } from '../lib/projects';
 import { withBase } from '../lib/url';
 import { slotAt } from '../scene/slots';
 
@@ -22,6 +22,9 @@ const { locale, project, index } = Astro.props;
 const label = t(locale);
 const { slug, data, text } = project;
 const slot = slotAt(index);
+const cardWidths = (image: { width: number }): number[] => [480, 720, 1120].filter((width) => width <= image.width);
+const sizes = '(width < 768px) 78vw, 38vw';
+const capture = await captureAttributes(data, cardWidths, sizes);
 const cartelId = `cartel-${slug}`;
 const href = withBase(pathFor({ id: 'project', slug }, locale));
 ---
@@ -34,10 +37,11 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
         <Image
           src={data.cover}
           alt=""
-          widths={[480, 720, 1120].filter((width) => width <= data.cover.width)}
-          sizes="(width < 768px) 78vw, 38vw"
+          widths={cardWidths(data.cover)}
+          sizes={sizes}
           fetchpriority="low"
           style={data.coverFocus ? `object-position: ${data.coverFocus}` : undefined}
+          {...capture}
         />
         <span class="visually-hidden">
           {label('card.see')} : {text.data.title}

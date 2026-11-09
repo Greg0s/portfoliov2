@@ -36,6 +36,8 @@ const projects = defineCollection({
           .default({}),
         cover: image(),
         coverFocus: focus,
+        /** A proposal (9 November 2026): the product's screenshot, framed, shown instead of the cover under `?banniere=capture`. */
+        capture: image().optional(),
         /** The card's muted video loop, added at step 9. */
         loop: z.string().optional(),
         /**

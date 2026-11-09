@@ -16,6 +16,7 @@
  *
  * Once per document: the client router keeps it going from page to page.
  */
+import { swapCaptures } from '../lib/banner';
 import { atRest, watchMoves } from './rest';
 
 /** How long after the page's load the queue starts, in ms. */
@@ -126,7 +127,9 @@ async function run(home: ParentNode): Promise<void> {
       done.push(page);
       if (spare || !html) continue;
       // The cover, as the case study's page will ask for it on this screen.
-      const cover = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-case-slug] .cover img');
+      const parsed = new DOMParser().parseFromString(html, 'text/html');
+      swapCaptures(parsed);
+      const cover = parsed.querySelector('[data-case-slug] .cover img');
       if (cover) {
         await atRest(moves, PATIENCE);
         await picture(cover.getAttribute('src') ?? '', {

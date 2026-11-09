@@ -2,6 +2,7 @@
  * The projects in one language: each project's data joined with its text, in the order of the journey. The case
  * studies, and the home from step 5, read the projects only through here.
  */
+import { getImage } from 'astro:assets';
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import type { Locale } from '../i18n';
 
@@ -40,4 +41,19 @@ export function projectNumber(order: number): string {
 /** A project's tag: `2024 — Three.js · génératif`. */
 export function projectTag(project: Project): string {
   return `${String(project.data.year)} — ${project.text.data.kind}`;
+}
+
+/**
+ * The attributes that let an image of a project's cover show its framed screenshot instead, under `?banniere=capture`
+ * (src/lib/banner.ts): none for a project without a capture.
+ */
+export async function captureAttributes(
+  data: Project['data'],
+  widths: (capture: { width: number }) => number[],
+  sizes: string,
+): Promise<Record<string, string>> {
+  const { capture } = data;
+  if (!capture) return {};
+  const image = await getImage({ src: capture, widths: widths(capture), sizes });
+  return { 'data-capture-src': image.src, 'data-capture-srcset': image.srcSet.attribute };
 }

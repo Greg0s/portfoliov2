@@ -337,3 +337,8 @@ html[data-sans-ombres][data-journey='on'] .project.lit .card {
 html[data-sans-fond] {
   background: var(--color-bg-deep);
 }
+
+/* The banner proposal (src/lib/banner.ts): an image waiting for its capture stays hidden, so its cover never flashes. */
+html[data-banniere='capture'] img[data-capture-src]:not([data-captured]) {
+  visibility: hidden;
+}

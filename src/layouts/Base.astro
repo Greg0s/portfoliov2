@@ -4,6 +4,7 @@ import Header from '../components/Header.astro';
 import Menu from '../components/Menu.astro';
 import { alternate, defaultLocale, locales, t, type Locale } from '../i18n';
 import { stripBase } from '../i18n';
+import { applyBanner } from '../lib/banner';
 import { withBase } from '../lib/url';
 import { applyMoment } from '../scene/time';
 import { fontFaceCss, preloadedFonts } from '../styles/fonts';
@@ -28,6 +29,8 @@ const xDefault = alternates.find(({ lang }) => lang === defaultLocale)?.href;
 const momentScript = `(${applyMoment.toString()})();`;
 // Measurement switches (`?ombres=0`, `?fond=0`): the page without the cards' large shadows, or without its gradient,
 // to tell what each costs on a browser that draws the ring slowly (see `src/styles/base.css`).
+// The banner proposal (`?banniere=capture`, src/lib/banner.ts), before the first paint too.
+const bannerScript = `(${applyBanner.toString()})();`;
 const switchesScript = `(() => { const asked = new URLSearchParams(location.search); for (const name of ['ombres', 'fond']) if (asked.get(name) === '0') document.documentElement.setAttribute('data-sans-' + name, ''); })();`;
 ---
 
@@ -60,6 +63,7 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
     <style is:inline set:html={fontFaceCss} />
     <script is:inline set:html={momentScript} />
     <script is:inline set:html={switchesScript} />
+    <script is:inline set:html={bannerScript} />
     <ClientRouter />
   </head>
   <body>
@@ -80,6 +84,7 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
 </html>
 
 <script>
+  import { applyBanner, swapCaptures } from '../lib/banner';
   import { initDive } from '../motion/dive';
   import { initMenu } from '../motion/menu';
   import { initNav } from '../motion/nav';
@@ -97,6 +102,12 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
   initSection();
   // The router swaps the root element's attributes for the new page's: the moment is set again on each page.
   document.addEventListener('astro:after-swap', applyMoment);
+  // The banner proposal: the captures swapped in on this page, and on each new page before it shows.
+  swapCaptures(document);
+  document.addEventListener('astro:before-swap', (event) => {
+    swapCaptures(event.newDocument);
+  });
+  document.addEventListener('astro:after-swap', applyBanner);
   onMomentChange((moment) => {
     document.documentElement.dataset.moment = moment;
   });

@@ -4,4 +4,5 @@ stack: [React, TypeScript, Vite, Cloudflare Workers, Hono, Durable Objects, Work
 links:
   live: https://lyrix.mintymoon.app/
 cover: ./cover.jpg
+capture: ./capture.jpg
 band: true

@@ -17,7 +17,7 @@ import ProjectFacts from './ProjectFacts.astro';
 import { config } from '../config';
 import { pathFor, t, type Locale } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { coverWidths, projectNumber, projectTag, type Project } from '../lib/projects';
+import { captureAttributes, coverWidths, projectNumber, projectTag, type Project } from '../lib/projects';
 import { neighbours } from '../lib/ring';
 import { withBase } from '../lib/url';
 
@@ -47,8 +47,16 @@ const ring = JSON.stringify(projects.map(projectPath));
 /** A neighbour, for a swipe: its page, and its cover's sources, loaded ahead so that the page slides in with it. */
 const peek = async (other: Project) => {
   const image = await getImage({ src: other.data.cover, widths: coverWidths(other.data.cover), sizes: '100vw' });
-  return { href: projectPath(other), title: other.text.data.title, srcset: image.srcSet.attribute, src: image.src };
+  const capture = await captureAttributes(other.data, coverWidths, '100vw');
+  return {
+    href: projectPath(other),
+    title: other.text.data.title,
+    srcset: image.srcSet.attribute,
+    src: image.src,
+    capture,
+  };
 };
+const coverCapture = await captureAttributes(project.data, coverWidths, '100vw');
 const peeks = [
   { side: 'previous', label: label('case.previous'), ...(await peek(previous)) },
   { side: 'next', label: label('case.next'), ...(await peek(next)) },
@@ -83,8 +91,15 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     </header>
     {/* What a swipe shows coming in from the edge: the neighbour it leads to. */}
     <div class="peeks" aria-hidden="true">
-      {peeks.map(({ side, label: text, title: name, href, srcset, src }) => (
-        <span class:list={['peek', side]} data-peek={side} data-href={href} data-srcset={srcset} data-src={src}>
+      {peeks.map(({ side, label: text, title: name, href, srcset, src, capture }) => (
+        <span
+          class:list={['peek', side]}
+          data-peek={side}
+          data-href={href}
+          data-srcset={srcset}
+          data-src={src}
+          {...capture}
+        >
           <span class="peek-label">{text}</span>
           <span class="peek-title">
             {side === 'previous' && <span class="peek-arrow">←</span>}
@@ -109,6 +124,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
           fetchpriority="high"
           transition:name={`cover-${project.slug}`}
           style={coverFocus ? `object-position: ${coverFocus}` : undefined}
+          {...coverCapture}
         />
       </figure>
 
