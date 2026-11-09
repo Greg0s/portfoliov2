@@ -3,7 +3,7 @@ title: What we play?
 kind: Web · CSS 3D
 role: Concept, design and development
 summary: Find an online game to play together, in a colourful, lively interface.
-coverAlt: The What we play? logo in a speech bubble, next to an old Mac with a TV face and four coloured pawns.
+coverAlt: 'The What we play? home in a browser, “À quoi on joue à 6 ?” and its game filters, and the same screen on a phone.'
 stats:
   - { value: '30+', label: hand-picked games }
 outcomes:

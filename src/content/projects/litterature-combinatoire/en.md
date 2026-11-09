@@ -3,7 +3,7 @@ title: Littérature & Combinatoire
 kind: Web · real time · video
 role: Mockup, back end, front end and video
 summary: An exhibition, a site that generates texts by combination in real time, and its promotional video.
-coverAlt: The title Littérature & Combinatoire, in black geometric letters, on a pastel gradient.
+coverAlt: 'The Combimac home in a browser, “Bienvenue dans le projet littérature & combinatoire”, and the creations page on a phone.'
 outcomes:
   - 'A tap on the phone recomposes the text on the screen, in real time.'
   - 'Each text keeps the form of its genre, and visitors see how it came about.'

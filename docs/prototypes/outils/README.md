@@ -61,3 +61,13 @@ node interactions/menu.cjs essais/canevas/Mobile.dc.html reduce
 - Les composants importés reçoivent leurs attributs comme dans le canevas (`dive-index` devient `diveIndex`) ; les attributs `hint-*` sont ignorés.
 - Les polices des balises `<helmet>` (Google Fonts) demandent un accès au réseau.
 - Les fichiers du canevas ne sont jamais versionnés : la référence est l'artefact publié.
+
+## Framing the projects' screenshots
+
+`cadrer-captures.cjs` makes the projects' covers (the card and the case study's banner): each product's screenshot in a
+browser window, with a phone when there is one, on the site's night background, under a soft glow in the product's
+colours. The screenshots stay out of the repository, in `.design-assets/captures/`; the script's header lists them.
+
+```sh
+node cadrer-captures.cjs ../../../.design-assets/captures out
+```
