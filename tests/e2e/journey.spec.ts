@@ -471,7 +471,7 @@ test('?mesure=visite goes through a case study and back to the screen, and lists
     expect(text).toContain(`"${step}"`);
   // Each page of the screen is a step of its own.
   expect(text.match(/"écran [^"]+": \{/g)).toHaveLength(4);
-  const report = JSON.parse(text.replace(/Copier$/, '')) as { pages: { to: string }[]; screenPages: unknown[] };
+  const report = JSON.parse(text.replace(/^Copier/, '')) as { pages: { to: string }[]; screenPages: unknown[] };
   expect(report.pages.map(({ to }) => to)).toHaveLength(4);
   expect(report.pages.at(-1)?.to).toMatch(/\/$/);
   expect(report.screenPages).toHaveLength(4);

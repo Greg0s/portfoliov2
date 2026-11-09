@@ -262,17 +262,7 @@ async function run(): Promise<void> {
   };
   const text = JSON.stringify(result, null, 2);
   console.info('mesure de la visite', result);
-  out.show(text);
-  const copy = document.createElement('button');
-  copy.type = 'button';
-  copy.textContent = 'Copier';
-  Object.assign(copy.style, { display: 'block', marginTop: '8px', font: 'inherit', padding: '4px 10px' });
-  copy.addEventListener('click', () => {
-    void navigator.clipboard.writeText(text).then(() => {
-      copy.textContent = 'Copié';
-    });
-  });
-  out.append(copy);
+  out.report(text);
 }
 
 /** Whether the screen page just opened shows its capture: at once (0), after how long, or not within 3 s (null). */
