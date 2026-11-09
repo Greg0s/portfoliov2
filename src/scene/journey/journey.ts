@@ -124,6 +124,9 @@ const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
 const easeInOutSine = (t: number): number => (1 - Math.cos(Math.PI * t)) / 2;
 /** The glide between the opening and the ring of projects, in ms: about the old glide to the first project. */
 const SHOWCASE_GLIDE_MS = 1150;
+/** How far a finger moves, in px, before it is told whether it turns the ring or scrolls the page: under the
+ * browsers' own threshold for scrolling, so that the page has not moved yet. */
+const SIDEWAYS_SLOP = 8;
 
 interface CardParts {
   item: HTMLElement;
@@ -691,6 +694,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   let touchX = 0;
   /** Whether the finger turns the ring rather than the page. */
   let sideways = false;
+  /** Whether the finger has gone far enough for that to be told, once for the whole touch. */
+  let decided = false;
   let touchY = 0;
   let touchFrom = 0;
   let touchTime = 0;
@@ -709,18 +714,26 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     touchStartX = event.touches[0]?.clientX ?? 0;
     touchX = touchStartX;
     sideways = false;
+    decided = false;
     touchTime = event.timeStamp;
     touchSpeed = 0;
   };
   const onTouchMove = (event: TouchEvent): void => {
     const y = event.touches[0]?.clientY ?? touchY;
     touchX = event.touches[0]?.clientX ?? touchX;
-    // On the ring, a finger going sideways turns it, following the finger.
+    // On the ring, a finger going sideways turns it, following the finger. Which way it goes is told once, from its
+    // first moves, before the browser starts scrolling: a finger going more across than up or down turns the ring, and
+    // the page holds still under it (the browser's own scrolling held back, up to the finger's last move, however it
+    // drifts); else the page scrolls and the ring stays.
     const across = touchStartX - touchX;
-    if (!sideways && atShowcase() && Math.abs(across) > 12 && Math.abs(across) > 1.2 * Math.abs(touchStartY - y)) {
-      sideways = true;
+    if (!decided && Math.max(Math.abs(across), Math.abs(touchStartY - y)) > SIDEWAYS_SLOP) {
+      decided = true;
+      sideways = atShowcase() && Math.abs(across) > Math.abs(touchStartY - y);
     }
-    if (sideways) showcase.drag(across / (scene.view.width * 0.9));
+    if (sideways) {
+      if (event.cancelable) event.preventDefault();
+      showcase.drag(across / (scene.view.width * 0.9));
+    }
     if (y !== touchY) direction = Math.sign(touchY - y);
     // The finger's speed, smoothed, in px/ms (positive: scrolling down).
     const dt = Math.max(1, event.timeStamp - touchTime);
@@ -1260,7 +1273,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('wheel', onWheel, { passive: false });
   window.addEventListener('touchstart', onTouchStart, { passive: true });
-  window.addEventListener('touchmove', onTouchMove, { passive: true });
+  // Not passive: on the ring, a sideways finger holds the page still.
+  window.addEventListener('touchmove', onTouchMove, { passive: false });
   window.addEventListener('touchend', onTouchEnd, { passive: true });
   // ---------- The live office ----------
 
