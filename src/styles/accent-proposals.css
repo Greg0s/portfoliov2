@@ -3,9 +3,10 @@
  * the "Musée de nuit" charter extended by one or more accent colours. Every proposal puts its accent in the same few
  * places, so that they compare: the moves (buttons, the "See the project" disc), where the visitor is (the current
  * section, the project's number, the dots), the marks (the tags, the ticks, the arrows), and the hover, focus and
- * selection. The stars, the cards' ring, the planet, the office and the moment's tint stay as they are, unless
- * `?lumiere=1…3` brings the accent into their light too (src/lib/accent-light.ts, and the end of this sheet). Without
- * the parameters, none of these rules applies.
+ * selection. The stars, the cards' ring, the planet and the office stay as they are, unless `?lumiere=1…3` brings the
+ * accent into their light too (src/lib/accent-light.ts, and the end of this sheet); the night background keeps the
+ * moment's tint, unless `?fond=1…3` gives it the accent's colours (the end of this sheet). Without the parameters, none
+ * of these rules applies.
  *
  * Tokens:
  * - `--accent`: the solid accent, for text, icons and thin lines (at least 7.5:1 on the night background).
@@ -337,4 +338,78 @@ html[data-accent][data-lumiere][data-journey='on'] body .planet-glow {
     color-mix(in srgb, var(--accent-light-end) 16%, transparent) 56%,
     transparent 72%
   );
+}
+
+/*
+ * The background (`?fond=1…3`, 9 November 2026): the page's night takes the accent's colours, its gradient's first
+ * stop and its last, instead of the moment's tint; the planet and the office still follow the moment.
+ * 1. The veil: the tint as it is, strongest at the top of the page, in the accent, from left to right.
+ * 2. The corners: two glows in opposite corners, the first stop at the bottom left, the last at the top right.
+ * 3. The tinted night: the whole night, very dark, from the first stop at the top to the last at the bottom, and with
+ *    it the glow behind the planet and the dark of the cuts.
+ * Each sets `--fond`, the page's background, which the case study's cover also fades into.
+ */
+html[data-accent][data-fond] {
+  --fond-start: var(--accent-light-start);
+  --fond-end: var(--accent-light-end);
+
+  background: var(--fond);
+}
+
+html[data-accent][data-fond='1'] {
+  --fond:
+    linear-gradient(to bottom, rgb(6 6 7 / 0%), var(--color-bg-deep)) fixed,
+    linear-gradient(
+        to right,
+        color-mix(in srgb, var(--fond-start) 12%, var(--color-bg)),
+        color-mix(in srgb, var(--fond-end) 12%, var(--color-bg))
+      )
+      fixed var(--color-bg-deep);
+}
+
+html[data-accent][data-fond='2'] {
+  --fond:
+    radial-gradient(
+        ellipse 80% 80% at 0% 100%,
+        color-mix(in srgb, var(--fond-start) 20%, transparent),
+        color-mix(in srgb, var(--fond-start) 7%, transparent) 45%,
+        transparent
+      )
+      fixed,
+    radial-gradient(
+        ellipse 80% 80% at 100% 0%,
+        color-mix(in srgb, var(--fond-end) 20%, transparent),
+        color-mix(in srgb, var(--fond-end) 7%, transparent) 45%,
+        transparent
+      )
+      fixed,
+    linear-gradient(to bottom, var(--color-bg), var(--color-bg-deep)) fixed var(--color-bg-deep);
+}
+
+html[data-accent][data-fond='3'] {
+  --color-bg: color-mix(in srgb, var(--fond-start) 7%, #0c0c0d);
+  --color-bg-deep: color-mix(in srgb, var(--fond-end) 5%, #060607);
+  --color-menu: color-mix(in srgb, var(--color-bg) 97%, transparent);
+  --fond-glow: color-mix(in srgb, var(--accent) 9%, #0f0f11);
+  --fond: linear-gradient(to bottom, var(--color-bg), var(--color-bg-deep)) fixed var(--color-bg-deep);
+}
+
+html[data-accent][data-fond='3']:not([data-journey='on']) body .opening {
+  background: radial-gradient(ellipse at 50% 50%, var(--fond-glow) 0%, rgb(10 10 11 / 0%) 70%);
+}
+
+html[data-accent][data-fond='3'][data-journey='on'] body .stage {
+  background: radial-gradient(ellipse at 50% var(--vp-y-ratio, 50%), var(--fond-glow) 0%, rgb(10 10 11 / 0%) 52%);
+}
+
+@media (width < 768px) {
+  html[data-accent][data-fond='3']:not([data-journey='on']) body .opening {
+    background: radial-gradient(ellipse at 50% 29%, var(--fond-glow) 0%, rgb(10 10 11 / 0%) 70%);
+  }
+}
+
+/* The case study's cover fades into the page's background as it is behind it, rather than into the plain night. */
+html[data-accent][data-fond] body .cover::before {
+  background: var(--fond);
+  mask-image: linear-gradient(to bottom, transparent, rgb(0 0 0 / 72%) 32%, rgb(0 0 0 / 92%) 58%, #000);
 }
