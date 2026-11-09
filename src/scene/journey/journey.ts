@@ -191,6 +191,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // Firefox sorts everything in one 3D scene plane by plane: a card's dark shadow, in the card's own plane, would
   // now and then be drawn over the card. There each card is flattened into its own picture, the perspective of its
   // turn given by its own frame, seen from the vanishing point at the card's distance: the same drawing, in one plane.
+  // The ring's probe (`?mesure=anneau`, `ring-probe.ts`) stops drawing one part or another: its names, in
+  // `data-probe` on the root element.
+  const probing = (part: string): boolean => html.dataset.probe?.includes(part) ?? false;
   const flatCards = CSS.supports('-moz-appearance', 'none');
   const cardPerspective = (parts: CardParts, x: number, y: number, depth: number, lift: number, view: View): void => {
     if (!flatCards) return;
@@ -492,7 +495,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     lastPlanetDraw = now;
     const draws = handoff.update(blur < PLANET_SHARP, now);
     html.dataset.planet = handoff.state();
-    if (!draws) return;
+    if (!draws || probing('planete')) return;
     livePlanet.setMoment(moment);
     livePlanet.render(delta);
     if (planetSampler && previousDraw > 0) {
@@ -1186,16 +1189,17 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       const disc = approach
         ? { x: ring.x, y: ring.y, r: held.diameter / 2 }
         : { x: view.vpX + planetRest.x + dx, y: view.vpY + planetRest.y + dy, r: (planetSize * sP) / 2 };
-      showcase.draw({
-        view,
-        sway,
-        shift: approach ? 0 : Math.min(relative, 0.72),
-        presence:
-          (approach ? smoothstep(0.4, 0.95, approach.t) : 1 - smoothstep(0.08, 0.45, Math.abs(relative))) * others,
-        zoom: approach ? { k: approach.zoom, x: approach.ox, y: approach.oy } : null,
-        time,
-        planet: disc,
-      });
+      if (!probing('ciel'))
+        showcase.draw({
+          view,
+          sway,
+          shift: approach ? 0 : Math.min(relative, 0.72),
+          presence:
+            (approach ? smoothstep(0.4, 0.95, approach.t) : 1 - smoothstep(0.08, 0.45, Math.abs(relative))) * others,
+          zoom: approach ? { k: approach.zoom, x: approach.ox, y: approach.oy } : null,
+          time,
+          planet: disc,
+        });
     }
     // The office loads from the first project on.
     if (u >= (anchors[1] ?? 0) - 0.01 && html.dataset.office !== 'live') html.dataset.office = 'near';
@@ -1247,7 +1251,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     }
 
     // The stars.
-    if (renderer && stars && swayMatrixOf) {
+    if (renderer && stars && swayMatrixOf && !probing('etoiles')) {
       stars.update({
         time,
         depth,

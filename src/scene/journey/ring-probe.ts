@@ -16,18 +16,27 @@ const wait = (ms: number): Promise<void> =>
   });
 const round = (x: number, digits = 1): number => Number(x.toFixed(digits));
 
-/** Each pass: its name and the styles that hide one part of the page while the ring turns. */
-const PASSES: readonly (readonly [string, string])[] = [
-  ['tout', ''],
-  ['sans ciel de l’anneau', '.showcase-sky { display: none !important; }'],
-  ['sans cartes', '[data-journey-root] .float { visibility: hidden !important; }'],
-  ['cartes sans ombre', '[data-journey-root] .card { box-shadow: none !important; }'],
-  ['cartes sans flou', '[data-journey-root] .card { filter: none !important; }'],
-  ['cartes sans image', '[data-journey-root] .card img { visibility: hidden !important; }'],
-  ['cartes sans perspective propre', '[data-journey-root] .float { perspective: none !important; }'],
-  ['sans planète 3D', '.planet-canvas { visibility: hidden !important; }'],
-  ['sans cartels ni flèches', '.cartel, .showcase-ui { visibility: hidden !important; }'],
-  ['tout de nouveau', ''],
+/**
+ * Each pass: its name, the parts whose drawing stops (`data-probe`, read by the journey) and the styles that hide
+ * them, or hide one part of the page, while the ring turns. The last but one pass doesn't turn: the ring at rest.
+ */
+const NOTHING =
+  '.showcase-sky, [data-journey-root] .project, .cartel, .showcase-ui, .planet-canvas { display: none !important; }';
+const PASSES: readonly (readonly [string, string, string])[] = [
+  ['tout', '', ''],
+  ['sans ciel (ni dessin)', 'ciel', '.showcase-sky { display: none !important; }'],
+  ['sans étoiles (ni dessin)', 'etoiles', ''],
+  ['sans planète 3D (ni dessin)', 'planete', '.planet-canvas { display: none !important; }'],
+  ['sans cartes (retirées)', '', '[data-journey-root] .project { display: none !important; }'],
+  [
+    'cartes sans ombre ni flou',
+    '',
+    '[data-journey-root] .card { box-shadow: none !important; filter: none !important; }',
+  ],
+  ['sans aucun dessin', 'ciel etoiles planete', '.showcase-sky, .planet-canvas { display: none !important; }'],
+  ['sans rien', 'ciel etoiles planete', NOTHING],
+  ['à l’arrêt', '', ''],
+  ['tout de nouveau', '', ''],
 ];
 
 let running = false;
@@ -92,19 +101,24 @@ async function run(): Promise<void> {
   document.head.append(style);
   const projects = document.querySelectorAll('[data-project]').length;
   const passes: Record<string, unknown> = {};
-  for (const [name, css] of PASSES) {
+  const html = document.documentElement;
+  for (const [name, parts, css] of PASSES) {
     out.show(`mesure de l’anneau : ${name}…`);
     style.textContent = css;
+    if (parts) html.dataset.probe = parts;
+    else delete html.dataset.probe;
     await wait(600);
     const journey = currentJourney();
     if (!journey) break;
     frames = [];
     scriptTimes = [];
-    for (let card = 0; card < projects; card += 1) {
-      journey.turn(1);
-      await until(() => journey.turned());
-      await wait(150);
-    }
+    if (name === 'à l’arrêt') await wait(4000);
+    else
+      for (let card = 0; card < projects; card += 1) {
+        journey.turn(1);
+        await until(() => journey.turned());
+        await wait(150);
+      }
     const sorted = [...scriptTimes].sort((a, b) => a - b);
     const total = scriptTimes.reduce((sum, time) => sum + time, 0);
     const { frames: count, fps, medianMs, p95Ms, slowPct } = summarize(frames);
@@ -120,6 +134,7 @@ async function run(): Promise<void> {
     frames = null;
   }
   style.remove();
+  delete html.dataset.probe;
 
   const result = {
     date: new Date().toISOString(),
