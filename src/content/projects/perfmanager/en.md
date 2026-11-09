@@ -5,7 +5,7 @@ role: Full-stack web development and support
 period: Since February 2026
 summary: Building and maintaining a complex QHSE management platform used across France.
 lede: Building and maintaining a complex QHSE management platform used nationwide.
-coverAlt: 'Perfmanager, the 2019 management review: the map of production, management and support processes, in green, orange and red.'
+coverAlt: 'Perfmanager in a browser, the 2019 management review: the map of production, management and support processes, in green, orange and red.'
 stats:
   - { value: '100+', label: client companies }
   - { value: '2,000+', label: users across France }

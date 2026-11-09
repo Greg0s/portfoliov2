@@ -3,7 +3,7 @@ title: Siemens
 kind: Stage web · Industrie 4.0
 role: Conception et développement web
 summary: Faciliter la configuration et le monitoring en direct de processus de fabrication additive industrielle.
-coverAlt: Un bras robotisé de soudage dépose du métal sur une grande pièce circulaire, sous une lumière verte (procédé WAAM).
+coverAlt: "Le tableau de bord de Siemens dans un navigateur : courbes de capteurs de deux salles, carte de chaleur d'un compteur et simulation des couches d'une pièce."
 outcomes:
   - Un outil de configuration adopté par l’équipe pour ses recherches et ses mémoires de master.
   - Le suivi en direct étendu à un nouveau procédé d’impression (SLM).
