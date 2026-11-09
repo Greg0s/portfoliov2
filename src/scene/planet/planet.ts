@@ -49,8 +49,16 @@ export interface LivePlanet {
   render(delta: number): void;
   setMoment(moment: Moment): void;
   resize(size: number, mobile: boolean): void;
+  /**
+   * Whether its programs linked slowly, one after the other (no parallel compiling, two links of 200 ms and more):
+   * a modest GPU, on which the live office, with five times as many programs, would hold the projects for seconds.
+   */
+  linksSlowly: boolean;
   dispose(): void;
 }
+
+/** A program link this long, in ms, says a modest GPU (as for the office, `src/scene/office/live.ts`). */
+const SLOW_LINK = 200;
 
 /** Thrown when the device draws WebGL in software. */
 export class SlowRenderer extends Error {}
@@ -333,6 +341,7 @@ async function assemble(
     renderer.setSize(size, size, false);
   };
   resize(options.size, options.mobile);
+  let slowLinks = 0;
   // Shaders compile in parallel where the browser can, so the first frame does not hold the page. Elsewhere (phones,
   // among them), the first frame would wait for every link at once: each program is linked in a task of its own.
   if (renderer.extensions.has('KHR_parallel_shader_compile')) {
@@ -345,7 +354,9 @@ async function assemble(
     for (const program of (renderer.info.programs ?? []) as unknown as Program[]) {
       await pause(done);
       // Asking whether it is linked makes this task wait for it, and for it alone.
+      const start = performance.now();
       gl.getProgramParameter(program.program, gl.LINK_STATUS);
+      if (performance.now() - start >= SLOW_LINK) slowLinks += 1;
       done = 'link';
     }
     await pause(done);
@@ -378,6 +389,7 @@ async function assemble(
       moment = next;
     },
     resize,
+    linksSlowly: slowLinks >= 2,
     dispose() {
       scene.traverse((mesh) => {
         if (!isMesh(mesh)) return;
