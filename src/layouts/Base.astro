@@ -28,7 +28,7 @@ const alternates = locales.map((lang) => ({ lang, href: absolute(lang === locale
 const xDefault = alternates.find(({ lang }) => lang === defaultLocale)?.href;
 // The moment is set before the first paint, from the same function the tests cover.
 const momentScript = `(${applyMoment.toString()})();`;
-// The accent colour proposals, before the first paint too (`?accent=1…13`, `?lumiere=1`).
+// The accent colour proposals, before the first paint too (`?accent=1…13`, `?lumiere=1…3`).
 const accentScript = `(${applyAccent.toString()})();`;
 ---
 

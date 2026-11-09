@@ -4,7 +4,7 @@
  * places, so that they compare: the moves (buttons, the "See the project" disc), where the visitor is (the current
  * section, the project's number, the dots), the marks (the tags, the ticks, the arrows), and the hover, focus and
  * selection. The stars, the cards' ring, the planet, the office and the moment's tint stay as they are, unless
- * `?lumiere=1` brings the accent into their light too (src/lib/accent-light.ts, and the end of this sheet). Without
+ * `?lumiere=1…3` brings the accent into their light too (src/lib/accent-light.ts, and the end of this sheet). Without
  * the parameters, none of these rules applies.
  *
  * Tokens:
@@ -13,7 +13,7 @@
  * - `--accent-line`, `--accent-line-down`: the colour or gradient of a line, across (the email's underline) or down (the
  *   call's line).
  * - `--accent-ink`: the text on a fill.
- * - `--accent-light`: the stops of the gradient, as a list of hex colours, for the 3D scenes' light (`?lumiere=1`).
+ * - `--accent-light`: the stops of the gradient, as a list of hex colours, for the 3D scenes' light (`?lumiere=`).
  */
 
 html[data-accent] {
@@ -317,7 +317,7 @@ html[data-accent] body .contact .links a span {
 }
 
 /*
- * The light (`?lumiere=1`): the 3D scenes read `--accent-light` (src/lib/accent-light.ts); the halos drawn in CSS
+ * The light (`?lumiere=1…3`): the 3D scenes read `--accent-light` (src/lib/accent-light.ts); the halos drawn in CSS
  * around the planet take its colours here.
  */
 html[data-accent][data-lumiere] body .opening .halo {

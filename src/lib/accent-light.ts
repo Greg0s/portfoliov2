@@ -1,5 +1,5 @@
 /**
- * The accent colour proposals' light (8 November 2026): with `?accent=` and `?lumiere=1` (src/lib/accent.ts), the 3D
+ * The accent colour proposals' light (8 November 2026): with `?accent=` and `?lumiere=1…3` (src/lib/accent.ts), the 3D
  * scenes light with the accent's colours, which they read here from the page's tokens
  * (src/styles/accent-proposals.css): `--accent`, the solid accent, and `--accent-light`, the stops of its gradient as a
  * list of hex colours. Without the parameters, `accentLight()` is null and the scenes stay as they are.
@@ -9,6 +9,11 @@
 export type Rgb = readonly [number, number, number];
 
 export interface AccentLight {
+  /**
+   * How the planet takes the light (`?lumiere=1…3`): 1, backlit by two rim lights; 2, its own lights take the
+   * colours, none added; 3, two spots in opposite corners of the screen. The other scenes take it the same way.
+   */
+  mode: 1 | 2 | 3;
   /** The solid accent. */
   solid: Rgb;
   /** The gradient's stops, one for a solid accent. */
@@ -49,7 +54,9 @@ export function accentLight(root: HTMLElement = document.documentElement): Accen
     .map(parse);
   if (!HEX.test(solid) || stops.length === 0) return null;
   const last = stops.length - 1;
+  const mode = root.dataset.lumiere === '2' ? 2 : root.dataset.lumiere === '3' ? 3 : 1;
   return {
+    mode,
     solid: parse(solid),
     stops,
     at(t) {
