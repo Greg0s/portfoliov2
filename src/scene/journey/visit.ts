@@ -222,6 +222,11 @@ async function run(): Promise<void> {
     planetReadyMs: marks('journey:planet-ready'),
     officeReadyMs: marks('journey:office-ready'),
     backAtMs: round(back),
+    // What was kept for the way back, and taken back (src/scene/keep.ts).
+    kept: performance
+      .getEntriesByType('mark')
+      .filter((entry) => entry.name.startsWith('keep:'))
+      .map((entry) => `${entry.name.slice(5)} ${String(round(entry.startTime))}`),
     arrival,
     arrivalsMs: marks('journey:arrival'),
     screenPages: screen,

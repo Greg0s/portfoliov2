@@ -27,6 +27,7 @@ import {
   easeInOutCubic,
   glideDuration,
   nearestAnchor,
+  ON_ANCHOR,
   settleAnchor,
   stepAnchor,
   wheelGestures,
@@ -507,6 +508,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // ---------- Following the scroll ----------
 
   const progressOf = (scroll: number): number => Math.max(0, Math.min(1, scroll / range));
+  /**
+   * Whether `u` is past the ring, toward the contact. The ring's anchor is a whole pixel, rounded from its progress
+   * (1539 px for 1538.875 on a 947 px high window): resting on it is not past it.
+   */
+  const pastRing = (u: number): boolean => u > LAST_PROJECT + ON_ANCHOR / range;
 
   function followCamera(delta: number): void {
     const edge = LAST_PROJECT - 1 / range;
@@ -1444,7 +1450,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         officeLoading &&
         !officeSlow &&
         officeMode !== 'live' &&
-        (target > LAST_PROJECT || now - officeStartedAt > STAND_IN_DELAY)
+        (pastRing(target) || now - officeStartedAt > STAND_IN_DELAY)
       ) {
         loadStandIn();
       }
@@ -1627,7 +1633,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     }
     // A visitor heading for the contact needs the office now, before the camera leaves the ring: one long frame may
     // carry it past.
-    if (target > LAST_PROJECT && !officeView && !officeFailed) loadOffice();
+    if (pastRing(target) && !officeView && !officeFailed) loadOffice();
     if (hold) {
       const waited = now - hold.start;
       const waiting = hold.reason === 'arrival' ? officeComing() : preparing();
@@ -1639,7 +1645,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     } else if (
       pauses &&
       !arrivalHeld &&
-      target > LAST_PROJECT &&
+      pastRing(target) &&
       current <= LAST_PROJECT &&
       officeComing() &&
       !html.dataset.officeArrival
