@@ -22,22 +22,30 @@ async function expectFront(page: Page, project: number): Promise<void> {
   await expect(page.locator(`[data-project="${String(project)}"]`)).toHaveClass(/\blit\b/, { timeout: 10_000 });
 }
 
-/** A swipe of a finger, `distance` px up (a negative distance swipes down), or to the left with `sideways`. */
-async function swipe(page: Page, distance: number, sideways = false): Promise<void> {
+/**
+ * A swipe of a finger, `distance` px up (a negative distance swipes down), or to the left with `sideways`, drifting
+ * `drift` px up on the way. Returns how far the page scrolled while the finger was down.
+ */
+async function swipe(page: Page, distance: number, sideways = false, drift = 0): Promise<number> {
   const cdp = await page.context().newCDPSession(page);
   const x = sideways ? (distance > 0 ? 340 : 50) : 195;
   const y = sideways ? 450 : distance > 0 ? 650 : 250;
   const steps = 10;
+  const from = await page.evaluate(() => window.scrollY);
+  let scrolled = 0;
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
   for (let i = 1; i <= steps; i += 1) {
     const moved = (distance * i) / steps;
+    const drifted = (drift * i) / steps;
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [sideways ? { x: x - moved, y } : { x, y: y - moved }],
+      touchPoints: [sideways ? { x: x - moved, y: y - drifted } : { x, y: y - moved }],
     });
     await page.waitForTimeout(16);
+    scrolled = Math.max(scrolled, Math.abs((await page.evaluate(() => window.scrollY)) - from));
   }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  return scrolled;
 }
 
 test('the journey starts on the opening and logs no error', async ({ page }) => {
@@ -202,6 +210,20 @@ test('a swipe across the ring turns it to the next or the previous project, the 
   await expectAnchor(page, RING);
   await page.getByRole('button', { name: 'Projet suivant' }).tap();
   await expectFront(page, 0);
+});
+
+test('a swipe across the ring that drifts up or down turns it, the page holding still', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the swipe is a phone gesture');
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  await expectFront(page, 0);
+  // Nearly as much up as across: the browser would scroll the page along with the ring.
+  expect(await swipe(page, 100, true, 80)).toBe(0);
+  await expectFront(page, 1);
+  expect(await swipe(page, -100, true, -80)).toBe(0);
+  await expectFront(page, 0);
+  await page.waitForTimeout(800);
+  await expectAnchor(page, RING);
 });
 
 test('a flick lands one anchor further, its fling held while the page glides there', async ({ page, isMobile }) => {
