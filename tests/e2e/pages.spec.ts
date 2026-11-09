@@ -32,6 +32,22 @@ test('an unknown path serves the 404 page, in both languages', async ({ page }) 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
 
+test('the favicons are declared and served', async ({ page }) => {
+  await page.goto('./');
+  const icons = [
+    ['link[rel="icon"][type="image/svg+xml"]', 'image/svg+xml'],
+    ['link[rel="icon"][sizes="32x32"]', 'image/'],
+    ['link[rel="apple-touch-icon"]', 'image/png'],
+  ] as const;
+  for (const [selector, type] of icons) {
+    const href = await page.locator(selector).getAttribute('href');
+    expect(href).toMatch(/^\/portfoliov2\//);
+    const response = await page.request.get(new URL(href ?? '', page.url()).href);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain(type);
+  }
+});
+
 test('the skip link leads to the content', async ({ page }) => {
   await page.goto('./');
   await page.keyboard.press('Tab');
