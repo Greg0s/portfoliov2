@@ -48,9 +48,15 @@ function start(root: HTMLElement): void {
         },
       }),
     );
-    // The measurement runs, on a real device (`?mesure=1`, `?mesure=rapide`, `?mesure=visite`): loaded only when asked
+    // The measurement runs, on a real device (`?mesure=1`, `?mesure=rapide`, `?mesure=visite`, `?mesure=anneau`): loaded only when asked
     // for. The full visit outlives the home: it goes through the case studies and back.
     const mesure = new URLSearchParams(location.search).get('mesure') ?? '';
+    if (mesure === 'anneau') {
+      void import('./ring-probe').then(({ startRingProbe }) => {
+        startRingProbe();
+      });
+      return;
+    }
     if (mesure === 'visite') {
       void import('./visit').then(({ startVisit }) => {
         startVisit();

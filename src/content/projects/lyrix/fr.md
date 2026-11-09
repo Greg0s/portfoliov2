@@ -3,7 +3,7 @@ title: Lyrix
 kind: Jeu multijoueur
 role: Conception et développement
 summary: Retrouver une chanson à partir de ses paroles cachées, seul ou à plusieurs en temps réel.
-coverAlt: Le logo Lyrix, « Retrouve la chanson du jour à partir de ses paroles cachées », au-dessus de barres orange et grises.
+coverAlt: 'La partie du jour de Lyrix dans un navigateur, les paroles cachées en barres orange, et la même partie sur un téléphone.'
 stats:
   - { value: '1', label: nouvelle chanson chaque jour }
   - { value: '30', label: jours d’archives toujours jouables }

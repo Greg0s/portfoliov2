@@ -3,7 +3,7 @@ title: Obaine
 kind: Front-end
 role: Développement front-end
 summary: Le front-end d’une plateforme où les fans financent des athlètes en échange de contenus exclusifs.
-coverAlt: 'La page d’accueil d’Obaine : « Accédez à des expériences uniques », une nageuse dans un cadre et une foule de supporters en silhouettes, sur un dégradé violet et rose.'
+coverAlt: "L'accueil d'Obaine dans un navigateur, « Accédez à des expériences uniques » sur un dégradé violet et rose, et sa version mobile sur un téléphone."
 stats:
   - { value: '2 mois', label: pour un MVP complet et fonctionnel }
   - { value: '100+', label: clients sur la plateforme }

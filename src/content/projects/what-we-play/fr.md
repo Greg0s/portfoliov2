@@ -3,7 +3,7 @@ title: What we play?
 kind: Web · 3D en CSS
 role: Conception, design et développement
 summary: Trouver un jeu en ligne à plusieurs, dans une interface colorée et dynamique.
-coverAlt: Le logo What we play? dans une bulle de dialogue, à côté d’un vieux Mac au visage de télé et de quatre pions de couleur.
+coverAlt: "L'accueil de What we play? dans un navigateur, « À quoi on joue à 6 ? » et ses filtres de jeux, et le même écran sur un téléphone."
 stats:
   - { value: '30+', label: jeux sélectionnés à la main }
 outcomes:

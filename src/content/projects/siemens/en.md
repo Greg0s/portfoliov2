@@ -3,7 +3,7 @@ title: Siemens
 kind: Web internship · Industry 4.0
 role: Web design and development
 summary: Making it easier to configure and monitor industrial additive manufacturing processes live.
-coverAlt: A robotic welding arm laying metal on a large circular part, under a green light (the WAAM process).
+coverAlt: "The Siemens dashboard in a browser: sensor curves for two rooms, a meter's heatmap and the simulation of a part's layers."
 outcomes:
   - A configuration tool the team adopted for its research and master’s theses.
   - Live monitoring extended to a new printing process (SLM).
