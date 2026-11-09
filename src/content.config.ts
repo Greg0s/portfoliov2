@@ -39,8 +39,8 @@ const projects = defineCollection({
         cover: image(),
         coverFocus: focus,
         /**
-         * The project's colours, two very close ones from its own identity (its banner, its logo), light enough to read
-         * on the night: the case study's main button and its lede take them as a light gradient (9 November 2026).
+         * The project's colours, two very close ones from its own identity (its banner, its logo), light enough
+         * to carry dark text: the case study's main buttons take them as a light gradient (9 November 2026).
          */
         colors: z.tuple([hex, hex]),
         /** The card's muted video loop, added at step 9. */

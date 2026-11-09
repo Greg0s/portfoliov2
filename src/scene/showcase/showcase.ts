@@ -4,6 +4,7 @@
  * journey, which places them in its 3D scene, draws the ring's dust and small planets on a canvas behind the cards,
  * and shows the arrows with the counter between them.
  */
+import { accentAt, cssRgb, mixRgb } from '../accent';
 import { projectCss, type Sway } from '../journey/camera';
 import type { View } from '../journey/layout';
 import { offset, ringFor, ringPoint, ringPose, type Pose, type Ring } from './ring';
@@ -222,6 +223,24 @@ export function createShowcase(
     alpha: 0.55 + rand() * 0.35,
   })).flatMap((item) => (item.kind ? [{ ...item, kind: item.kind }] : []));
 
+  // The accent's light (src/scene/accent.ts): the ring's front takes its green, its back its sky blue, as if lit from
+  // either side; three grains in five and the bodies' glow take it, the rest of the dust stays white.
+  const SHADES = 24;
+  const shade = (alpha: number, white = 0): string[] =>
+    Array.from({ length: SHADES + 1 }, (_, i) =>
+      cssRgb(mixRgb(accentAt(i / SHADES), [0.953, 0.953, 0.945], white), alpha),
+    );
+  const dustShades = shade(1, 0.04);
+  const glowShades = shade(0.42);
+  const lineShade = cssRgb(accentAt(0.5), 0.13);
+  /** The shade of the ring at `theta`, from its front (0) to its back (SHADES). */
+  const along = (theta: number): number => Math.round((0.5 - 0.5 * Math.cos(theta)) * SHADES);
+  const hash = (i: number): number => {
+    const x = Math.sin(i * 12.9898 + 4.1) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  const tinted = grains.map((_, i) => hash(i) < 0.6);
+
   function body(
     ctx: CanvasRenderingContext2D,
     kind: Body['kind'],
@@ -229,12 +248,13 @@ export function createShowcase(
     y: number,
     size: number,
     alpha: number,
+    glowColor: string,
   ): void {
     const r = size / 2;
     ctx.save();
     ctx.globalAlpha = alpha;
     const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-    glow.addColorStop(0, 'rgb(255 255 255 / 34%)');
+    glow.addColorStop(0, glowColor);
     glow.addColorStop(1, 'rgb(255 255 255 / 0%)');
     ctx.fillStyle = glow;
     ctx.beginPath();
@@ -280,9 +300,7 @@ export function createShowcase(
     const drift = time * 0.000012;
     const bodyScale = view.mobile ? 0.7 : 1;
     // The dust, brighter on the ring's front.
-    near.fillStyle = '#f3f3f1';
-    far.fillStyle = '#f3f3f1';
-    for (const grain of grains) {
+    for (const [i, grain] of grains.entries()) {
       const theta = grain.theta + angle + drift;
       const point = ringPoint(ring, theta, grain.r);
       const at = projectCss(point.x, point.y + grain.dy * bodyScale, point.z + shift, view, sway);
@@ -290,6 +308,7 @@ export function createShowcase(
       const front = 0.35 + 0.65 * (0.5 + 0.5 * Math.cos(theta));
       const ctx = layer(point.z);
       ctx.globalAlpha = grain.alpha * front;
+      ctx.fillStyle = tinted[i] ? (dustShades[along(theta)] ?? '#f3f3f1') : '#f3f3f1';
       const size = grain.size * at.scale;
       ctx.fillRect(at.x - size / 2, at.y - size / 2, size, size);
     }
@@ -297,7 +316,7 @@ export function createShowcase(
     far.globalAlpha = 1;
     // A faint line along the ring, its far half under the planet.
     for (const ctx of near === far ? [near] : [near, far]) {
-      ctx.strokeStyle = 'rgb(243 243 241 / 9%)';
+      ctx.strokeStyle = lineShade;
       ctx.lineWidth = 1;
       ctx.beginPath();
     }
@@ -324,7 +343,8 @@ export function createShowcase(
       const at = projectCss(point.x, point.y + item.dy * bodyScale, point.z + shift, view, sway);
       if (hidden(at.x, at.y, point.z, frame.planet)) continue;
       const front = 0.25 + 0.75 * (0.5 + 0.5 * Math.cos(theta));
-      body(layer(point.z), item.kind, at.x, at.y, item.size * bodyScale * at.scale, item.alpha * front);
+      const glow = glowShades[along(theta)] ?? 'rgb(255 255 255 / 34%)';
+      body(layer(point.z), item.kind, at.x, at.y, item.size * bodyScale * at.scale, item.alpha * front, glow);
     }
   }
 

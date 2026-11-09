@@ -43,7 +43,7 @@ const back = withBase(`${home}#${project.slug}`);
 const numberText = label('case.number').replace('{n}', String(order)).replace('{total}', String(total));
 const projectPath = (other: Project): string => withBase(pathFor({ id: 'project', slug: other.slug }, locale));
 const ring = JSON.stringify(projects.map(projectPath));
-// The project's two colours, for its main buttons and its lede.
+// The project's two colours, for its main buttons.
 const projectColors = `--project-from: ${colors[0]}; --project-to: ${colors[1]}`;
 
 /** A neighbour, for a swipe: its page, and its cover's sources, loaded ahead so that the page slides in with it. */
@@ -68,7 +68,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
       <div class="aside">
         <p class="number">
           <span class="digits" aria-hidden="true">
-            {projectNumber(order)} / {projectNumber(total)}
+            <span class="now">{projectNumber(order)}</span> / {projectNumber(total)}
           </span>
           {/* On a touch screen, the projects' dots tell that the case studies sit side by side, to swipe through. */}
           <span class="dots" aria-hidden="true">
@@ -276,6 +276,12 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     min-height: 44px;
   }
 
+  /* Pointed at, the way back takes the accent rather than fading. */
+  .back:hover {
+    opacity: 1;
+    color: var(--color-accent);
+  }
+
   .aside {
     display: flex;
     align-items: center;
@@ -284,6 +290,10 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 
   .number {
     color: rgb(243 243 241 / 75%);
+  }
+
+  .number .now {
+    color: var(--color-accent);
   }
 
   .dots {
@@ -302,7 +312,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 
   .dots .current {
     width: 18px;
-    background: var(--color-text);
+    background: var(--color-accent);
   }
 
   /* The neighbours a swipe brings in, waiting beyond the screen's edges (src/motion/swipe.ts). */
@@ -383,6 +393,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
   }
 
   .peek-arrow {
+    color: var(--color-accent);
     transition: translate 250ms var(--ease-ui);
   }
 
@@ -608,7 +619,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     font-weight: 600;
     letter-spacing: var(--tracking-tag);
     text-transform: uppercase;
-    color: var(--color-muted);
+    color: var(--color-accent);
   }
 
   /* Under the title, close to it: it reads as the title's line. */
@@ -621,19 +632,11 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     line-height: 0.95;
   }
 
-  /* In the project's two colours, a light gradient (9 November 2026). */
   .lede {
     max-width: 34em;
-    background: linear-gradient(90deg, var(--project-from), var(--project-to));
-    background-clip: text;
-    color: transparent;
     font-size: 21px;
     line-height: 1.55;
-  }
-
-  .lede::selection {
-    background: var(--project-from);
-    color: var(--color-bg);
+    color: var(--color-muted);
   }
 
   .case-content {
@@ -757,7 +760,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     flex: none;
     margin-top: 4px;
     fill: none;
-    stroke: var(--color-text);
+    stroke: var(--color-accent);
     stroke-width: 1.6;
   }
 

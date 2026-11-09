@@ -54,6 +54,13 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     font-weight: 500;
   }
 
+  /* Pointed at, the links take the accent rather than fading. */
+  .name:hover,
+  .links > a:hover {
+    opacity: 1;
+    color: var(--color-accent);
+  }
+
   .menu-button {
     display: none;
     min-width: 44px;
@@ -83,7 +90,7 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
   }
   /*
    * The current section, on a computer (Grégoire's choice, 3 November 2026): its link (the name on the opening)
-   * glows softly, as if lit, and the other links dim a little. A phone shows no current section.
+   * glows softly in the accent, as if lit, and the other links dim a little. A phone shows no current section.
    */
   @media (width >= 768px) {
     [data-section] .name,
@@ -96,11 +103,17 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     }
 
     [data-section] .name[aria-current],
+    [data-section] .links > a[aria-current],
+    [data-section] .name:hover,
+    [data-section] .links > a:hover {
+      color: var(--color-accent);
+    }
+
+    [data-section] .name[aria-current],
     [data-section] .links > a[aria-current] {
-      color: var(--color-text);
       text-shadow:
-        0 0 8px rgb(255 255 255 / 32%),
-        0 0 18px rgb(255 240 225 / 14%);
+        0 0 10px var(--color-accent-glow),
+        0 0 22px var(--color-accent-soft);
     }
   }
 </style>

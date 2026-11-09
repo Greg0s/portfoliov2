@@ -66,9 +66,24 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-text);
+  outline: 2px solid var(--color-accent);
   outline-offset: 4px;
   border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+/* The contact keeps the site's first colours: a white outline, the browser's selection (9 November 2026). */
+.contact :focus-visible {
+  outline-color: var(--color-text);
+}
+
+.contact ::selection {
+  background: highlight;
+  color: highlighttext;
 }
 
 .label {

@@ -2,7 +2,8 @@
  * Renders the planet's fallbacks (main spec §6, plan step 5): the image shown before the 3D planet is ready, without
  * WebGL or with "reduce motion". The planet prototype (docs/prototypes/petit-prince) renders it alone on a transparent
  * background for each moment; each render becomes a desktop and a mobile WebP of at most 50 kB. The decor around it
- * (`decor.webp`, white stars and glowing planets) is the mockup's, rendered by the same prototype.
+ * (`decor.webp`, white stars and glowing planets) is the mockup's, rendered by the same prototype. The planet's lights
+ * take the site's accent (src/scene/accent.ts), as the live planet's do.
  *
  * Usage: `cd docs/prototypes/petit-prince && npm install`, then `pnpm render-planet-fallbacks`.
  * Playwright's Chromium is used; CHROMIUM_PATH points to another one.
@@ -14,6 +15,7 @@ import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
+import { ACCENT_STOPS } from '../src/scene/accent.ts';
 
 const PROTOTYPE = resolve('docs/prototypes/petit-prince');
 const OUT = resolve('public/images/planet');
@@ -48,7 +50,10 @@ await new Promise<void>((done) => server.listen(PORT, done));
 
 const renders = mkdtempSync(join(tmpdir(), 'planet-'));
 try {
-  const jobs = Object.entries(moments).map(([name, tod]) => `${name}:layer=planet&w=1200&h=1200&tod=${tod}`);
+  const accent = ACCENT_STOPS.map((hex) => hex.slice(1)).join(',');
+  const jobs = Object.entries(moments).map(
+    ([name, tod]) => `${name}:layer=planet&w=1200&h=1200&tod=${tod}&accent=${accent}`,
+  );
   // Asynchronous, so that this process keeps serving the prototype to the browser.
   await promisify(execFile)('node', ['shoot.cjs', renders, ...jobs], {
     cwd: PROTOTYPE,

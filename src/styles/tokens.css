@@ -8,27 +8,35 @@
   --color-bubble: #19191b;
   --color-text: #f3f3f1;
   --color-muted: #8f8f8b;
-  --color-accent: #fff;
   --color-line: rgb(243 243 241 / 14%);
   --color-line-strong: rgb(243 243 241 / 18%);
   --color-menu: rgb(8 8 9 / 97%);
 
   /*
-   * In two opposite corners of the night, the planet's colours (§5.2, 9 November 2026): the Little Prince's coat at the
-   * bottom left, the rose at the top right.
+   * The accent (§5.2, Grégoire's choice of 9 November 2026): the gradient of his first portfolio, green, turquoise and
+   * sky blue. The turquoise for text, icons and thin lines (9.6:1 on the night); the gradient fills and draws lines.
+   * The 3D scenes take the same three stops in their light (src/scene/accent.ts).
    */
+  --color-accent: #71c4bb;
+  --color-accent-fill: linear-gradient(90deg, #6db96e, #71c4bb 50%, #90d3f4);
+  --color-accent-line-down: linear-gradient(#6db96e, #71c4bb 50%, #90d3f4);
+  --color-accent-ink: #0c0c0d;
+  --color-accent-soft: rgb(113 196 187 / 16%);
+  --color-accent-glow: rgb(113 196 187 / 38%);
+
+  /* In two opposite corners of the night, the accent's ends: its green at the bottom left, its sky blue at the top right. */
   --page-glow:
     radial-gradient(
       ellipse 80% 80% at 0% 100%,
-      rgb(169 206 115 / 20%),
-      rgb(169 206 115 / 7%) 45%,
-      rgb(169 206 115 / 0%)
+      rgb(109 185 110 / 20%),
+      rgb(109 185 110 / 7%) 45%,
+      rgb(109 185 110 / 0%)
     ),
     radial-gradient(
       ellipse 80% 80% at 100% 0%,
-      rgb(232 134 156 / 20%),
-      rgb(232 134 156 / 7%) 45%,
-      rgb(232 134 156 / 0%)
+      rgb(144 211 244 / 20%),
+      rgb(144 211 244 / 7%) 45%,
+      rgb(144 211 244 / 0%)
     );
 
   /* Type (§5.1) */

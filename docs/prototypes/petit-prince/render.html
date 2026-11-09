@@ -113,6 +113,18 @@ if (tod) {
     if (tod.env) A.env = tod.env;
   }
 }
+// The site's accent in the same lights, none added (Grégoire's choice of 9 November 2026), as the site's
+// src/scene/planet/lights.ts does: `accent` gives its gradient's three stops (hex, without #). The spot leans toward its
+// start, the sky toward its middle (in linear light), the fill, faint and back lights take its end.
+const accent = q.get('accent')?.split(',').map((hex) => new THREE.Color('#' + hex));
+if (accent && A.spot) {
+  const [start, middle, end] = accent;
+  A.spot = [new THREE.Color(A.spot[0]).lerp(start, 0.6), ...A.spot.slice(1)];
+  A.hemi = [new THREE.Color(A.hemi[0]).lerp(middle, 0.7), A.hemi[1], A.hemi[2]];
+  A.key = [end, A.key[1], A.key[2]];
+  A.fill = [end, A.fill[1], A.fill[2]];
+  A.rim = [end, 1.3, A.rim[2]];
+}
 
 const rng = (seed) => () => {
   seed = (seed + 0x6d2b79f5) | 0;
