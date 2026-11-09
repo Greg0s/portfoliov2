@@ -68,6 +68,18 @@ test('a case study leads to its live site, from its facts and, for some, from a 
   expect((await page.request.get('letters/siemens-en.pdf')).headers()['content-type']).toBe('application/pdf');
 });
 
+test("a case study's main buttons and lede take the project's two colours, the rest of its text staying white", async ({
+  page,
+}) => {
+  await page.goto('projets/lyrix/');
+  const gradient = 'linear-gradient(90deg, rgb(236, 106, 44), rgb(242, 132, 63))';
+  for (const selector of ['.facts .button', '.band-button', '.lede']) {
+    await expect(page.locator(selector)).toHaveCSS('background-image', gradient);
+  }
+  await expect(page.locator('.lede')).toHaveCSS('color', 'rgba(0, 0, 0, 0)');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('color', 'rgb(243, 243, 241)');
+});
+
 test('a case study declares its alternates and switches language on the same project', async ({ page }) => {
   await page.goto('projets/lyrix/');
   await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute(

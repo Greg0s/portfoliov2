@@ -1,11 +1,5 @@
 /* The "Musée de nuit" charter in code (main spec §5): colours, type, easings and durations. */
 
-@property --page-tint {
-  syntax: '<color>';
-  inherits: true;
-  initial-value: transparent;
-}
-
 :root {
   /* Colours (§5.2) */
   --color-bg: #0c0c0d;
@@ -19,9 +13,23 @@
   --color-line-strong: rgb(243 243 241 / 18%);
   --color-menu: rgb(8 8 9 / 97%);
 
-  /* The tint at the top of the page follows the visitor's moment (§5.3) */
-  --tint-aube: rgb(255 168 140 / 12%);
-  --tint-crepuscule: rgb(255 122 80 / 12%);
+  /*
+   * In two opposite corners of the night, the planet's colours (§5.2, 9 November 2026): the Little Prince's coat at the
+   * bottom left, the rose at the top right.
+   */
+  --page-glow:
+    radial-gradient(
+      ellipse 80% 80% at 0% 100%,
+      rgb(169 206 115 / 20%),
+      rgb(169 206 115 / 7%) 45%,
+      rgb(169 206 115 / 0%)
+    ),
+    radial-gradient(
+      ellipse 80% 80% at 100% 0%,
+      rgb(232 134 156 / 20%),
+      rgb(232 134 156 / 7%) 45%,
+      rgb(232 134 156 / 0%)
+    );
 
   /* Type (§5.1) */
   --font-display: 'Libre Franklin Variable', 'Libre Franklin', 'Helvetica Neue', arial, sans-serif;
@@ -54,7 +62,6 @@
   --duration-menu-out: 180ms;
   --duration-menu-item: 320ms;
   --stagger-menu-item: 50ms;
-  --duration-moment: 4s;
 
   /* Layout */
   --header-height: 80px;

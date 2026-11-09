@@ -71,6 +71,16 @@ test('?heure= sets the moment, and the clock sets it otherwise', async ({ page }
   await expect(page.locator('html')).toHaveAttribute('data-moment', 'crepuscule');
 });
 
+test("the page's background glows with the planet's colours, the same at dawn and at dusk", async ({ page }) => {
+  const glow = (): Promise<string> => page.evaluate(() => getComputedStyle(document.body, '::before').backgroundImage);
+  await page.goto('./?heure=aube');
+  const dawn = await glow();
+  expect(dawn).toContain('rgba(169, 206, 115, 0.2)');
+  expect(dawn).toContain('rgba(232, 134, 156, 0.2)');
+  await page.goto('./?heure=crepuscule');
+  expect(await glow()).toBe(dawn);
+});
+
 test('the moment survives a page change through the client router', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(new Date(2026, 9, 23, 20, 0));
   await page.goto('./');

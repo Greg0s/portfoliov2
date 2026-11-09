@@ -31,7 +31,7 @@ interface Props {
 const { locale, project, projects } = Astro.props;
 const label = t(locale);
 const { title, lede, summary, coverAlt, period, stats, outcomes, did, challenges } = project.text.data;
-const { cover, coverFocus, order, band, links } = project.data;
+const { cover, coverFocus, colors, order, band, links } = project.data;
 const { Content } = await render(project.text);
 const total = projects.length;
 const { previous, next } = neighbours(projects, projects.indexOf(project));
@@ -43,6 +43,8 @@ const back = withBase(`${home}#${project.slug}`);
 const numberText = label('case.number').replace('{n}', String(order)).replace('{total}', String(total));
 const projectPath = (other: Project): string => withBase(pathFor({ id: 'project', slug: other.slug }, locale));
 const ring = JSON.stringify(projects.map(projectPath));
+// The project's two colours, for its main buttons and its lede.
+const projectColors = `--project-from: ${colors[0]}; --project-to: ${colors[1]}`;
 
 /** A neighbour, for a swipe: its page, and its cover's sources, loaded ahead so that the page slides in with it. */
 const peek = async (other: Project) => {
@@ -96,7 +98,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     </div>
   </Fragment>
 
-  <div class="case-page" data-case-slug={project.slug} data-ring={ring}>
+  <div class="case-page" data-case-slug={project.slug} data-ring={ring} style={projectColors}>
     <CaseStars />
     <article class="case">
       <figure class="cover">
@@ -444,8 +446,9 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
   }
 
   /*
-   * The dark fade the content rises over, down to the page's own dark: it starts a little above the tag and darkens
-   * quickly, so that the media keeps its colours above the text.
+   * The dark fade the content rises over, down to the page's own background, the night and its glows, as it is behind
+   * it on the screen: it starts a little above the tag and darkens quickly, so that the media keeps its colours above
+   * the text.
    */
   .cover::before {
     content: '';
@@ -453,13 +456,11 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     inset: auto 0 0;
     z-index: 1;
     height: min(100%, var(--rise) * 1.1);
-    background: linear-gradient(
-      to bottom,
-      rgb(6 6 7 / 0%),
-      rgb(6 6 7 / 72%) 32%,
-      rgb(6 6 7 / 92%) 58%,
-      rgb(6 6 7 / 100%)
-    );
+    background:
+      var(--page-glow),
+      linear-gradient(to bottom, var(--color-bg), var(--color-bg-deep)) var(--color-bg-deep);
+    background-attachment: fixed;
+    mask-image: linear-gradient(to bottom, transparent, rgb(0 0 0 / 72%) 32%, rgb(0 0 0 / 92%) 58%, #000);
     pointer-events: none;
   }
 
@@ -620,11 +621,19 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     line-height: 0.95;
   }
 
+  /* In the project's two colours, a light gradient (9 November 2026). */
   .lede {
     max-width: 34em;
+    background: linear-gradient(90deg, var(--project-from), var(--project-to));
+    background-clip: text;
+    color: transparent;
     font-size: 21px;
     line-height: 1.55;
-    color: var(--color-muted);
+  }
+
+  .lede::selection {
+    background: var(--project-from);
+    color: var(--color-bg);
   }
 
   .case-content {
@@ -802,7 +811,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     min-height: 52px;
     padding: 0 28px;
     border-radius: 999px;
-    background: var(--color-text);
+    background: linear-gradient(90deg, var(--project-from), var(--project-to));
     color: var(--color-bg);
     font-family: var(--font-display);
     font-size: 16px;

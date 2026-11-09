@@ -7,6 +7,8 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+const hex = z.string().regex(/^#[0-9a-f]{6}$/, 'a colour is a lowercase hex such as "#ec6a2c"');
+
 const focus = z
   .string()
   .regex(/^\d{1,3}% \d{1,3}%$/, 'a focus is an object-position such as "50% 30%"')
@@ -36,6 +38,11 @@ const projects = defineCollection({
           .default({}),
         cover: image(),
         coverFocus: focus,
+        /**
+         * The project's colours, two very close ones from its own identity (its banner, its logo), light enough to read
+         * on the night: the case study's main button and its lede take them as a light gradient (9 November 2026).
+         */
+        colors: z.tuple([hex, hex]),
         /** The card's muted video loop, added at step 9. */
         loop: z.string().optional(),
         /**

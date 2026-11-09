@@ -1,4 +1,4 @@
-/* Base styles: the night background, the moment's tint, links, focus, skip link. */
+/* Base styles: the night background and its glows, links, focus, skip link. */
 
 *,
 *::before,
@@ -6,32 +6,34 @@
   box-sizing: border-box;
 }
 
-/* The night, and over it the tint of the visitor's moment, strongest at the top of the page. */
+/* The night. */
 html {
   color-scheme: dark;
-  background:
-    linear-gradient(to bottom, var(--page-tint), transparent) fixed,
-    linear-gradient(to bottom, var(--color-bg), var(--color-bg-deep)) fixed var(--color-bg-deep);
+  background: linear-gradient(to bottom, var(--color-bg), var(--color-bg-deep)) fixed var(--color-bg-deep);
   color: var(--color-text);
   font-family: var(--font-text);
   font-size: var(--size-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-size-adjust: 100%;
-  transition: --page-tint var(--duration-moment) ease;
-}
-
-html[data-moment='aube'] {
-  --page-tint: var(--tint-aube);
-}
-
-html[data-moment='crepuscule'] {
-  --page-tint: var(--tint-crepuscule);
 }
 
 body {
   min-height: 100svh;
   margin: 0;
+}
+
+/*
+ * Over the night, the planet's colours in two opposite corners of the screen (main spec §5.2). On a layer of its own
+ * fixed to the screen rather than as a fixed background, which iOS would scroll with the page.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--page-glow);
+  pointer-events: none;
 }
 
 h1,
@@ -263,26 +265,31 @@ html[data-fusion='0'] * {
 }
 
 /*
- * The light pill buttons to a project (ProjectFacts.astro, CaseStudy.astro): pointed at, they brighten and their arrow
- * leaves up and to the right as another comes in from below; pressed, they give a little, and spring back.
+ * The pill buttons to a project (ProjectFacts.astro, CaseStudy.astro), in the project's two colours: pointed at, they
+ * brighten, a ring of their colour around them, and their arrow leaves up and to the right as another comes in from
+ * below; pressed, they give a little, and spring back. The brightening is a light inset shadow, over the gradient, so
+ * that it fades in.
  */
 .pill-button {
+  box-shadow:
+    inset 0 0 0 100px rgb(255 255 255 / 0%),
+    0 0 0 0 rgb(255 255 255 / 0%);
   transition:
-    background 220ms ease,
     box-shadow 320ms ease,
     scale 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .pill-button:hover {
   opacity: 1;
-  background: #fff;
-  box-shadow: 0 0 0 5px rgb(243 243 241 / 10%);
+  box-shadow:
+    inset 0 0 0 100px rgb(255 255 255 / 16%),
+    0 0 0 5px color-mix(in srgb, var(--project-to, #fff) 18%, transparent);
 }
 
 .pill-button:active {
   scale: 0.96;
-  transition-duration: 220ms, 320ms, 90ms;
-  transition-timing-function: ease, ease, ease-out;
+  transition-duration: 320ms, 90ms;
+  transition-timing-function: ease, ease-out;
 }
 
 .arrow-swap {
