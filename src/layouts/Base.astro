@@ -48,7 +48,9 @@ const momentScript = `(${applyMoment.toString()})();`;
     ) : (
       <meta name="robots" content="noindex" />
     )}
+    <link rel="icon" href={withBase('/favicon.ico')} sizes="32x32" />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
     {preloadedFonts.map((href) => (
       <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />
     ))}
