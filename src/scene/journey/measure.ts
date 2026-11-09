@@ -139,6 +139,8 @@ export function gpu(): { gpu: string; parallelCompile: boolean } {
 
 export function panel(): {
   show(text: string): void;
+  /** Shows the report, with a button that copies it, at the top so that a long report never hides it. */
+  report(text: string): void;
   append(node: Node): void;
   remove(): void;
   reattach(): void;
@@ -174,7 +176,64 @@ export function panel(): {
     reattach: () => {
       if (!box.isConnected) document.body.append(box);
     },
+    report: (text) => {
+      box.textContent = '';
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.textContent = 'Copier';
+      Object.assign(copy.style, {
+        position: 'sticky',
+        top: '0',
+        display: 'block',
+        marginBottom: '8px',
+        font: 'inherit',
+        padding: '6px 14px',
+      });
+      copy.addEventListener('click', () => {
+        void copyText(text, box).then((done) => {
+          copy.textContent = done ? 'Copié' : 'Texte sélectionné : copie-le à la main';
+        });
+      });
+      const body = document.createElement('div');
+      body.textContent = text;
+      box.append(copy, body);
+    },
   };
+}
+
+/**
+ * Copies `text`: through the clipboard, or, where the browser refuses it (Firefox on a phone, at times), through a
+ * selected text field; as a last resort, the text stays selected in `box` for a copy by hand.
+ */
+async function copyText(text: string, box: HTMLElement): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // The older way below.
+  }
+  const field = document.createElement('textarea');
+  field.value = text;
+  field.setAttribute('readonly', '');
+  Object.assign(field.style, { position: 'fixed', top: '0', left: '0', width: '1px', height: '1px', opacity: '0' });
+  document.body.append(field);
+  field.select();
+  let done: boolean;
+  try {
+    // Deprecated, but the one way left where the clipboard refuses.
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    done = document.execCommand('copy');
+  } catch {
+    done = false;
+  }
+  field.remove();
+  if (!done) {
+    const range = document.createRange();
+    range.selectNodeContents(box.lastChild ?? box);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+  }
+  return done;
 }
 
 /** Plays the journey and records it; returns a function that stops the run. */
@@ -319,17 +378,7 @@ export function startMeasure(root: HTMLElement): () => void {
     };
     const text = JSON.stringify(result, null, 2);
     console.info('mesure', result);
-    out.show(text);
-    const copy = document.createElement('button');
-    copy.type = 'button';
-    copy.textContent = 'Copier';
-    Object.assign(copy.style, { display: 'block', marginTop: '8px', font: 'inherit', padding: '4px 10px' });
-    copy.addEventListener('click', () => {
-      void navigator.clipboard.writeText(text).then(() => {
-        copy.textContent = 'Copié';
-      });
-    });
-    out.append(copy);
+    out.report(text);
   };
   void run();
 
