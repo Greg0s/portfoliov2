@@ -443,6 +443,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
           else created.dispose();
           return;
         }
+        // Its programs linked slowly: the live office would link five times as many, seconds of halting frames on the
+        // ring, and turn out too slow anyway. Its layers show from the start.
+        if (!kept && created.linksSlowly && officeMode !== 'live' && !officeLoading) {
+          officeSlow = true;
+          markSlow('office');
+        }
         livePlanet?.dispose();
         livePlanet = created;
         handoff = planetHandoff(container, created.canvas);

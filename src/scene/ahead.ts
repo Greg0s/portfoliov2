@@ -2,8 +2,8 @@
  * Loading ahead (main spec §6.5): once the opening shows and the page is calm, everything the rest of the visit can
  * ask for is fetched in the background, in the order the visitor meets it, so that nothing waits on the network later:
  *
- * 1. the case studies, from the project in front on round the ring: each page, and its cover at the size this screen
- *    takes, decoded;
+ * 1. the case studies, from the project in front on round the ring (the one in front when each is fetched): each page,
+ *    and its cover at the size this screen takes, decoded;
  * 2. the office as the contact shows it on this screen and at this moment of the day: its still image, its layers and
  *    where they land (`placement.json`);
  * 3. the pictures of the wall, which the office draws from, and the screen's wallpapers;
@@ -40,17 +40,22 @@ export interface Plan {
   files: string[];
 }
 
-/**
- * The case studies' pages, from the project in front on round the ring, then the office's files, the wall's and the
- * screen's, for a screen `width` px wide at `moment`.
- */
-export function planFrom(home: ParentNode, width: number, moment: string): Plan {
+/** The case studies' pages, from the project in front on round the ring. */
+export function pagesFrom(home: ParentNode): string[] {
   const cards = [...home.querySelectorAll<HTMLAnchorElement>('[data-project] a.card[href]')];
   const front = Math.max(
     0,
     cards.findIndex((card) => card.closest('[data-project]')?.classList.contains('lit')),
   );
-  const pages = [...cards.slice(front), ...cards.slice(0, front)].map((card) => card.href);
+  return [...cards.slice(front), ...cards.slice(0, front)].map((card) => card.href);
+}
+
+/**
+ * The case studies' pages, from the project in front on round the ring, then the office's files, the wall's and the
+ * screen's, for a screen `width` px wide at `moment`.
+ */
+export function planFrom(home: ParentNode, width: number, moment: string): Plan {
+  const pages = pagesFrom(home);
 
   const files: string[] = [];
   const office = home.querySelector<HTMLElement>('[data-layers]');
@@ -112,8 +117,11 @@ async function run(home: ParentNode): Promise<void> {
   const plan = planFrom(home, innerWidth, document.documentElement.dataset.moment ?? 'crepuscule');
   const moves = watchMoves();
   try {
-    for (const page of plan.pages) {
+    for (;;) {
       await atRest(moves, PATIENCE);
+      // The project in front now comes first: the ring may have turned since the last one.
+      const page = pagesFrom(home).find((href) => !done.includes(href));
+      if (!page) break;
       const html = await text(page);
       done.push(page);
       if (spare || !html) continue;
