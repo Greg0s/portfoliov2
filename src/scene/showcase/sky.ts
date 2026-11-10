@@ -341,17 +341,13 @@ function link(gl: WebGL2RenderingContext, vertex: string, fragment: string, name
 
 /**
  * The painter in WebGL 2, or `null` where the canvas gives no such context or its programs fail to build. A canvas
- * that gave a WebGL context keeps it: the caller then draws on another canvas.
+ * that gave a WebGL context keeps it: the caller then draws on another canvas. `onLost` is called when the context is
+ * lost (a browser whose WebGL gives out, as CI's Safari drawing in software does): the caller may then draw the sky
+ * another way.
  */
-export function webglPainter(canvas: HTMLCanvasElement): SkyPainter | null {
-  const context = canvas.getContext('webgl2', {
-    alpha: true,
-    antialias: false,
-    depth: false,
-    stencil: false,
-    premultipliedAlpha: true,
-    preserveDrawingBuffer: false,
-  });
+export function webglPainter(canvas: HTMLCanvasElement, onLost?: () => void): SkyPainter | null {
+  // The stars' context's attributes (`src/scene/renderer.ts`): a transparent canvas, composited premultiplied.
+  const context = canvas.getContext('webgl2', { alpha: true, antialias: false });
   if (!context) return null;
   const gl: WebGL2RenderingContext = context;
 
@@ -444,6 +440,7 @@ export function webglPainter(canvas: HTMLCanvasElement): SkyPainter | null {
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
     lost = true;
+    onLost?.();
   });
   canvas.addEventListener('webglcontextrestored', () => {
     try {

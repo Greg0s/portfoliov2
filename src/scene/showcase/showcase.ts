@@ -143,16 +143,26 @@ export function createShowcase(
   // whose WebGL painter could not be made keeps its context: a fresh one takes its place for the 2D painter.
   const painterOf = (element: HTMLCanvasElement, draw: 'webgl' | '2d'): [SkyPainter | null, HTMLCanvasElement] => {
     if (draw === 'webgl') {
-      const made = webglPainter(element);
+      const made = webglPainter(element, onLost);
       if (made) return [made, element];
     }
     const fresh = element.cloneNode() as HTMLCanvasElement;
     element.replaceWith(fresh);
     return [canvasPainter(fresh), fresh];
   };
-  const [painter, nearCanvas] = painterOf(canvas, webgl ? 'webgl' : '2d');
-  canvas = nearCanvas;
+  let painter: SkyPainter | null = null;
   let farPainter: SkyPainter | null = null;
+  /** Draws the sky on 2D contexts from now on (fresh canvases), when WebGL gives out. */
+  function onLost(): void {
+    if (!painter?.webgl) return;
+    [painter, canvas] = painterOf(canvas, '2d');
+    if (planet) [farPainter, farCanvas] = painterOf(farCanvas, '2d');
+    html.dataset.sky = '2d';
+    farSide = 0;
+    blank = false;
+    onMove();
+  }
+  [painter, canvas] = painterOf(canvas, webgl ? 'webgl' : '2d');
   if (planet) [farPainter, farCanvas] = painterOf(farCanvas, painter?.webgl ? 'webgl' : '2d');
   html.dataset.sky = painter?.webgl ? 'webgl' : '2d';
 
