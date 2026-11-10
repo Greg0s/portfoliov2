@@ -129,7 +129,12 @@ export function createShowcase(
   };
   const canvas = sky('near');
   space.before(canvas);
+  // The far canvas covers the planet's square alone (placed each frame), not the screen: outside that square nothing
+  // lies between the two canvases, so the far half of the ring is drawn on the near canvas there, under its near
+  // half, and only what the planet can hide goes on the far canvas. One screen-sized picture less to draw and send
+  // to the GPU at every frame.
   const farCanvas = sky('far');
+  Object.assign(farCanvas.style, { inset: 'auto', left: '0', top: '0' });
   if (planet) planet.before(farCanvas);
   const context = canvas.getContext('2d');
   const farContext = planet ? farCanvas.getContext('2d') : null;
@@ -137,6 +142,9 @@ export function createShowcase(
   // The arrows and the counter, over the cards.
   const ui = document.createElement('div');
   ui.className = 'showcase-ui';
+  // A strip along the bottom edge, where the arrows are, rather than the whole screen: the stage gives each of its
+  // children the whole screen, which this picture, faded in and out as the ring comes and goes, has no use for.
+  Object.assign(ui.style, { inset: 'auto 0 0', height: '0' });
   const total = String(n).padStart(2, '0');
   ui.innerHTML = `
     <div class="showcase-arrows">
@@ -188,15 +196,76 @@ export function createShowcase(
   let ratio = 1;
   /** Whether both canvases are cleared and hidden, away from the ring. */
   let blank = false;
+  /** The far canvas's square on screen, in CSS px: its side (0 until placed) and its top-left corner. */
+  let farSide = 0;
+  let farLeft = 0;
+  let farTop = 0;
+  /** Around the planet's square: its bob (10 px), its slight turn and half a grain, in px at the stop. */
+  const FAR_MARGIN = 16;
+  /**
+   * The far canvas moves by steps of this many CSS px: the smallest step that is whole in both the canvas's pixels
+   * and the screen's, so that its grains land on the screen's pixels exactly as the near canvas's do (on a phone
+   * drawing 2.6 screen pixels per CSS px, a canvas moved by any other amount would be resampled a little
+   * differently from the other).
+   */
+  let farStep = 1;
   function resize(view: View): void {
     blank = false;
-    ratio = Math.min(2, window.devicePixelRatio || 1);
-    for (const element of [canvas, farCanvas]) {
-      element.width = Math.round(view.width * ratio);
-      element.height = Math.round(view.height * ratio);
-      element.style.width = `${String(view.width)}px`;
-      element.style.height = `${String(view.height)}px`;
+    const dpr = window.devicePixelRatio || 1;
+    ratio = Math.min(2, dpr);
+    farStep = 1 / ratio;
+    for (let k = 1; k <= 64; k += 1) {
+      const step = k / ratio;
+      const screen = step * dpr;
+      if (Math.abs(screen - Math.round(screen)) < 1e-6) {
+        farStep = step;
+        break;
+      }
     }
+    canvas.width = Math.round(view.width * ratio);
+    canvas.height = Math.round(view.height * ratio);
+    canvas.style.width = `${String(view.width)}px`;
+    canvas.style.height = `${String(view.height)}px`;
+    farSide = 0;
+  }
+
+  /** A box on screen, in px as `projectCss` gives them (at the stop, before the approach's zoom). */
+  interface Box {
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  }
+
+  /**
+   * Puts the far canvas over the planet's square, `disc` as drawn at the stop and `zoom` mapping the stop onto the
+   * screen, on whole device pixels so that its grains stay as crisp as the near canvas's; returns the square it covers,
+   * at the stop. Its size changes only when the square does by a few pixels (the way to the ring), never at every
+   * frame: sizing a canvas again throws its memory away.
+   */
+  function placeFar(disc: NonNullable<Frame['planet']>, zoom: { k: number; x: number; y: number }): Box {
+    const half = disc.r + FAR_MARGIN;
+    // Its corner moves by whole steps: the square covers one more step, so that it still holds the planet's.
+    const side = 2 * half * zoom.k + farStep;
+    if (farSide === 0 || Math.abs(side - farSide) > 6) {
+      farSide = Math.ceil(side * ratio) / ratio;
+      farCanvas.width = Math.round(farSide * ratio);
+      farCanvas.height = farCanvas.width;
+      farCanvas.style.width = `${String(farSide)}px`;
+      farCanvas.style.height = farCanvas.style.width;
+    }
+    const left = Math.floor(((disc.x - half) * zoom.k + zoom.x) / farStep) * farStep;
+    const top = Math.floor(((disc.y - half) * zoom.k + zoom.y) / farStep) * farStep;
+    if (left !== farLeft || top !== farTop) {
+      farLeft = left;
+      farTop = top;
+      farCanvas.style.transform = `translate(${String(left)}px, ${String(top)}px)`;
+    }
+    // What the canvas covers, at the stop (a little more than the planet's square when its side was rounded up).
+    const covered = farSide / zoom.k / 2;
+    const cx = (left + farSide / 2 - zoom.x) / zoom.k;
+    const cy = (top + farSide / 2 - zoom.y) / zoom.k;
+    return { x0: cx - covered, y0: cy - covered, x1: cx + covered, y1: cy + covered };
   }
 
   // The ring's dust and its stellar bodies, between the projects' sections.
@@ -292,60 +361,169 @@ export function createShowcase(
     return !farContext && z < 0 && planet !== null && Math.hypot(x - planet.x, y - planet.y) < planet.r * 0.94;
   }
 
-  function drawRing(near: CanvasRenderingContext2D, far: CanvasRenderingContext2D, frame: Frame): void {
-    const layer = (z: number): CanvasRenderingContext2D => (z < 0 ? far : near);
+  /** The grains, the line and the bodies of one frame, placed on screen: computed once, drawn on each canvas. */
+  const placed = {
+    gx: new Float64Array(grains.length),
+    gy: new Float64Array(grains.length),
+    gz: new Float64Array(grains.length),
+    gsize: new Float64Array(grains.length),
+    galpha: new Float64Array(grains.length),
+    gshade: new Int16Array(grains.length),
+    lx: new Float64Array(181),
+    ly: new Float64Array(181),
+    lz: new Float64Array(181),
+    bx: new Float64Array(bodies.length),
+    by: new Float64Array(bodies.length),
+    bz: new Float64Array(bodies.length),
+    bsize: new Float64Array(bodies.length),
+    balpha: new Float64Array(bodies.length),
+    bshade: new Int16Array(bodies.length),
+  };
+
+  function placeRing(frame: Frame): void {
     const { view, sway, shift, time } = frame;
     const ring = ringFor(view);
     const angle = (-2 * Math.PI * dust.x) / n;
     const drift = time * 0.000012;
     const bodyScale = view.mobile ? 0.7 : 1;
-    // The dust, brighter on the ring's front.
-    for (const [i, grain] of grains.entries()) {
+    grains.forEach((grain, i) => {
       const theta = grain.theta + angle + drift;
       const point = ringPoint(ring, theta, grain.r);
       const at = projectCss(point.x, point.y + grain.dy * bodyScale, point.z + shift, view, sway);
-      if (hidden(at.x, at.y, point.z, frame.planet)) continue;
+      // The dust, brighter on the ring's front.
       const front = 0.35 + 0.65 * (0.5 + 0.5 * Math.cos(theta));
-      const ctx = layer(point.z);
-      ctx.globalAlpha = grain.alpha * front;
-      ctx.fillStyle = tinted[i] ? (dustShades[along(theta)] ?? '#f3f3f1') : '#f3f3f1';
-      const size = grain.size * at.scale;
-      ctx.fillRect(at.x - size / 2, at.y - size / 2, size, size);
-    }
-    near.globalAlpha = 1;
-    far.globalAlpha = 1;
-    // A faint line along the ring, its far half under the planet.
-    for (const ctx of near === far ? [near] : [near, far]) {
-      ctx.strokeStyle = lineShade;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-    }
-    let pen: CanvasRenderingContext2D | null = null;
+      placed.gx[i] = at.x;
+      placed.gy[i] = at.y;
+      placed.gz[i] = point.z;
+      placed.gsize[i] = grain.size * at.scale;
+      placed.galpha[i] = grain.alpha * front;
+      placed.gshade[i] = tinted[i] ? along(theta) : -1;
+    });
     for (let k = 0; k <= 180; k += 1) {
       const theta = (k / 180) * Math.PI * 2;
       const point = ringPoint(ring, theta);
       const at = projectCss(point.x, point.y, point.z + shift, view, sway);
-      const ctx = layer(point.z);
-      if (hidden(at.x, at.y, point.z, frame.planet)) {
-        pen = null;
-        continue;
-      }
-      if (pen === ctx) ctx.lineTo(at.x, at.y);
-      else ctx.moveTo(at.x, at.y);
-      pen = ctx;
+      placed.lx[k] = at.x;
+      placed.ly[k] = at.y;
+      placed.lz[k] = point.z;
     }
-    near.stroke();
-    if (far !== near) far.stroke();
-    // The stellar bodies between the projects.
-    for (const item of bodies) {
+    bodies.forEach((item, i) => {
       const theta = item.theta + angle;
       const point = ringPoint(ring, theta, item.r);
       const at = projectCss(point.x, point.y + item.dy * bodyScale, point.z + shift, view, sway);
-      if (hidden(at.x, at.y, point.z, frame.planet)) continue;
       const front = 0.25 + 0.75 * (0.5 + 0.5 * Math.cos(theta));
-      const glow = glowShades[along(theta)] ?? 'rgb(255 255 255 / 34%)';
-      body(layer(point.z), item.kind, at.x, at.y, item.size * bodyScale * at.scale, item.alpha * front, glow);
+      placed.bx[i] = at.x;
+      placed.by[i] = at.y;
+      placed.bz[i] = point.z;
+      placed.bsize[i] = item.size * bodyScale * at.scale;
+      placed.balpha[i] = item.alpha * front;
+      placed.bshade[i] = along(theta);
+    });
+  }
+
+  type Half = 'far' | 'near' | 'both';
+  const inHalf = (z: number, half: Half): boolean => half === 'both' || (half === 'far' ? z < 0 : z >= 0);
+  const within = (box: Box, x0: number, y0: number, x1: number, y1: number): boolean =>
+    x0 >= box.x0 && y0 >= box.y0 && x1 <= box.x1 && y1 <= box.y1;
+  const apart = (box: Box, x0: number, y0: number, x1: number, y1: number): boolean =>
+    x1 < box.x0 || x0 > box.x1 || y1 < box.y0 || y0 > box.y1;
+
+  /**
+   * Draws one half of the ring (or both) on `ctx`, as placed: its grains, then its line, then its bodies. With `only`,
+   * what lies wholly inside (`'inside'`) or wholly outside (`'outside'`) `box` alone is drawn: the rest is for the
+   * other canvas. Without a far canvas, the planet's disc hides what is behind it (`hidden`).
+   */
+  function drawHalf(
+    ctx: CanvasRenderingContext2D,
+    half: Half,
+    box: Box | null,
+    only: 'inside' | 'outside' | null,
+    planet: Frame['planet'],
+  ): void {
+    const skip = (x0: number, y0: number, x1: number, y1: number): boolean => {
+      if (!box || !only) return false;
+      return only === 'inside' ? apart(box, x0, y0, x1, y1) : within(box, x0, y0, x1, y1);
+    };
+    // Three grains in five take the accent at their place on the ring, the others stay white.
+    let fill = '#f3f3f1';
+    ctx.fillStyle = fill;
+    for (let i = 0; i < grains.length; i += 1) {
+      const z = placed.gz[i] ?? 0;
+      if (!inHalf(z, half)) continue;
+      const x = placed.gx[i] ?? 0;
+      const y = placed.gy[i] ?? 0;
+      if (hidden(x, y, z, planet)) continue;
+      const size = placed.gsize[i] ?? 0;
+      if (skip(x - size / 2, y - size / 2, x + size / 2, y + size / 2)) continue;
+      const shade = placed.gshade[i] ?? -1;
+      const style = shade < 0 ? '#f3f3f1' : (dustShades[shade] ?? '#f3f3f1');
+      if (style !== fill) {
+        fill = style;
+        ctx.fillStyle = fill;
+      }
+      ctx.globalAlpha = placed.galpha[i] ?? 0;
+      ctx.fillRect(x - size / 2, y - size / 2, size, size);
     }
+    ctx.globalAlpha = 1;
+    // A faint line along the ring, in the accent's turquoise.
+    ctx.strokeStyle = lineShade;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    let pen = false;
+    for (let k = 0; k <= 180; k += 1) {
+      const z = placed.lz[k] ?? 0;
+      const x = placed.lx[k] ?? 0;
+      const y = placed.ly[k] ?? 0;
+      if (!inHalf(z, half) || hidden(x, y, z, planet)) {
+        pen = false;
+        continue;
+      }
+      if (pen) ctx.lineTo(x, y);
+      else ctx.moveTo(x, y);
+      pen = true;
+    }
+    ctx.stroke();
+    // The stellar bodies between the projects.
+    bodies.forEach((item, i) => {
+      const z = placed.bz[i] ?? 0;
+      if (!inHalf(z, half)) return;
+      const x = placed.bx[i] ?? 0;
+      const y = placed.by[i] ?? 0;
+      if (hidden(x, y, z, planet)) return;
+      const size = placed.bsize[i] ?? 0;
+      // The glow reaches three times the body's radius.
+      const reach = size * 1.5;
+      if (skip(x - reach, y - reach, x + reach, y + reach)) return;
+      const glow = glowShades[placed.bshade[i] ?? 0] ?? 'rgb(255 255 255 / 34%)';
+      body(ctx, item.kind, x, y, size, placed.balpha[i] ?? 0, glow);
+    });
+  }
+
+  /**
+   * Draws the ring: on the near canvas, its far half outside the planet's square `box`, then its near half; on the
+   * far canvas (`far`, under the planet), its far half within the square. Without a far canvas, all on the near one,
+   * the planet's disc hiding what is behind it.
+   */
+  function drawRing(
+    near: CanvasRenderingContext2D,
+    far: CanvasRenderingContext2D | null,
+    box: Box | null,
+    frame: Frame,
+  ): void {
+    placeRing(frame);
+    if (!far || !box) {
+      drawHalf(near, 'both', null, null, frame.planet);
+      return;
+    }
+    near.save();
+    near.beginPath();
+    near.rect(-1e6, -1e6, 2e6, 2e6);
+    near.rect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
+    near.clip('evenodd');
+    drawHalf(near, 'far', box, 'outside', frame.planet);
+    near.restore();
+    drawHalf(far, 'far', box, 'inside', frame.planet);
+    drawHalf(near, 'near', null, null, frame.planet);
   }
 
   const showcase: Showcase = {
@@ -398,7 +576,6 @@ export function createShowcase(
     draw(frame) {
       if (!context) return;
       const ctx = context;
-      const far = farContext ?? ctx;
       const shown = frame.presence >= 0.004;
       const opacity = shown ? frame.presence.toFixed(3) : '0';
       if (canvas.style.opacity !== opacity) {
@@ -415,9 +592,11 @@ export function createShowcase(
       // Away from the ring (the opening, the office), its two screen-sized canvases are cleared once, then left alone
       // and out of the page's drawing, rather than cleared at every frame.
       if (!shown && blank) return;
-      for (const each of [ctx, far]) {
-        each.setTransform(1, 0, 0, 1, 0, 0);
-        each.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (farContext) {
+        farContext.setTransform(1, 0, 0, 1, 0, 0);
+        farContext.clearRect(0, 0, farCanvas.width, farCanvas.height);
       }
       blank = !shown;
       const visibility = shown ? '' : 'hidden';
@@ -427,9 +606,20 @@ export function createShowcase(
       }
       if (!shown) return;
       const zoom = frame.zoom ?? { k: 1, x: 0, y: 0 };
-      for (const each of [ctx, far])
-        each.setTransform(ratio * zoom.k, 0, 0, ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
-      drawRing(ctx, far, frame);
+      ctx.setTransform(ratio * zoom.k, 0, 0, ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
+      let box: Box | null = null;
+      if (farContext && frame.planet) {
+        box = placeFar(frame.planet, zoom);
+        farContext.setTransform(
+          ratio * zoom.k,
+          0,
+          0,
+          ratio * zoom.k,
+          ratio * (zoom.x - farLeft),
+          ratio * (zoom.y - farTop),
+        );
+      }
+      drawRing(ctx, farContext, box, frame);
     },
     resize,
     stop() {
