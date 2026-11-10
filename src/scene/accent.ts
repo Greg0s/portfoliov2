@@ -11,13 +11,14 @@ export type Rgb = readonly [number, number, number];
 /** The gradient's stops, from its start (the green) to its end (the sky blue). */
 export const ACCENT_STOPS = ['#6db96e', '#71c4bb', '#90d3f4'] as const;
 
-const parse = (hex: string): Rgb => [
+/** A `#rrggbb` colour as sRGB components. */
+export const fromHex = (hex: string): Rgb => [
   parseInt(hex.slice(1, 3), 16) / 255,
   parseInt(hex.slice(3, 5), 16) / 255,
   parseInt(hex.slice(5, 7), 16) / 255,
 ];
 
-const STOPS: readonly Rgb[] = ACCENT_STOPS.map(parse);
+const STOPS: readonly Rgb[] = ACCENT_STOPS.map(fromHex);
 
 /** The colour `t` of the way from `a` to `b`. */
 export function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {

@@ -68,17 +68,26 @@ test('a case study leads to its live site, from its facts and, for some, from a 
   expect((await page.request.get('letters/siemens-en.pdf')).headers()['content-type']).toBe('application/pdf');
 });
 
-test("a case study's main buttons take the project's two colours, its labels the accent", async ({ page }) => {
+test("a case study takes its project's colours: its two on the main buttons, their middle as its accent", async ({
+  page,
+  isMobile,
+}) => {
   await page.goto('projets/lyrix/');
   const gradient = 'linear-gradient(90deg, rgb(236, 106, 44), rgb(242, 132, 63))';
   for (const selector of ['.facts .button', '.band-button']) {
     await expect(page.locator(selector)).toHaveCSS('background-image', gradient);
   }
-  const accent = 'rgb(113, 196, 187)';
+  // The project's accent rather than the site's turquoise, in the page and in its header.
+  const accent = 'rgb(239, 119, 54)';
   await expect(page.locator('.intro .tag')).toHaveCSS('color', accent);
   await expect(page.locator('.facts dt').first()).toHaveCSS('color', accent);
-  // The lede and the title keep the night's greys and white.
+  await expect(page.locator(isMobile ? '.case-header .dots .current' : '.case-header .number .now')).toHaveCSS(
+    isMobile ? 'background-color' : 'color',
+    accent,
+  );
+  // The lede, the sections' titles and the title keep the night's greys and white.
   await expect(page.locator('.lede')).toHaveCSS('color', 'rgb(143, 143, 139)');
+  await expect(page.locator('#case-results')).toHaveCSS('color', 'rgb(143, 143, 139)');
   await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('color', 'rgb(243, 243, 241)');
 });
 
