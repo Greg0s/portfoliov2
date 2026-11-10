@@ -40,7 +40,14 @@ export function keepRenderer(kept: Renderer): void {
 export function takeRenderer(): Renderer | null {
   const taken = renderer;
   renderer = null;
-  if (taken) note('take-renderer');
+  if (!taken) return null;
+  // Its context lost while it was kept, and not back: a new one is made.
+  if (taken.lost) {
+    note('lost-renderer');
+    taken.dispose();
+    return null;
+  }
+  note('take-renderer');
   return taken;
 }
 
@@ -54,7 +61,14 @@ export function keepPlanet(kept: LivePlanet): void {
 export function takePlanet(): LivePlanet | null {
   const taken = planet;
   planet = null;
-  if (taken) note('take-planet');
+  if (!taken) return null;
+  // Its context lost while it was kept: it is put together again.
+  if (taken.isLost()) {
+    note('lost-planet');
+    taken.dispose();
+    return null;
+  }
+  note('take-planet');
   return taken;
 }
 
@@ -70,6 +84,12 @@ export function takeOffice(framing: Framing, moment: Moment, kind: KeptOffice['k
   const taken = office;
   office = null;
   if (!taken) return null;
+  // Its context lost while it was kept: it is prepared again.
+  if (taken.scene.isLost()) {
+    note('lost-office');
+    taken.scene.dispose();
+    return null;
+  }
   if (taken.framing === framing && taken.moment === moment && taken.kind === kind) {
     note('take-office');
     return taken.scene;

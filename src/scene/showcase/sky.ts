@@ -47,6 +47,12 @@ export interface SkyPainter {
   lineDone(rgb: Rgb, alpha: number): void;
   /** A body of `size` px across at `x, y`, with its glow in `glow` (at 42 %), the whole at `alpha`. */
   body(kind: BodyKind, x: number, y: number, size: number, alpha: number, glow: Rgb): void;
+  /**
+   * Lets the canvas's memory go, and its WebGL context at once: a browser keeps only so many contexts (8 on a phone),
+   * and drops the oldest one, a scene still on screen maybe, when a new one comes before the garbage collector has
+   * taken the old ones.
+   */
+  dispose(): void;
 }
 
 /** The painter on a 2D context. */
@@ -154,6 +160,10 @@ export function canvasPainter(canvas: HTMLCanvasElement): SkyPainter | null {
       ctx.restore();
       ctx.beginPath();
       fill = '';
+    },
+    dispose() {
+      canvas.width = 0;
+      canvas.height = 0;
     },
   };
 }
@@ -352,6 +362,7 @@ export function webglPainter(canvas: HTMLCanvasElement, onLost?: () => void): Sk
   const gl: WebGL2RenderingContext = context;
 
   let lost = false;
+  let disposed = false;
   let grainProgram: Program;
   let lineProgram: Program;
   let bodyProgram: Program;
@@ -440,9 +451,10 @@ export function webglPainter(canvas: HTMLCanvasElement, onLost?: () => void): Sk
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
     lost = true;
-    onLost?.();
+    if (!disposed) onLost?.();
   });
   canvas.addEventListener('webglcontextrestored', () => {
+    if (disposed) return;
     try {
       setUp();
       lost = false;
@@ -585,6 +597,12 @@ export function webglPainter(canvas: HTMLCanvasElement, onLost?: () => void): Sk
       gl.bindVertexArray(bodyArray);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.bindVertexArray(null);
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      lost = true;
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
     },
   };
 }

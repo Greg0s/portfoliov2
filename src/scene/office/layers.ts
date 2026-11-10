@@ -204,6 +204,8 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
         face.image.addEventListener('load', loaded, { once: true });
       }
     },
+    isLost: () => false,
+    whenLost: () => undefined,
     dispose() {
       cancelAnimationFrame(redrawn);
       root.remove();

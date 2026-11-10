@@ -7,6 +7,7 @@ import { PerspectiveCamera, Scene, ShaderChunk, WebGLRenderer } from 'three';
 import { cameraPosition, projectionMatrix } from './journey/camera3d';
 import type { View } from './journey/layout';
 import { noteContext } from './quality';
+import { cappedPixelRatio } from './resolution';
 
 // A first visit, again and again (`?froid=1`, and the fast and full-visit measurement runs): the browser keeps the programs it linked
 // in a cache of its own, which makes every later visit fast. A comment that changes at each visit, in the code every
@@ -20,50 +21,11 @@ export interface Renderer {
   scene: Scene;
   camera: PerspectiveCamera;
   pixelRatio: number;
+  /** Whether its WebGL context is lost, and not back yet. */
+  readonly lost: boolean;
   resize(view: View): void;
   render(): void;
   dispose(): void;
-}
-
-/** The device pixel ratio the renderer draws at: at most 2, and 1.5 on phones. */
-export function cappedPixelRatio(devicePixelRatio: number, mobile: boolean): number {
-  return Math.min(devicePixelRatio, mobile ? 1.5 : 2);
-}
-
-/**
- * The live scenes' resolution, as a share of their pixel ratio: lowered once when a scene lags, before any fallback
- * (main spec §6.4). Only a dense screen gives anything up: the ratio never goes under 1.
- */
-const LOWER_RESOLUTION = 0.75;
-const RESOLUTION_KEY = 'portfolio:resolution';
-let resolution = ((): number => {
-  try {
-    return sessionStorage.getItem(RESOLUTION_KEY) === 'lower' ? LOWER_RESOLUTION : 1;
-  } catch {
-    return 1;
-  }
-})();
-
-/** The pixel ratio a live scene (the planet, the office) draws at. */
-export function scenePixelRatio(devicePixelRatio: number, mobile: boolean): number {
-  const capped = cappedPixelRatio(devicePixelRatio, mobile);
-  return Math.max(Math.min(1, capped), capped * resolution);
-}
-
-/**
- * Lowers the live scenes' resolution for the rest of the visit; says whether that changes anything on this screen
- * (false once lowered already, or when the ratio is already 1).
- */
-export function lowerResolution(devicePixelRatio: number, mobile: boolean): boolean {
-  if (resolution < 1) return false;
-  const before = scenePixelRatio(devicePixelRatio, mobile);
-  resolution = LOWER_RESOLUTION;
-  try {
-    sessionStorage.setItem(RESOLUTION_KEY, 'lower');
-  } catch {
-    // Without storage, it holds until the page is left.
-  }
-  return scenePixelRatio(devicePixelRatio, mobile) < before;
 }
 
 export function createRenderer(container: HTMLElement, view: View): Renderer {
@@ -98,6 +60,9 @@ export function createRenderer(container: HTMLElement, view: View): Renderer {
     get pixelRatio() {
       return pixelRatio;
     },
+    get lost() {
+      return lost;
+    },
     resize(next) {
       pixelRatio = cappedPixelRatio(window.devicePixelRatio || 1, next.mobile);
       gl.setPixelRatio(pixelRatio);
@@ -114,6 +79,9 @@ export function createRenderer(container: HTMLElement, view: View): Renderer {
       canvas.removeEventListener('webglcontextlost', onLost);
       canvas.removeEventListener('webglcontextrestored', onRestored);
       gl.dispose();
+      // Its context is given back now: a browser keeps only so many (8 on a phone) and waits for the garbage
+      // collector otherwise, dropping the oldest one meanwhile, which may be a scene still on screen.
+      if (!lost) gl.forceContextLoss();
       canvas.remove();
     },
   };
