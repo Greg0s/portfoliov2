@@ -3,7 +3,8 @@
  * One project of the journey (journey spec §5): its cartel (title, tag, short description) and its card, a 16:9 link to
  * the case study. Its `id` is the project's slug, the fragment that leads to it in the home. Without the journey's
  * animation (no JavaScript, "reduce motion", the light version), the projects are a list, alternating sides; in the
- * journey, `src/scene/journey/journey.ts` places the card in 3D (`.place`), floats it (`.float`) and sets its focus.
+ * journey, `src/scene/journey/journey.ts` places the card in 3D (`.place`), floats it (`.float`), turns it (`.spin`,
+ * which carries the card and its shadow, `.shade`) and sets its focus.
  */
 import { Image } from 'astro:assets';
 import Cartel from './Cartel.astro';
@@ -30,24 +31,27 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
   <Cartel id={cartelId} title={text.data.title} tag={projectTag(project)} summary={text.data.summary} />
   <div class="place">
     <div class="float">
-      <a class="card" href={href} aria-describedby={cartelId} data-slug={slug}>
-        <Image
-          src={data.cover}
-          alt=""
-          widths={[480, 720, 1120].filter((width) => width <= data.cover.width)}
-          sizes="(width < 768px) 78vw, 38vw"
-          fetchpriority="low"
-          style={data.coverFocus ? `object-position: ${data.coverFocus}` : undefined}
-        />
-        <span class="visually-hidden">
-          {label('card.see')} : {text.data.title}
-        </span>
-        <span class="pill" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 14 14">
-            <path d="M4 10L10 4M5 4h5v5"></path>
-          </svg>
-        </span>
-      </a>
+      <div class="spin">
+        <span class="shade" aria-hidden="true"></span>
+        <a class="card" href={href} aria-describedby={cartelId} data-slug={slug}>
+          <Image
+            src={data.cover}
+            alt=""
+            widths={[480, 720, 1120].filter((width) => width <= data.cover.width)}
+            sizes="(width < 768px) 78vw, 38vw"
+            fetchpriority="low"
+            style={data.coverFocus ? `object-position: ${data.coverFocus}` : undefined}
+          />
+          <span class="visually-hidden">
+            {label('card.see')} : {text.data.title}
+          </span>
+          <span class="pill" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14">
+              <path d="M4 10L10 4M5 4h5v5"></path>
+            </svg>
+          </span>
+        </a>
+      </div>
     </div>
   </div>
 </li>
@@ -71,8 +75,13 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
   }
 
   .place,
-  .float {
+  .float,
+  .spin {
     display: contents;
+  }
+
+  .shade {
+    display: none;
   }
 
   .card {
@@ -185,25 +194,46 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
     }
   }
 
-  :global(html[data-journey='on']) .card {
+  /* The card's turn, on a point at the card's centre: the card and its shadow turn with it. */
+  :global(html[data-journey='on']) .spin {
     position: absolute;
-    width: auto;
-    box-shadow:
-      0 0 0 1px rgb(243 243 241 / 14%),
-      0 40px 80px -24px rgb(0 0 0 / 75%);
-    pointer-events: auto;
-    transition:
-      transform 450ms var(--ease-ui),
-      box-shadow 450ms ease;
-    translate: none;
+    left: 0;
+    top: 0;
+    display: block;
+    width: 0;
+    height: 0;
+    transition: transform 450ms var(--ease-ui);
     backface-visibility: hidden;
   }
 
-  :global(html[data-journey='on']) .project.lit .card {
+  /* The card's soft shadow, under the card and out of its blur: a blurred element is drawn again at every frame it
+     moves, over all its shadow reaches; the shadow is blurred once, by the browser, as a shadow. */
+  :global(html[data-journey='on']) .shade {
+    position: absolute;
+    display: block;
+    border-radius: var(--radius-card);
+    box-shadow: 0 40px 80px -24px rgb(0 0 0 / 75%);
+    transition: box-shadow 450ms ease;
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .card {
+    position: absolute;
+    width: auto;
+    box-shadow: 0 0 0 1px rgb(243 243 241 / 14%);
+    pointer-events: auto;
+    transition: box-shadow 450ms ease;
+    translate: none;
+  }
+
+  :global(html[data-journey='on']) .project.lit .shade {
     box-shadow:
-      0 0 0 1px rgb(255 255 255 / 55%),
       0 50px 120px -24px rgb(255 255 255 / 10%),
       0 30px 60px -12px rgb(0 0 0 / 85%);
+  }
+
+  :global(html[data-journey='on']) .project.lit .card {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 55%);
     cursor: none;
   }
 

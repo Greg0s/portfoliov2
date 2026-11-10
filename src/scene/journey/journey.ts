@@ -132,6 +132,10 @@ interface CardParts {
   item: HTMLElement;
   place: HTMLElement;
   float: HTMLElement;
+  /** The card's turn: the card and its shadow turn with it. */
+  spin: HTMLElement;
+  /** The card's soft shadow, a box the card's size under it. */
+  shade: HTMLElement;
   link: HTMLAnchorElement;
   cartel: HTMLElement | null;
 }
@@ -219,9 +223,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   const cards: CardParts[] = [...root.querySelectorAll<HTMLElement>('[data-project]')].flatMap((item) => {
     const place = item.querySelector<HTMLElement>('.place');
     const float = item.querySelector<HTMLElement>('.float');
+    const spin = item.querySelector<HTMLElement>('.spin');
+    const shade = item.querySelector<HTMLElement>('.shade');
     const link = item.querySelector<HTMLAnchorElement>('a.card');
-    if (!place || !float || !link) return [];
-    return [{ item, place, float, link, cartel: item.querySelector<HTMLElement>('.cartel') }];
+    if (!place || !float || !spin || !shade || !link) return [];
+    return [{ item, place, float, spin, shade, link, cartel: item.querySelector<HTMLElement>('.cartel') }];
   });
 
   // The fragments the journey answers, by anchor: the opening, the first project, each project, the contact.
@@ -248,6 +254,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       redraw = true;
     },
     planetFrame,
+    // The sky in WebGL, with the stars; `?ciel=2d` keeps the 2D canvases, to compare the two drawings.
+    options.webgl && new URLSearchParams(location.search).get('ciel') !== '2d',
   );
   /** The screen's height the track was laid out for, in px. */
   let screen = 0;
@@ -314,12 +322,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     set(world3d, '--vp-x', `${view.vpX.toFixed(1)}px`);
     set(world3d, '--vp-y', `${view.vpY.toFixed(1)}px`);
     const cardWidth = showcase.ring(view).card;
-    cards.forEach(({ link }) => {
+    cards.forEach(({ link, shade }) => {
       const cardHeight = (cardWidth * 9) / 16;
-      set(link, 'width', `${cardWidth.toFixed(1)}px`);
-      set(link, 'height', `${cardHeight.toFixed(1)}px`);
-      set(link, 'left', `${(-cardWidth / 2).toFixed(1)}px`);
-      set(link, 'top', `${(-cardHeight / 2).toFixed(1)}px`);
+      for (const box of [link, shade]) {
+        set(box, 'width', `${cardWidth.toFixed(1)}px`);
+        set(box, 'height', `${cardHeight.toFixed(1)}px`);
+        set(box, 'left', `${(-cardWidth / 2).toFixed(1)}px`);
+        set(box, 'top', `${(-cardHeight / 2).toFixed(1)}px`);
+      }
     });
     showcase.resize(view);
 
@@ -966,16 +976,19 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         set(parts.place, 'transform', cssTransform(flight.x, flight.y, flight.depth, view, sway));
         cardPerspective(parts, flight.x, flight.y, flight.depth, lift, view);
         set(parts.link, 'opacity', '1');
+        set(parts.shade, 'opacity', '1');
         set(parts.link, 'filter', 'none');
         set(parts.link, 'pointer-events', 'none');
         set(
-          parts.link,
+          parts.spin,
           'transform',
           `rotateY(${(pose.rotateY * (1 - k)).toFixed(2)}deg) rotateZ(${(pose.rotateZ * (1 - k)).toFixed(2)}deg) translateZ(${(dive.lift * (1 - k)).toFixed(2)}px) scale(${pose.scale.toFixed(4)})`,
         );
-        set(parts.link, 'transition', 'box-shadow 450ms ease');
-        set(parts.link, 'box-shadow', '0 0 0 0 rgb(255 255 255 / 0%), 0 40px 80px -24px rgb(0 0 0 / 0%)');
+        // The card's rim and its shadow fade out as it flies.
+        set(parts.link, 'box-shadow', '0 0 0 0 rgb(255 255 255 / 0%)');
+        set(parts.shade, 'box-shadow', '0 40px 80px -24px rgb(0 0 0 / 0%)');
         set(parts.link, 'border-radius', `${(dive.radius * (1 - k)).toFixed(2)}px`);
+        set(parts.shade, 'border-radius', `${(dive.radius * (1 - k)).toFixed(2)}px`);
       } else {
         // A card the mouse is over, beside the one in front, lights up a little: a click brings it in front.
         const over = lit ? 0 : (hoverGlow[i] ?? 0);
@@ -984,16 +997,18 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         set(parts.place, 'transform', cssTransform(pose.x, pose.y, z, view, sway));
         cardPerspective(parts, pose.x, pose.y, z, lift, view);
         set(parts.link, 'opacity', opacity.toFixed(3));
+        set(parts.shade, 'opacity', opacity.toFixed(3));
         set(parts.link, 'filter', opacity > 0.004 ? blurFilter(blur) : 'none');
         set(parts.link, 'pointer-events', opacity > 0.12 && diving < 0 && presence > 0.5 ? 'auto' : 'none');
         set(
-          parts.link,
+          parts.spin,
           'transform',
           `rotateY(${pose.rotateY.toFixed(2)}deg) rotateZ(${pose.rotateZ.toFixed(2)}deg) translateZ(${lit && hovered === i ? String(HOVER_LIFT) : '0'}px) scale(${pose.scale.toFixed(4)})`,
         );
-        set(parts.link, 'transition', '');
         set(parts.link, 'box-shadow', '');
+        set(parts.shade, 'box-shadow', '');
         set(parts.link, 'border-radius', '');
+        set(parts.shade, 'border-radius', '');
       }
       parts.item.classList.toggle('lit', lit);
       if (!parts.cartel) return;
