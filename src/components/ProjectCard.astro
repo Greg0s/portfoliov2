@@ -232,6 +232,18 @@ const href = withBase(pathFor({ id: 'project', slug }, locale));
       0 30px 60px -12px rgb(0 0 0 / 85%);
   }
 
+  /* A lighter shadow, its blur half as wide (`?ombre=legere`, a proposal for Firefox on phones, 10 November 2026):
+     the cost of a shadow grows with its blur. */
+  :global(html[data-ombre-legere][data-journey='on']) .shade {
+    box-shadow: 0 28px 40px -18px rgb(0 0 0 / 70%);
+  }
+
+  :global(html[data-ombre-legere][data-journey='on']) .project.lit .shade {
+    box-shadow:
+      0 40px 60px -20px rgb(255 255 255 / 8%),
+      0 24px 34px -12px rgb(0 0 0 / 80%);
+  }
+
   :global(html[data-journey='on']) .project.lit .card {
     box-shadow: 0 0 0 1px rgb(255 255 255 / 55%);
     cursor: none;
