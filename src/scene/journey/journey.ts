@@ -196,7 +196,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   const probing = (part: string): boolean => html.dataset.probe?.includes(part) ?? false;
   const flatCards = CSS.supports('-moz-appearance', 'none');
   const cardPerspective = (parts: CardParts, x: number, y: number, depth: number, lift: number, view: View): void => {
-    if (!flatCards) return;
+    if (!flatCards || probing('perspective')) return;
     set(parts.float, 'perspective', `${Math.max(1, view.perspective * (1 - depth)).toFixed(1)}px`);
     set(parts.float, 'perspective-origin', `${(-x).toFixed(1)}px ${(-y - lift).toFixed(1)}px`);
   };
@@ -956,6 +956,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       const z = Math.min(pose.z + plane.depth, 0.72);
       const scale = 1 / (1 - z);
       const lit = focus === i && diving < 0;
+      // The probe's "cards held still": the cards keep the styles of the frame before, whatever the ring does.
+      if (probing('cartes')) return;
       const lift = options.still ? 0 : 10 * swing(time, place.floatDuration, place.floatDelay) * (1 - floatRest);
       set(parts.float, 'transform', `translateY(${lift.toFixed(2)}px)`);
       if (i === diving && dive) {
