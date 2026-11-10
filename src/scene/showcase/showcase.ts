@@ -4,10 +4,11 @@
  * journey, which places them in its 3D scene, draws the ring's dust and small planets on a canvas behind the cards,
  * and shows the arrows with the counter between them.
  */
-import { accentAt, cssRgb, mixRgb } from '../accent';
+import { accentAt, mixRgb, type Rgb } from '../accent';
 import { projectCss, type Sway } from '../journey/camera';
 import type { View } from '../journey/layout';
 import { offset, ringFor, ringPoint, ringPose, type Pose, type Ring } from './ring';
+import { canvasPainter, webglPainter, type BodyKind, type SkyBox, type SkyPainter } from './sky';
 
 /**
  * The ring turns on a critically damped spring: it sets off gently, glides and settles without a bump, about a second
@@ -64,7 +65,7 @@ export interface Showcase {
 }
 
 interface Body {
-  kind: 'orb' | 'ringed' | 'moon';
+  kind: BodyKind;
   theta: number;
   r: number;
   dy: number;
@@ -106,13 +107,15 @@ function spring(state: { x: number; v: number }, target: number, omega: number, 
 /**
  * Starts the ring over the journey's section `space`, for the projects titled `titles`. The ring's far half is drawn
  * just under `planet` (the planet's own element), so that only the planet and its characters hide it, not the
- * transparent space around them; its near half over the planet, under the cards.
+ * transparent space around them; its near half over the planet, under the cards. The sky is drawn in WebGL (`sky.ts`)
+ * unless `webgl` is false or the browser has no WebGL 2: on 2D contexts then.
  */
 export function createShowcase(
   space: HTMLElement,
   titles: readonly string[],
   onMove: () => void,
   planet: HTMLElement | null = null,
+  webgl = true,
 ): Showcase {
   const n = titles.length;
   const french = document.documentElement.lang.startsWith('fr');
@@ -127,17 +130,41 @@ export function createShowcase(
     element.setAttribute('aria-hidden', 'true');
     return element;
   };
-  const canvas = sky('near');
+  let canvas = sky('near');
   space.before(canvas);
   // The far canvas covers the planet's square alone (placed each frame), not the screen: outside that square nothing
   // lies between the two canvases, so the far half of the ring is drawn on the near canvas there, under its near
   // half, and only what the planet can hide goes on the far canvas. One screen-sized picture less to draw and send
   // to the GPU at every frame.
-  const farCanvas = sky('far');
+  let farCanvas = sky('far');
   Object.assign(farCanvas.style, { inset: 'auto', left: '0', top: '0' });
   if (planet) planet.before(farCanvas);
-  const context = canvas.getContext('2d');
-  const farContext = planet ? farCanvas.getContext('2d') : null;
+  // Both canvases draw the same way, so that a grain looks the same on either side of the far canvas's edge. A canvas
+  // whose WebGL painter could not be made keeps its context: a fresh one takes its place for the 2D painter.
+  const painterOf = (element: HTMLCanvasElement, draw: 'webgl' | '2d'): [SkyPainter | null, HTMLCanvasElement] => {
+    if (draw === 'webgl') {
+      const made = webglPainter(element, onLost);
+      if (made) return [made, element];
+    }
+    const fresh = element.cloneNode() as HTMLCanvasElement;
+    element.replaceWith(fresh);
+    return [canvasPainter(fresh), fresh];
+  };
+  let painter: SkyPainter | null = null;
+  let farPainter: SkyPainter | null = null;
+  /** Draws the sky on 2D contexts from now on (fresh canvases), when WebGL gives out. */
+  function onLost(): void {
+    if (!painter?.webgl) return;
+    [painter, canvas] = painterOf(canvas, '2d');
+    if (planet) [farPainter, farCanvas] = painterOf(farCanvas, '2d');
+    html.dataset.sky = '2d';
+    farSide = 0;
+    blank = false;
+    onMove();
+  }
+  [painter, canvas] = painterOf(canvas, webgl ? 'webgl' : '2d');
+  if (planet) [farPainter, farCanvas] = painterOf(farCanvas, painter?.webgl ? 'webgl' : '2d');
+  html.dataset.sky = painter?.webgl ? 'webgl' : '2d';
 
   // The arrows and the counter, over the cards.
   const ui = document.createElement('div');
@@ -236,12 +263,7 @@ export function createShowcase(
   }
 
   /** A box on screen, in px as `projectCss` gives them (at the stop, before the approach's zoom). */
-  interface Box {
-    x0: number;
-    y0: number;
-    x1: number;
-    y1: number;
-  }
+  type Box = SkyBox;
 
   /**
    * Puts the far canvas over the planet's square, `disc` as drawn at the stop and `zoom` mapping the stop onto the
@@ -301,13 +323,12 @@ export function createShowcase(
   // The accent's light (src/scene/accent.ts): the ring's front takes its green, its back its sky blue, as if lit from
   // either side; three grains in five and the bodies' glow take it, the rest of the dust stays white.
   const SHADES = 24;
-  const shade = (alpha: number, white = 0): string[] =>
-    Array.from({ length: SHADES + 1 }, (_, i) =>
-      cssRgb(mixRgb(accentAt(i / SHADES), [0.953, 0.953, 0.945], white), alpha),
-    );
-  const dustShades = shade(1, 0.04);
-  const glowShades = shade(0.42);
-  const lineShade = cssRgb(accentAt(0.5), 0.13);
+  const shade = (white = 0): Rgb[] =>
+    Array.from({ length: SHADES + 1 }, (_, i) => mixRgb(accentAt(i / SHADES), [0.953, 0.953, 0.945], white));
+  const dustShades = shade(0.04);
+  const glowShades = shade();
+  const WHITE: Rgb = [0.953, 0.953, 0.945];
+  const lineShade = accentAt(0.5);
   /** The shade of the ring at `theta`, from its front (0) to its back (SHADES). */
   const along = (theta: number): number => Math.round((0.5 - 0.5 * Math.cos(theta)) * SHADES);
   const hash = (i: number): number => {
@@ -316,55 +337,12 @@ export function createShowcase(
   };
   const tinted = grains.map((_, i) => hash(i) < 0.6);
 
-  function body(
-    ctx: CanvasRenderingContext2D,
-    kind: Body['kind'],
-    x: number,
-    y: number,
-    size: number,
-    alpha: number,
-    glowColor: string,
-  ): void {
-    const r = size / 2;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-    glow.addColorStop(0, glowColor);
-    glow.addColorStop(1, 'rgb(255 255 255 / 0%)');
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(x, y, r * 3, 0, Math.PI * 2);
-    ctx.fill();
-    {
-      const disc = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-      disc.addColorStop(0, '#ffffff');
-      disc.addColorStop(1, 'rgb(200 200 196)');
-      ctx.fillStyle = disc;
-      ctx.beginPath();
-      ctx.arc(x, y, r * (kind === 'orb' ? 0.8 : 0.62), 0, Math.PI * 2);
-      ctx.fill();
-      if (kind === 'ringed') {
-        ctx.strokeStyle = 'rgb(255 255 255 / 70%)';
-        ctx.lineWidth = Math.max(0.8, r * 0.14);
-        ctx.beginPath();
-        ctx.ellipse(x, y, r * 1.35, r * 0.36, -0.32, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (kind === 'moon') {
-        ctx.fillStyle = 'rgb(255 255 255 / 85%)';
-        ctx.beginPath();
-        ctx.arc(x + r * 1.25, y - r * 0.7, r * 0.22, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.restore();
-  }
-
   /**
    * Whether a point behind the planet's centre is hidden by its disc: only without the far layer, which lets the
    * planet's own pixels hide it.
    */
   function hidden(x: number, y: number, z: number, planet: Frame['planet']): boolean {
-    return !farContext && z < 0 && planet !== null && Math.hypot(x - planet.x, y - planet.y) < planet.r * 0.94;
+    return !farPainter && z < 0 && planet !== null && Math.hypot(x - planet.x, y - planet.y) < planet.r * 0.94;
   }
 
   /** The grains, the line and the bodies of one frame, placed on screen: computed once, drawn on each canvas. */
@@ -435,12 +413,12 @@ export function createShowcase(
     x1 < box.x0 || x0 > box.x1 || y1 < box.y0 || y0 > box.y1;
 
   /**
-   * Draws one half of the ring (or both) on `ctx`, as placed: its grains, then its line, then its bodies. With `only`,
-   * what lies wholly inside (`'inside'`) or wholly outside (`'outside'`) `box` alone is drawn: the rest is for the
-   * other canvas. Without a far canvas, the planet's disc hides what is behind it (`hidden`).
+   * Draws one half of the ring (or both) with `paint`, as placed: its grains, then its line, then its bodies. With
+   * `only`, what lies wholly inside (`'inside'`) or wholly outside (`'outside'`) `box` alone is drawn: the rest is
+   * for the other canvas. Without a far canvas, the planet's disc hides what is behind it (`hidden`).
    */
   function drawHalf(
-    ctx: CanvasRenderingContext2D,
+    paint: SkyPainter,
     half: Half,
     box: Box | null,
     only: 'inside' | 'outside' | null,
@@ -451,8 +429,6 @@ export function createShowcase(
       return only === 'inside' ? apart(box, x0, y0, x1, y1) : within(box, x0, y0, x1, y1);
     };
     // Three grains in five take the accent at their place on the ring, the others stay white.
-    let fill = '#f3f3f1';
-    ctx.fillStyle = fill;
     for (let i = 0; i < grains.length; i += 1) {
       const z = placed.gz[i] ?? 0;
       if (!inHalf(z, half)) continue;
@@ -462,19 +438,10 @@ export function createShowcase(
       const size = placed.gsize[i] ?? 0;
       if (skip(x - size / 2, y - size / 2, x + size / 2, y + size / 2)) continue;
       const shade = placed.gshade[i] ?? -1;
-      const style = shade < 0 ? '#f3f3f1' : (dustShades[shade] ?? '#f3f3f1');
-      if (style !== fill) {
-        fill = style;
-        ctx.fillStyle = fill;
-      }
-      ctx.globalAlpha = placed.galpha[i] ?? 0;
-      ctx.fillRect(x - size / 2, y - size / 2, size, size);
+      paint.grain(x, y, size, placed.galpha[i] ?? 0, shade < 0 ? WHITE : (dustShades[shade] ?? WHITE));
     }
-    ctx.globalAlpha = 1;
+    paint.grainsDone();
     // A faint line along the ring, in the accent's turquoise.
-    ctx.strokeStyle = lineShade;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
     let pen = false;
     for (let k = 0; k <= 180; k += 1) {
       const z = placed.lz[k] ?? 0;
@@ -484,11 +451,11 @@ export function createShowcase(
         pen = false;
         continue;
       }
-      if (pen) ctx.lineTo(x, y);
-      else ctx.moveTo(x, y);
+      if (pen) paint.lineTo(x, y);
+      else paint.lineMove(x, y);
       pen = true;
     }
-    ctx.stroke();
+    paint.lineDone(lineShade, 0.13);
     // The stellar bodies between the projects.
     bodies.forEach((item, i) => {
       const z = placed.bz[i] ?? 0;
@@ -500,8 +467,8 @@ export function createShowcase(
       // The glow reaches three times the body's radius.
       const reach = size * 1.5;
       if (skip(x - reach, y - reach, x + reach, y + reach)) return;
-      const glow = glowShades[placed.bshade[i] ?? 0] ?? 'rgb(255 255 255 / 34%)';
-      body(ctx, item.kind, x, y, size, placed.balpha[i] ?? 0, glow);
+      const glow = glowShades[placed.bshade[i] ?? 0] ?? WHITE;
+      paint.body(item.kind, x, y, size, placed.balpha[i] ?? 0, glow);
     });
   }
 
@@ -510,24 +477,15 @@ export function createShowcase(
    * far canvas (`far`, under the planet), its far half within the square. Without a far canvas, all on the near one,
    * the planet's disc hiding what is behind it.
    */
-  function drawRing(
-    near: CanvasRenderingContext2D,
-    far: CanvasRenderingContext2D | null,
-    box: Box | null,
-    frame: Frame,
-  ): void {
+  function drawRing(near: SkyPainter, far: SkyPainter | null, box: Box | null, frame: Frame): void {
     placeRing(frame);
     if (!far || !box) {
       drawHalf(near, 'both', null, null, frame.planet);
       return;
     }
-    near.save();
-    near.beginPath();
-    near.rect(-1e6, -1e6, 2e6, 2e6);
-    near.rect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
-    near.clip('evenodd');
+    near.hole(box);
     drawHalf(near, 'far', box, 'outside', frame.planet);
-    near.restore();
+    near.hole(null);
     drawHalf(far, 'far', box, 'inside', frame.planet);
     drawHalf(near, 'near', null, null, frame.planet);
   }
@@ -580,8 +538,7 @@ export function createShowcase(
     pose: (i, view, at = turn.x) => ringPose(i, at, n, view),
     ring: ringFor,
     draw(frame) {
-      if (!context) return;
-      const ctx = context;
+      if (!painter) return;
       const shown = frame.presence >= 0.004;
       const opacity = shown ? frame.presence.toFixed(3) : '0';
       if (canvas.style.opacity !== opacity) {
@@ -599,11 +556,9 @@ export function createShowcase(
       // and out of the page's drawing, rather than cleared at every frame.
       if (!shown && blank) return;
       if ((html.dataset.probeRatio ?? '') !== lastProbeRatio) resize(frame.view);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (farContext) {
-        farContext.setTransform(1, 0, 0, 1, 0, 0);
-        farContext.clearRect(0, 0, farCanvas.width, farCanvas.height);
+      if (!shown) {
+        painter.clear();
+        farPainter?.clear();
       }
       blank = !shown;
       const visibility = shown ? '' : 'hidden';
@@ -613,20 +568,13 @@ export function createShowcase(
       }
       if (!shown) return;
       const zoom = frame.zoom ?? { k: 1, x: 0, y: 0 };
-      ctx.setTransform(ratio * zoom.k, 0, 0, ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
+      painter.begin(ratio * zoom.k, ratio * zoom.x, ratio * zoom.y);
       let box: Box | null = null;
-      if (farContext && frame.planet) {
+      if (farPainter && frame.planet) {
         box = placeFar(frame.planet, zoom);
-        farContext.setTransform(
-          ratio * zoom.k,
-          0,
-          0,
-          ratio * zoom.k,
-          ratio * (zoom.x - farLeft),
-          ratio * (zoom.y - farTop),
-        );
+        farPainter.begin(ratio * zoom.k, ratio * (zoom.x - farLeft), ratio * (zoom.y - farTop));
       }
-      drawRing(ctx, farContext, box, frame);
+      drawRing(painter, farPainter, box, frame);
     },
     resize,
     stop() {
@@ -635,6 +583,7 @@ export function createShowcase(
       farCanvas.remove();
       ui.remove();
       delete html.dataset.showcase;
+      delete html.dataset.sky;
     },
   };
   return showcase;

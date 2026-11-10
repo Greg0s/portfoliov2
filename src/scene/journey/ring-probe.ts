@@ -22,29 +22,17 @@ const round = (x: number, digits = 1): number => Number(x.toFixed(digits));
  * the styles that hide one part of the page while the ring turns, and the ratio the sky is drawn at (0: as usual).
  * The last but one pass doesn't turn: the ring at rest.
  *
- * The run of 10 November 2026 on Grégoire's phone (Firefox, Mali-T760) said: the sky's canvas costs the most (41 fps
- * without it, 27 with), then the cards' shadows and blurs (40 fps without), the live planet (32) and the stars (29);
- * with nothing drawn, 56 to 60. These passes split those two costs further.
+ * The runs of 10 November 2026 on Grégoire's phone (Firefox, Mali-T760) said: the sky's 2D canvases cost the most
+ * (13 to 35 % of slow frames without them, 45 with), then the cards (17 to 20 % held still), their shadow first; a
+ * layer of their own (will-change, translateZ) changed nothing. The sky is now drawn in WebGL and the shadow out of
+ * the blurred card: these passes weigh what is left.
  */
 const PASSES: readonly (readonly [string, string, string, number])[] = [
   ['tout', '', '', 0],
-  // The sky's canvas in a layer of its own: Firefox may then stop drawing the rest of the page again at each frame.
-  ['ciel en couche à part (will-change)', '', '.showcase-sky { will-change: transform; }', 0],
-  ['ciel en couche à part (translateZ)', '', '.showcase-sky { transform: translateZ(0); }', 0],
-  ['ciel presque opaque', '', '.showcase-sky { opacity: 0.999 !important; }', 0],
   ['sans ciel (ni dessin)', 'ciel', '.showcase-sky { display: none !important; }', 0],
-  [
-    'cartes en couche à part (will-change)',
-    '',
-    '[data-journey-root] .card { will-change: transform, filter, opacity; }',
-    0,
-  ],
-  [
-    'cartes sans ombre, flou ni perspective propre',
-    'perspective',
-    '[data-journey-root] .card { box-shadow: none !important; filter: none !important; }',
-    0,
-  ],
+  ['cartes sans ombre', '', '[data-journey-root] .shade { display: none !important; }', 0],
+  ['cartes sans flou', '', '[data-journey-root] .card { filter: none !important; }', 0],
+  ['cartes sans perspective propre', 'perspective', '', 0],
   ['cartes figées', 'cartes', '', 0],
   ['à l’arrêt', '', '', 0],
   ['tout de nouveau', '', '', 0],
