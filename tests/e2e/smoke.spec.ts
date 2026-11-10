@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { trackErrors } from './helpers';
 
+// CI's WebKit draws WebGL in software, and its driver now and then fails to allocate a texture: the browser says so in
+// the console and takes the context away. The site lives with it (the ring's sky turns to 2D canvases), and the
+// journey below must play all the same: these two lines of the browser's are not the site's.
+const DRIVER_GAVE_OUT = [/^WebGL: INVALID_OPERATION: .*Unexpected driver error\.$/, /^WebGL: context lost\.$/];
+
 // A quick pass on every browser, Safari included: the home plays its journey, and the keys and fragments move it.
 test('the journey plays and moves', async ({ page }) => {
   test.slow();
@@ -24,5 +29,5 @@ test('the journey plays and moves', async ({ page }) => {
 
   await page.goto('./#lyrix');
   await expect(page.locator('#lyrix')).toHaveClass(/\blit\b/);
-  expect(errors).toEqual([]);
+  expect(errors.filter((error) => !DRIVER_GAVE_OUT.some((line) => line.test(error)))).toEqual([]);
 });

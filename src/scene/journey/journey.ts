@@ -47,7 +47,7 @@ import type { OfficeView } from '../office/view';
 import type { OfficeScene } from '../office/live';
 import { withBase } from '../../lib/url';
 import { frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
-import { lowerResolution } from '../renderer';
+import { lowerResolution } from '../resolution';
 import { blurFilter } from './blur';
 import { coverTop } from '../../lib/cover';
 import { createShowcase } from '../showcase/showcase';
@@ -453,6 +453,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
             }
             throw error;
           }));
+        if (created.isLost()) {
+          created.dispose();
+          throw new Error('The planet lost its WebGL context.');
+        }
         if (stopped || !planetLoading) {
           // Ready as the home is left: kept for the way back.
           if (stopped && keeping) keepPlanet(created);
@@ -467,6 +471,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         }
         livePlanet?.dispose();
         livePlanet = created;
+        created.whenLost(onPlanetLost);
         handoff = planetHandoff(container, created.canvas);
         planetSampler = planetForced ? null : frameSampler();
         performance.mark('journey:planet-ready');
@@ -478,9 +483,25 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       });
   }
 
+  /**
+   * The planet's WebGL context is lost (the GPU taken back while the tab was away, a driver's reset): its image comes
+   * back at once, and the planet is put together again, once. Lost again, the image stays for the rest of the page.
+   */
+  let planetLosses = 0;
+  function onPlanetLost(): void {
+    if (stopped || !livePlanet) return;
+    planetLosses += 1;
+    planetSampler = null;
+    freePlanet();
+    if (planetLosses > 1) planetFailed = true;
+    redraw = true;
+  }
+
   function freePlanet(keep = false): void {
     planetLoading = false;
     handoff?.reset();
+    // Kept, it answers to the journey that takes it back (`src/scene/keep.ts` lets go of one lost meanwhile).
+    livePlanet?.whenLost(null);
     if (keep && livePlanet) keepPlanet(livePlanet);
     else livePlanet?.dispose();
     livePlanet = null;
@@ -530,6 +551,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // ---------- Following the scroll ----------
 
   const progressOf = (scroll: number): number => Math.max(0, Math.min(1, scroll / range));
+  /** How far the arrival at the office is, from 0 to 1, with the camera at `u`. */
+  const arrivalAt = (u: number): number => Math.max(0, Math.min(1, (endProgress(u) - 0.2) / 0.8));
   /**
    * Whether `u` is past the ring, toward the contact. The ring's anchor is a whole pixel, rounded from its progress
    * (1539 px for 1538.875 on a 947 px high window): resting on it is not past it.
@@ -774,6 +797,24 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     } else {
       glideTo(settleAnchor(touchFrom, positions, 0));
     }
+    holdFling(glide !== null);
+  };
+
+  // A touch the system takes away (a gesture from the screen's edge, the notifications pulled down, a call coming in)
+  // ends without a `touchend`: left as it was, the journey would go on waiting for the finger to lift, the snapping
+  // off, and the page could rest between two anchors. It comes back to the anchor the touch started on.
+  const onTouchCancel = (event: TouchEvent): void => {
+    if (event.touches.length > 0 || !touching) return;
+    touching = false;
+    if (pinching) {
+      setSnap(true);
+      return;
+    }
+    if (sideways) {
+      showcase.release(0);
+      sideways = false;
+    }
+    glideTo(settleAnchor(touchFrom, positions, 0));
     holdFling(glide !== null);
   };
 
@@ -1087,7 +1128,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const u = current;
     const depth = cameraDepth(u);
     const tEnd = endProgress(u);
-    const arrival = Math.max(0, Math.min(1, (tEnd - 0.2) / 0.8));
+    const arrival = arrivalAt(u);
     const starsK = 1 - smoothstep(0, 0.04, arrival);
     const time = options.still ? 0 : ambient.time(now);
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
@@ -1297,6 +1338,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // Not passive: on the ring, a sideways finger holds the page still.
   window.addEventListener('touchmove', onTouchMove, { passive: false });
   window.addEventListener('touchend', onTouchEnd, { passive: true });
+  window.addEventListener('touchcancel', onTouchCancel, { passive: true });
   // ---------- The live office ----------
 
   // It is prepared from the first project on (from the opening on a computer, at once on `#contact`), and drawn while the
@@ -1379,11 +1421,29 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
           return true;
         };
         if (left(made)) return;
+        // Its context lost on the way (see `onOfficeLost`): its layers are prepared instead, at the next frame.
+        const gone = (): boolean => {
+          if (!made.isLost()) return false;
+          officeLoading = false;
+          officeAbort = null;
+          officeSlow = true;
+          redraw = true;
+          return true;
+        };
+        if (gone()) {
+          made.dispose();
+          return;
+        }
         const created = await viewOffice(host, host, made, { moment, still: options.still, kept: kept !== null });
         if (left(made)) {
           created.release();
           return;
         }
+        if (gone()) {
+          created.dispose();
+          return;
+        }
+        made.whenLost(onOfficeLost);
         officeScene = { framing, moment, kind };
         // Ready before the arrival: the layers standing by are no longer needed.
         freeStandIn();
@@ -1444,11 +1504,30 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     officeAbort = null;
     freeStandIn();
     if (keep && officeView) {
-      keepOffice({ scene: officeView.release(), ...officeScene });
+      const scene = officeView.release();
+      // Kept, it answers to the journey that takes it back (`src/scene/keep.ts` lets go of one lost meanwhile).
+      scene.whenLost(null);
+      keepOffice({ scene, ...officeScene });
     } else officeView?.dispose();
     officeView = null;
     officeSampler = null;
     if (html.dataset.office === 'live') html.dataset.office = 'near';
+  }
+
+  /**
+   * The live office's WebGL context is lost (the GPU taken back while the tab was away, a driver's reset): its shadows
+   * and environments are gone for good, so its layers take over, for the rest of the page only (nothing says the
+   * device is slow). On screen, they are drawn where the arrival is; away from the contact, they are prepared when the
+   * office is next asked for.
+   */
+  function onOfficeLost(): void {
+    if (stopped || !officeView || officeScene.kind !== 'live') return;
+    officeSlow = true;
+    officeSampler = null;
+    const arrival = arrivalAt(current);
+    if (arrival > 0) replaceOffice(arrival);
+    else freeOffice();
+    redraw = true;
   }
 
   /** What played the first arrival of the page, and when, for the measurement run: the live office, its layers or its image. */
@@ -1796,6 +1875,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     window.removeEventListener('touchstart', onTouchStart);
     window.removeEventListener('touchmove', onTouchMove);
     window.removeEventListener('touchend', onTouchEnd);
+    window.removeEventListener('touchcancel', onTouchCancel);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('resize', onResize);
     window.removeEventListener('hashchange', onHash);

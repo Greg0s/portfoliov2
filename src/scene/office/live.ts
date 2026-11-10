@@ -39,7 +39,7 @@ import { FRAMINGS, makeCamera, type Framing } from './framings';
 import { createOffice, type Office } from './office';
 import type { TownGeometry } from './town';
 import type { Moment } from '../time';
-import { scenePixelRatio } from '../renderer';
+import { scenePixelRatio } from '../resolution';
 import { atRest, watchMoves } from '../rest';
 
 export interface PictureSource {
@@ -72,6 +72,10 @@ export interface OfficeScene {
   resize(width: number, height: number, fit: Fit): void;
   /** Puts the pictures on their frames; `loaded` is called as each one is ready to show. */
   setPictures(pictures: ReadonlyMap<string, PictureSource>, loaded: () => void): void;
+  /** Whether its WebGL context was lost: what was on the GPU is gone (the layers have none to lose). */
+  isLost(): boolean;
+  /** Calls `callback` (one at a time, `null` for none) if its WebGL context is lost. */
+  whenLost(callback: (() => void) | null): void;
   dispose(): void;
 }
 
@@ -239,6 +243,17 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   renderer.shadowMap.type = PCFShadowMap;
   // Reading back each program's log once it is linked makes the driver wait for it: only while developing.
   renderer.debug.checkShaderErrors = import.meta.env.DEV;
+  // A lost context (the GPU taken back while the tab was away, a driver's reset) takes with it the shadows, drawn
+  // once, and the environments, which three.js does not make again when the context comes back: the room and the desk
+  // would stay blank. The scene says so instead, for the journey to show its layers.
+  let lost = false;
+  let disposed = false;
+  let onLost: (() => void) | null = null;
+  canvas.addEventListener('webglcontextlost', () => {
+    if (disposed) return;
+    lost = true;
+    onLost?.();
+  });
   // The drawing buffer, made at its size in a step of its own: resizing it later, with the view, held the page
   // (a quarter of a second on a laptop, without a graphics card).
   const pixelRatio = (): number => scenePixelRatio(window.devicePixelRatio || 1, framing === 'mobile');
@@ -315,6 +330,7 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   try {
     await compileOffice(renderer, office, rest, options.forced ?? false, options.signal);
   } catch (error) {
+    disposed = true;
     office.dispose();
     renderer.dispose();
     renderer.forceContextLoss();
@@ -407,6 +423,11 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
         if (!face) continue;
         const { w, h } = face.userData as { w: number; h: number };
         loader.load(picture.src, (texture) => {
+          // Let go meanwhile: nothing is left to put it on.
+          if (disposed) {
+            texture.dispose();
+            return;
+          }
           texture.colorSpace = SRGBColorSpace;
           texture.anisotropy = 4;
           // Cropped to the frame's shape around its focus, as `object-fit: cover`.
@@ -432,12 +453,20 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
         });
       }
     },
+    isLost: () => lost,
+    whenLost(callback) {
+      onLost = callback;
+    },
     dispose() {
+      disposed = true;
+      onLost = null;
       office.dispose();
       textures.forEach((texture) => {
         texture.dispose();
       });
       renderer.dispose();
+      // Its context, the site's heaviest, is given back now rather than when the garbage collector comes.
+      if (!lost) renderer.forceContextLoss();
       canvas.remove();
     },
   };

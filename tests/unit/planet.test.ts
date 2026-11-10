@@ -171,7 +171,7 @@ describe('the quality', () => {
 
 describe('the resolution of the live scenes', () => {
   it('is lowered once, on a dense screen only, never under 1', async () => {
-    const { lowerResolution, scenePixelRatio } = await import('../../src/scene/renderer');
+    const { lowerResolution, scenePixelRatio } = await import('../../src/scene/resolution');
     expect(scenePixelRatio(2, false)).toBe(2);
     expect(lowerResolution(2, false)).toBe(true);
     expect(scenePixelRatio(2, false)).toBe(1.5);

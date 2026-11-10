@@ -155,6 +155,8 @@ export function createShowcase(
   /** Draws the sky on 2D contexts from now on (fresh canvases), when WebGL gives out. */
   function onLost(): void {
     if (!painter?.webgl) return;
+    painter.dispose();
+    farPainter?.dispose();
     [painter, canvas] = painterOf(canvas, '2d');
     if (planet) [farPainter, farCanvas] = painterOf(farCanvas, '2d');
     html.dataset.sky = '2d';
@@ -579,6 +581,9 @@ export function createShowcase(
     resize,
     stop() {
       ui.removeEventListener('click', onButton);
+      painter?.dispose();
+      farPainter?.dispose();
+      painter = farPainter = null;
       canvas.remove();
       farCanvas.remove();
       ui.remove();

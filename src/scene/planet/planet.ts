@@ -25,7 +25,7 @@ import { addLights, CENTER, mixMoments } from './lights';
 import { isMesh, loadPlanetModel, meshIn, type PlanetModel } from './load';
 import { foxWind } from './fox';
 import { createWind, type WindState } from './wind';
-import { scenePixelRatio } from '../renderer';
+import { scenePixelRatio } from '../resolution';
 import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
 import type { Arrays } from '../workers/relief';
@@ -54,6 +54,10 @@ export interface LivePlanet {
    * a modest GPU, on which the live office, with five times as many programs, would hold the projects for seconds.
    */
   linksSlowly: boolean;
+  /** Whether its WebGL context was lost: what was on the GPU is gone, and the planet has to be put together again. */
+  isLost(): boolean;
+  /** Calls `callback` (one at a time, `null` for none) if its WebGL context is lost. */
+  whenLost(callback: (() => void) | null): void;
   dispose(): void;
 }
 
@@ -314,6 +318,17 @@ async function assemble(
   renderer.toneMappingExposure = 1;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
+  // A lost context (the GPU taken back while the tab was away, a driver's reset) takes the environment's reflections
+  // with it, which three.js does not make again when the context comes back: the planet would come back dark. It
+  // says so instead, for the journey to show its image and put it together again.
+  let lost = false;
+  let disposed = false;
+  let onLost: (() => void) | null = null;
+  canvas.addEventListener('webglcontextlost', () => {
+    if (disposed) return;
+    lost = true;
+    onLost?.();
+  });
 
   await pause('canvas');
   const scene = new Scene();
@@ -390,7 +405,13 @@ async function assemble(
     },
     resize,
     linksSlowly: slowLinks >= 2,
+    isLost: () => lost,
+    whenLost(callback) {
+      onLost = callback;
+    },
     dispose() {
+      disposed = true;
+      onLost = null;
       scene.traverse((mesh) => {
         if (!isMesh(mesh)) return;
         mesh.geometry.dispose();
@@ -403,7 +424,7 @@ async function assemble(
       });
       lights.dispose();
       renderer.dispose();
-      renderer.forceContextLoss();
+      if (!lost) renderer.forceContextLoss();
       canvas.remove();
     },
   };
