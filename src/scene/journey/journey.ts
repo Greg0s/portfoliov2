@@ -1351,6 +1351,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   /** On a computer, how long after the ambient motions start the office starts getting ready at the opening, in ms. */
   const OFFICE_EARLY_DELAY = 2500;
   let ambientAt = 0;
+  // `?bureau=tot`: on a phone too, at the opening once the planet is ready, to try (Grégoire's choice to come; he chose
+  // on 9 November 2026 not to start it at launch on phones, to keep the opening smooth).
+  const officeEarlyOnPhones = new URLSearchParams(location.search).get('bureau') === 'tot';
   // Not ready by the middle of the journey, its layers get ready too.
   const OFFICE_WARM = SHOWCASE_AT;
   // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
@@ -1552,7 +1555,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       // the visitor going fast through the projects then never meets its preparation.
       if (ambientAt === 0 && ambient.started()) ambientAt = now;
       const early =
-        !scene.view.mobile &&
+        (!scene.view.mobile || officeEarlyOnPhones) &&
         ambientAt > 0 &&
         now - ambientAt > OFFICE_EARLY_DELAY &&
         !(planetLoading && !livePlanet && !planetSlow && !planetFailed && options.webgl);
@@ -1564,13 +1567,16 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         loadOffice();
       }
       // Its layers get ready too only if the live office is slow to come: a few seconds after it started, or as soon
-      // as the visitor heads for the contact.
+      // as the visitor heads for the contact. On a phone, as soon as the ring shows, whether the live office started or
+      // not (it waits for the planet): the contact is one swipe away, and the live office, which links its programs
+      // one by one there, is seldom ready in time on a first visit. The layers, pictures already loaded ahead, then
+      // play the arrival rather than a loading pause (Grégoire, 10 November 2026).
       if (
         u >= OFFICE_WARM - 0.01 &&
-        officeLoading &&
         !officeSlow &&
         officeMode !== 'live' &&
-        (pastRing(target) || now - officeStartedAt > STAND_IN_DELAY)
+        (officeLoading || scene.view.mobile) &&
+        (scene.view.mobile || pastRing(target) || now - officeStartedAt > STAND_IN_DELAY)
       ) {
         loadStandIn();
       }
@@ -1696,6 +1702,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     officeReplacing;
   /** Whether the live office is still getting ready, not found too slow: worth waiting for at the arrival. */
   const officeComing = (): boolean => officeLoading && !officeView && !officeFailed && !officeSlow;
+  /**
+   * Whether the arrival would have nothing to play it: the live office still getting ready, and its layers not ready
+   * either. Once they are, they play it at once, without a pause.
+   */
+  const arrivalWaits = (): boolean => officeComing() && !standIn;
 
   function startHold(now: number, reason: Hold['reason']): void {
     hold = { reason, start: now, next: null };
@@ -1756,7 +1767,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     if (pastRing(target) && !officeView && !officeFailed) loadOffice();
     if (hold) {
       const waited = now - hold.start;
-      const waiting = hold.reason === 'arrival' ? officeComing() : preparing();
+      const waiting = hold.reason === 'arrival' ? arrivalWaits() : preparing();
       if (waited >= HOLD_MAX || (waited >= HOLD_MIN && !waiting)) endHold(now);
     } else if (lagDue && !glide && current === target) {
       lagDue = false;
@@ -1767,11 +1778,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       !arrivalHeld &&
       pastRing(target) &&
       current <= LAST_PROJECT &&
-      officeComing() &&
+      arrivalWaits() &&
       !html.dataset.officeArrival
     ) {
-      // The arrival comes before the live office is ready: the camera waits on the last project, for a few seconds at
-      // most, rather than playing it with the layers.
+      // The arrival comes before the live office and its layers are ready: the camera waits on the ring, for a few
+      // seconds at most, rather than playing it with the still image.
       arrivalHeld = true;
       startHold(now, 'arrival');
     }
