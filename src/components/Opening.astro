@@ -321,12 +321,24 @@ const images = [
     background: none;
   }
 
-  /* The planet's blur applies on screen, after its scale, like the cards' depth of field. */
+  /*
+   * The planet's blur applies on screen, after its scale, like the cards' depth of field. The frame is a point at the
+   * planet's place, not the whole screen: the blur then works on the planet's own pixels, not on a screen-sized
+   * picture (on a dense phone, that picture was the costliest thing drawn on the way to the office).
+   */
   :global(html[data-journey='on']) .planet-frame {
     position: absolute;
-    inset: 0;
+    left: var(--planet-x);
+    top: var(--planet-y);
     display: block;
+    width: 0;
+    height: 0;
     pointer-events: none;
+  }
+
+  :global(html[data-journey='on']) .planet-image {
+    left: 0;
+    top: 0;
   }
 
   :global(html[data-journey='on']) .planet-glow {
