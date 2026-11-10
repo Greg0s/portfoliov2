@@ -111,7 +111,8 @@ const images = [
     position: absolute;
     inset: -40px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgb(255 255 255 / 6%) 0%, rgb(255 255 255 / 2%) 38%, rgb(0 0 0 / 0%) 68%);
+    /* The accent's green at its heart, its sky blue toward its edge (src/scene/accent.ts). */
+    background: radial-gradient(circle, rgb(109 185 110 / 9%) 0%, rgb(144 211 244 / 4%) 38%, rgb(144 211 244 / 0%) 68%);
   }
 
   .planet-image {
@@ -161,7 +162,7 @@ const images = [
     font-weight: 300;
     line-height: 1.25;
     letter-spacing: -0.01em;
-    color: var(--color-muted);
+    color: var(--color-accent);
   }
 
   /* Optical alignment: the T of "Tinnes", just above, makes the job look as if it started further left. */
@@ -227,7 +228,7 @@ const images = [
     position: absolute;
     inset: 0 0 auto;
     height: 16px;
-    background: var(--color-text);
+    background: var(--color-accent-line-down);
     animation: descend 2.4s var(--ease-float) infinite;
   }
 
@@ -351,10 +352,10 @@ const images = [
     border-radius: 50%;
     background: radial-gradient(
       circle,
-      rgb(255 255 255 / 55%) 0%,
-      rgb(255 255 255 / 34%) 30%,
-      rgb(255 255 255 / 12%) 56%,
-      rgb(255 255 255 / 0%) 72%
+      rgb(255 255 255 / 60%) 0%,
+      rgb(109 185 110 / 45%) 30%,
+      rgb(144 211 244 / 16%) 56%,
+      rgb(144 211 244 / 0%) 72%
     );
     opacity: 0;
     translate: -50% -50%;

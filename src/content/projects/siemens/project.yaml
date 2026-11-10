@@ -2,4 +2,5 @@ order: 2
 year: 2024
 stack: [Vue, Vuex, React, React Flow, JSON Schema, Plotly, Docker]
 cover: ./cover.jpg
+colors: ['#13b5bd', '#2dc5cf']
 letter: true

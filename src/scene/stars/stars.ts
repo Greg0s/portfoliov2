@@ -4,6 +4,7 @@
  * trails of the office's jump (step 7) reuse it.
  */
 import { BufferAttribute, BufferGeometry, NormalBlending, Points, ShaderMaterial } from 'three';
+import { accentAt, mixRgb } from '../accent';
 import { fragmentShader, vertexShader } from './stars.glsl';
 import type { Star, View } from '../journey/layout';
 
@@ -34,7 +35,14 @@ export function createStars(stars: readonly Star[], view: View, pixelRatio: numb
   const big = new Float32Array(count);
   const twinkle = new Float32Array(count * 2);
   const keep = new Float32Array(count);
+  // White, but about one star in three takes a colour along the accent's gradient (src/scene/accent.ts).
+  const color = new Float32Array(count * 3).fill(1);
+  const hash = (i: number, salt: number): number => {
+    const x = Math.sin(i * 12.9898 + salt) * 43758.5453;
+    return x - Math.floor(x);
+  };
   stars.forEach((star, i) => {
+    if (hash(i, 1.7) < 0.36) color.set(mixRgb([1, 1, 1], accentAt(hash(i, 8.3)), 0.8), i * 3);
     // Near stars in the Three.js world (y up); far stars in px from the vanishing point (y down).
     position.set(star.near ? [star.x, -star.y, star.z] : [star.x, star.y, 0], i * 3);
     near[i] = star.near ? 1 : 0;
@@ -53,6 +61,7 @@ export function createStars(stars: readonly Star[], view: View, pixelRatio: numb
   geometry.setAttribute('aBig', new BufferAttribute(big, 1));
   geometry.setAttribute('aTwinkle', new BufferAttribute(twinkle, 2));
   geometry.setAttribute('aKeep', new BufferAttribute(keep, 1));
+  geometry.setAttribute('aColor', new BufferAttribute(color, 3));
 
   const material = new ShaderMaterial({
     vertexShader,

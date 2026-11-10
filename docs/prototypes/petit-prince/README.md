@@ -33,6 +33,7 @@ npm run vent   # l'écharpe au vent et la rose, pour la maquette (une vingtaine 
 | -------------- | ------------------------------------------ | -------------------------------------------------------------------- |
 | `amb`          | `noir` (défaut), `nuit`, `brume`           | ambiance ; `noir` est celle retenue                                  |
 | `tod`          | `aube`, `jour`, `crepuscule`               | lumière selon l'heure ; sans ce paramètre, la nuit                   |
+| `accent`       | `6db96e,71c4bb,90d3f4`                     | l'accent du site dans les lumières de `noir` (début, milieu, fin du dégradé) |
 | `layer`        | `planet` (défaut), `decor`, `full`         | planète seule sur fond transparent, décor seul sur fond noir, ou tout |
 | `w`, `h`       | pixels                                     | taille de l'image                                                    |
 | `model`        | nom de fichier dans `models/`              | `petit-prince.glb` par défaut                                        |

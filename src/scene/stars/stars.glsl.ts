@@ -10,6 +10,7 @@ export const vertexShader = /* glsl */ `
   attribute float aBig;
   attribute vec2 aTwinkle;
   attribute float aKeep;
+  attribute vec3 aColor;
 
   uniform float uTime;
   uniform float uDepth;
@@ -26,6 +27,7 @@ export const vertexShader = /* glsl */ `
   varying float vAlpha;
   varying float vCore;
   varying float vBig;
+  varying vec3 vColor;
 
   float smoothstep01(float edge0, float edge1, float x) {
     float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -54,6 +56,7 @@ export const vertexShader = /* glsl */ `
     }
     vAlpha = alpha;
     vBig = aBig;
+    vColor = aColor;
     // A big near star has a soft glow around it; every point gets a pixel of room for its antialiased edge.
     float drawn = aBig > 0.5 && aNear > 0.5 ? size * 5.0 : size + 2.0;
     vCore = size / drawn;
@@ -66,6 +69,7 @@ export const fragmentShader = /* glsl */ `
   varying float vAlpha;
   varying float vCore;
   varying float vBig;
+  varying vec3 vColor;
 
   void main() {
     float d = length(gl_PointCoord - 0.5) * 2.0;
@@ -74,6 +78,6 @@ export const fragmentShader = /* glsl */ `
     float glow = vBig > 0.5 ? 0.35 * exp(-pow(max(0.0, d - vCore) / (vCore * 1.2), 2.0)) : 0.0;
     float a = vAlpha * max(core, glow);
     if (a < 0.002) discard;
-    gl_FragColor = vec4(vec3(1.0) * a, a);
+    gl_FragColor = vec4(vColor * a, a);
   }
 `;

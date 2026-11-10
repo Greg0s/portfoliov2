@@ -4,6 +4,7 @@
  * journey, which places them in its 3D scene, draws the ring's dust and small planets on a canvas behind the cards,
  * and shows the arrows with the counter between them.
  */
+import { accentAt, cssRgb, mixRgb } from '../accent';
 import { projectCss, type Sway } from '../journey/camera';
 import type { View } from '../journey/layout';
 import { offset, ringFor, ringPoint, ringPose, type Pose, type Ring } from './ring';
@@ -297,6 +298,24 @@ export function createShowcase(
     alpha: 0.55 + rand() * 0.35,
   })).flatMap((item) => (item.kind ? [{ ...item, kind: item.kind }] : []));
 
+  // The accent's light (src/scene/accent.ts): the ring's front takes its green, its back its sky blue, as if lit from
+  // either side; three grains in five and the bodies' glow take it, the rest of the dust stays white.
+  const SHADES = 24;
+  const shade = (alpha: number, white = 0): string[] =>
+    Array.from({ length: SHADES + 1 }, (_, i) =>
+      cssRgb(mixRgb(accentAt(i / SHADES), [0.953, 0.953, 0.945], white), alpha),
+    );
+  const dustShades = shade(1, 0.04);
+  const glowShades = shade(0.42);
+  const lineShade = cssRgb(accentAt(0.5), 0.13);
+  /** The shade of the ring at `theta`, from its front (0) to its back (SHADES). */
+  const along = (theta: number): number => Math.round((0.5 - 0.5 * Math.cos(theta)) * SHADES);
+  const hash = (i: number): number => {
+    const x = Math.sin(i * 12.9898 + 4.1) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  const tinted = grains.map((_, i) => hash(i) < 0.6);
+
   function body(
     ctx: CanvasRenderingContext2D,
     kind: Body['kind'],
@@ -304,12 +323,13 @@ export function createShowcase(
     y: number,
     size: number,
     alpha: number,
+    glowColor: string,
   ): void {
     const r = size / 2;
     ctx.save();
     ctx.globalAlpha = alpha;
     const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-    glow.addColorStop(0, 'rgb(255 255 255 / 34%)');
+    glow.addColorStop(0, glowColor);
     glow.addColorStop(1, 'rgb(255 255 255 / 0%)');
     ctx.fillStyle = glow;
     ctx.beginPath();
@@ -354,6 +374,7 @@ export function createShowcase(
     gz: new Float64Array(grains.length),
     gsize: new Float64Array(grains.length),
     galpha: new Float64Array(grains.length),
+    gshade: new Int16Array(grains.length),
     lx: new Float64Array(181),
     ly: new Float64Array(181),
     lz: new Float64Array(181),
@@ -362,6 +383,7 @@ export function createShowcase(
     bz: new Float64Array(bodies.length),
     bsize: new Float64Array(bodies.length),
     balpha: new Float64Array(bodies.length),
+    bshade: new Int16Array(bodies.length),
   };
 
   function placeRing(frame: Frame): void {
@@ -381,6 +403,7 @@ export function createShowcase(
       placed.gz[i] = point.z;
       placed.gsize[i] = grain.size * at.scale;
       placed.galpha[i] = grain.alpha * front;
+      placed.gshade[i] = tinted[i] ? along(theta) : -1;
     });
     for (let k = 0; k <= 180; k += 1) {
       const theta = (k / 180) * Math.PI * 2;
@@ -400,6 +423,7 @@ export function createShowcase(
       placed.bz[i] = point.z;
       placed.bsize[i] = item.size * bodyScale * at.scale;
       placed.balpha[i] = item.alpha * front;
+      placed.bshade[i] = along(theta);
     });
   }
 
@@ -426,7 +450,9 @@ export function createShowcase(
       if (!box || !only) return false;
       return only === 'inside' ? apart(box, x0, y0, x1, y1) : within(box, x0, y0, x1, y1);
     };
-    ctx.fillStyle = '#f3f3f1';
+    // Three grains in five take the accent at their place on the ring, the others stay white.
+    let fill = '#f3f3f1';
+    ctx.fillStyle = fill;
     for (let i = 0; i < grains.length; i += 1) {
       const z = placed.gz[i] ?? 0;
       if (!inHalf(z, half)) continue;
@@ -435,12 +461,18 @@ export function createShowcase(
       if (hidden(x, y, z, planet)) continue;
       const size = placed.gsize[i] ?? 0;
       if (skip(x - size / 2, y - size / 2, x + size / 2, y + size / 2)) continue;
+      const shade = placed.gshade[i] ?? -1;
+      const style = shade < 0 ? '#f3f3f1' : (dustShades[shade] ?? '#f3f3f1');
+      if (style !== fill) {
+        fill = style;
+        ctx.fillStyle = fill;
+      }
       ctx.globalAlpha = placed.galpha[i] ?? 0;
       ctx.fillRect(x - size / 2, y - size / 2, size, size);
     }
     ctx.globalAlpha = 1;
-    // A faint line along the ring.
-    ctx.strokeStyle = 'rgb(243 243 241 / 9%)';
+    // A faint line along the ring, in the accent's turquoise.
+    ctx.strokeStyle = lineShade;
     ctx.lineWidth = 1;
     ctx.beginPath();
     let pen = false;
@@ -468,7 +500,8 @@ export function createShowcase(
       // The glow reaches three times the body's radius.
       const reach = size * 1.5;
       if (skip(x - reach, y - reach, x + reach, y + reach)) return;
-      body(ctx, item.kind, x, y, size, placed.balpha[i] ?? 0);
+      const glow = glowShades[placed.bshade[i] ?? 0] ?? 'rgb(255 255 255 / 34%)';
+      body(ctx, item.kind, x, y, size, placed.balpha[i] ?? 0, glow);
     });
   }
 

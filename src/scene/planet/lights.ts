@@ -1,9 +1,21 @@
 /**
  * The planet's "Noir musée" lighting (main spec §6.3), the prototype's `noir` ambience: a museum spot on the prince and
- * the fox from the top left, a near-null ambient light, a light cold back light, a very faint environment. The
- * visitor's moment changes the spot's and the sky's colours; at noon they cross-fade.
+ * the fox from the top left, a near-null ambient light, a light back light, a very faint environment. The visitor's
+ * moment changes the spot's and the sky's colours; at noon they cross-fade. The accent's colours (src/scene/accent.ts)
+ * come into these same lights, none added (Grégoire's choice of 9 November 2026): the spot leans toward its green, the
+ * sky toward its turquoise, the fill light and the back light take its sky blue.
  */
-import { Color, DirectionalLight, HemisphereLight, SpotLight, Vector3, type Scene, type WebGLRenderer } from 'three';
+import {
+  Color,
+  DirectionalLight,
+  HemisphereLight,
+  SpotLight,
+  SRGBColorSpace,
+  Vector3,
+  type Scene,
+  type WebGLRenderer,
+} from 'three';
+import { accentAt } from '../accent';
 import { LightPMREMGenerator } from '../pmrem';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Moment } from '../time';
@@ -32,6 +44,13 @@ export function mixMoments(from: Moment, to: Moment, elapsed: number): { spot: C
   };
 }
 
+const accent = (t: number): Color => new Color().setRGB(...accentAt(t), SRGBColorSpace);
+
+/** The moment's colours with the accent in them: the spot leans toward its start, the sky toward its middle. */
+export function withAccent(colors: { spot: Color; sky: Color }): { spot: Color; sky: Color } {
+  return { spot: colors.spot.clone().lerp(accent(0), 0.6), sky: colors.sky.clone().lerp(accent(0.5), 0.7) };
+}
+
 export interface PlanetLights {
   setColors(colors: { spot: Color; sky: Color }): void;
   dispose(): void;
@@ -47,18 +66,19 @@ export function addLights(scene: Scene, renderer: WebGLRenderer, moment: Moment,
   scene.environment = environment;
   scene.environmentIntensity = 0.035;
 
-  const colors = momentColors[moment];
+  const colors = withAccent({ spot: new Color(momentColors[moment].spot), sky: new Color(momentColors[moment].sky) });
   const sky = new HemisphereLight(colors.sky, 0x000000, 0.06);
   scene.add(sky);
-  const directional = (color: number, intensity: number, offset: [number, number, number]): void => {
+  const directional = (color: Color, intensity: number, offset: [number, number, number]): void => {
     const light = new DirectionalLight(color, intensity);
     light.position.copy(CENTER).add(new Vector3(...offset));
     light.target.position.copy(CENTER);
     scene.add(light, light.target);
   };
-  directional(0xffffff, 0.35, [-6, 6, -8]);
-  directional(0xffffff, 0.04, [7, 4, 4]);
-  directional(0xdfe6ff, 0.9, [-2, -6, -8]);
+  // The fill light, a faint one and the back light, in the accent's sky blue.
+  directional(accent(1), 0.35, [-6, 6, -8]);
+  directional(accent(1), 0.04, [7, 4, 4]);
+  directional(accent(1), 1.3, [-2, -6, -8]);
 
   // The museum spot: a pool of light on the characters, the rest of the planet falls into darkness.
   const spot = new SpotLight(colors.spot, 7.5, 0, 0.165, 1, 0);
@@ -75,8 +95,9 @@ export function addLights(scene: Scene, renderer: WebGLRenderer, moment: Moment,
 
   return {
     setColors(next) {
-      spot.color.copy(next.spot);
-      sky.color.copy(next.sky);
+      const leaned = withAccent(next);
+      spot.color.copy(leaned.spot);
+      sky.color.copy(leaned.sky);
     },
     dispose() {
       environment.dispose();

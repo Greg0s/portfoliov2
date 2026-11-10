@@ -5,4 +5,5 @@ links:
   live: https://whatweplay.gregoiretinn.es/
   code: https://github.com/Greg0s/what-we-play
 cover: ./cover.jpg
+colors: ['#ffd84a', '#ffc452']
 band: true
