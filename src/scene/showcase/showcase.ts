@@ -208,10 +208,16 @@ export function createShowcase(
    * differently from the other).
    */
   let farStep = 1;
+  /** The probe's ratio the canvases were last sized for. */
+  let lastProbeRatio = '';
   function resize(view: View): void {
     blank = false;
     const dpr = window.devicePixelRatio || 1;
     ratio = Math.min(2, dpr);
+    // The ring's probe (`?mesure=anneau`) draws the sky at a lower ratio, to weigh what its pixels cost.
+    const probeRatio = Number(html.dataset.probeRatio) || 0;
+    if (probeRatio > 0) ratio = Math.min(ratio, probeRatio);
+    lastProbeRatio = html.dataset.probeRatio ?? '';
     farStep = 1 / ratio;
     for (let k = 1; k <= 64; k += 1) {
       const step = k / ratio;
@@ -559,6 +565,7 @@ export function createShowcase(
       // Away from the ring (the opening, the office), its two screen-sized canvases are cleared once, then left alone
       // and out of the page's drawing, rather than cleared at every frame.
       if (!shown && blank) return;
+      if ((html.dataset.probeRatio ?? '') !== lastProbeRatio) resize(frame.view);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (farContext) {

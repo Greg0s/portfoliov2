@@ -17,26 +17,27 @@ const wait = (ms: number): Promise<void> =>
 const round = (x: number, digits = 1): number => Number(x.toFixed(digits));
 
 /**
- * Each pass: its name, the parts whose drawing stops (`data-probe`, read by the journey) and the styles that hide
- * them, or hide one part of the page, while the ring turns. The last but one pass doesn't turn: the ring at rest.
+ * Each pass: its name, the parts whose drawing stops (`data-probe`, read by the journey and the ring: `ciel`,
+ * `etoiles`, `planete`, `perspective` for the cards' own perspective on Firefox, `cartes` for the cards held still),
+ * the styles that hide one part of the page while the ring turns, and the ratio the sky is drawn at (0: as usual).
+ * The last but one pass doesn't turn: the ring at rest.
+ *
+ * The run of 10 November 2026 on Grégoire's phone (Firefox, Mali-T760) said: the sky's canvas costs the most (41 fps
+ * without it, 27 with), then the cards' shadows and blurs (40 fps without), the live planet (32) and the stars (29);
+ * with nothing drawn, 56 to 60. These passes split those two costs further.
  */
-const NOTHING =
-  '.showcase-sky, [data-journey-root] .project, .cartel, .showcase-ui, .planet-canvas { display: none !important; }';
-const PASSES: readonly (readonly [string, string, string])[] = [
-  ['tout', '', ''],
-  ['sans ciel (ni dessin)', 'ciel', '.showcase-sky { display: none !important; }'],
-  ['sans étoiles (ni dessin)', 'etoiles', ''],
-  ['sans planète 3D (ni dessin)', 'planete', '.planet-canvas { display: none !important; }'],
-  ['sans cartes (retirées)', '', '[data-journey-root] .project { display: none !important; }'],
-  [
-    'cartes sans ombre ni flou',
-    '',
-    '[data-journey-root] .card { box-shadow: none !important; filter: none !important; }',
-  ],
-  ['sans aucun dessin', 'ciel etoiles planete', '.showcase-sky, .planet-canvas { display: none !important; }'],
-  ['sans rien', 'ciel etoiles planete', NOTHING],
-  ['à l’arrêt', '', ''],
-  ['tout de nouveau', '', ''],
+const PASSES: readonly (readonly [string, string, string, number])[] = [
+  ['tout', '', '', 0],
+  ['ciel à ×1,5', '', '', 1.5],
+  ['ciel à ×1', '', '', 1],
+  ['sans ciel (ni dessin)', 'ciel', '.showcase-sky { display: none !important; }', 0],
+  ['cartes sans ombre', '', '[data-journey-root] .card { box-shadow: none !important; }', 0],
+  ['cartes sans flou', '', '[data-journey-root] .card { filter: none !important; }', 0],
+  ['cartes sans perspective propre', 'perspective', '', 0],
+  ['cartes figées', 'cartes', '', 0],
+  ['sans cartes (retirées)', '', '[data-journey-root] .project { display: none !important; }', 0],
+  ['à l’arrêt', '', '', 0],
+  ['tout de nouveau', '', '', 0],
 ];
 
 let running = false;
@@ -102,11 +103,13 @@ async function run(): Promise<void> {
   const projects = document.querySelectorAll('[data-project]').length;
   const passes: Record<string, unknown> = {};
   const html = document.documentElement;
-  for (const [name, parts, css] of PASSES) {
+  for (const [name, parts, css, ratio] of PASSES) {
     out.show(`mesure de l’anneau : ${name}…`);
     style.textContent = css;
     if (parts) html.dataset.probe = parts;
     else delete html.dataset.probe;
+    if (ratio > 0) html.dataset.probeRatio = String(ratio);
+    else delete html.dataset.probeRatio;
     await wait(600);
     const journey = currentJourney();
     if (!journey) break;
@@ -135,6 +138,7 @@ async function run(): Promise<void> {
   }
   style.remove();
   delete html.dataset.probe;
+  delete html.dataset.probeRatio;
 
   const result = {
     date: new Date().toISOString(),
