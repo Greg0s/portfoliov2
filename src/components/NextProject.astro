@@ -8,6 +8,7 @@
 import { Image } from 'astro:assets';
 import { pathFor, t, type Locale } from '../i18n';
 import { coverWidths, projectTag, type Project } from '../lib/projects';
+import { projectAccent } from '../lib/project-accent';
 import { withBase } from '../lib/url';
 
 interface Props {
@@ -18,9 +19,11 @@ interface Props {
 const { locale, next } = Astro.props;
 const label = t(locale);
 const href = withBase(pathFor({ id: 'project', slug: next.slug }, locale));
+// The arrow takes the accent of the project it leads to, not of the one being read.
+const accent = projectAccent(next.data.colors);
 ---
 
-<nav class="next" aria-label={label('case.next')}>
+<nav class="next" aria-label={label('case.next')} style={accent}>
   <a href={href} data-astro-prefetch="viewport">
     <span class="edge" aria-hidden="true">
       <Image
