@@ -28,14 +28,24 @@ const round = (x: number, digits = 1): number => Number(x.toFixed(digits));
  */
 const PASSES: readonly (readonly [string, string, string, number])[] = [
   ['tout', '', '', 0],
-  ['ciel à ×1,5', '', '', 1.5],
-  ['ciel à ×1', '', '', 1],
+  // The sky's canvas in a layer of its own: Firefox may then stop drawing the rest of the page again at each frame.
+  ['ciel en couche à part (will-change)', '', '.showcase-sky { will-change: transform; }', 0],
+  ['ciel en couche à part (translateZ)', '', '.showcase-sky { transform: translateZ(0); }', 0],
+  ['ciel presque opaque', '', '.showcase-sky { opacity: 0.999 !important; }', 0],
   ['sans ciel (ni dessin)', 'ciel', '.showcase-sky { display: none !important; }', 0],
-  ['cartes sans ombre', '', '[data-journey-root] .card { box-shadow: none !important; }', 0],
-  ['cartes sans flou', '', '[data-journey-root] .card { filter: none !important; }', 0],
-  ['cartes sans perspective propre', 'perspective', '', 0],
+  [
+    'cartes en couche à part (will-change)',
+    '',
+    '[data-journey-root] .card { will-change: transform, filter, opacity; }',
+    0,
+  ],
+  [
+    'cartes sans ombre, flou ni perspective propre',
+    'perspective',
+    '[data-journey-root] .card { box-shadow: none !important; filter: none !important; }',
+    0,
+  ],
   ['cartes figées', 'cartes', '', 0],
-  ['sans cartes (retirées)', '', '[data-journey-root] .project { display: none !important; }', 0],
   ['à l’arrêt', '', '', 0],
   ['tout de nouveau', '', '', 0],
 ];
