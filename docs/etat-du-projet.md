@@ -1,6 +1,6 @@
 # Où en est le projet
 
-- **Mis à jour** : 8 novembre 2026 (visite sans chargement, étape 1)
+- **Mis à jour** : 10 novembre 2026 (passe de performance)
 - **À lire en premier** dans une nouvelle conversation, juste après `CLAUDE.md`.
 
 ## La maquette v3 est terminée
@@ -43,6 +43,7 @@ Les vidéos des cartes entreront dans la même file, sous 600 Ko chacune.
 - Le code des composants du canevas sert la maquette et ne sera pas repris : on ne l'optimise pas. Le site est écrit à neuf.
 - Les scènes Three.js des prototypes seront reprises : leur coût (nombre d'objets, ombres, génération de la ville) compte, et se mesure au point 3 de la suite.
 - Les budgets de la section 9.4 et les vérifications de la section 9 de la spec principale s'appliquent à chaque étape du site, qui se termine avec la CI verte. L'étape 11 fait une passe complète d'accessibilité, de performance et de référencement.
+- Passe de performance du 10 novembre 2026, sans changement visible, pour alléger ce que le navigateur dessine à chaque image de l'anneau (et le bug de l'anneau sous Firefox Android, une image sur deux à 100 ms, GPU saturé par les surfaces plein écran) : le cadre de la planète (`.planet-frame`) est un point à la place de la planète plutôt qu'un élément plein écran, pour que son flou ne travaille plus sur une image de la taille de l'écran ; le canevas lointain du ciel de l'anneau ne couvre plus que le carré de la planète (ce qu'elle seule peut cacher), le reste de la moitié lointaine étant dessiné sous la moitié proche sur le canevas proche ; le calque des flèches n'est plus plein écran. Vérifié au pixel près avant/après (Chromium, ordinateur et mobile).
 
 ## Ce que Grégoire doit encore fournir
 
