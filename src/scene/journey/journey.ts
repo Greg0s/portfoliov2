@@ -1114,9 +1114,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       let y: number;
       let cartelWidth = 300;
       if (view.mobile) {
-        // As wide as the card in front at rest, whatever the swipe does to this card: its text never reflows under
-        // the finger (Grégoire, 4 November 2026). It follows the card's centre and its lower edge.
-        const frontHalf = frontCardHalf(view, plane.depth);
+        // As wide as the card in front at rest, whatever the swipe does to this card and whatever the camera does to
+        // the ring while it leaves it: its text never reflows, under the finger (Grégoire, 4 November 2026) or with
+        // the scroll (11 November 2026). It follows the card's centre and its lower edge.
+        const frontHalf = frontCardHalf(view, 0);
         x = at.x - frontHalf;
         y = at.y + (half * 9) / 16 + CARTEL_GAP + rise;
         cartelWidth = frontHalf * 2;

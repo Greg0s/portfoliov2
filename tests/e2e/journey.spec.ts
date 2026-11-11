@@ -634,3 +634,28 @@ test('on a short phone, the text of the card in front stays above the arrows and
     await next.click();
   }
 });
+
+test("on a phone, the front card's text keeps its width, so its lines, as the scroll leaves the ring", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'the cartel is as wide as the card on a phone');
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  const widths = new Set<string>();
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 700 }] });
+  for (let step = 1; step <= 30; step += 1) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 195, y: 700 - step * 16 }] });
+    await page.waitForTimeout(30);
+    const width = await page.evaluate(() => {
+      const cartel = document.querySelector<HTMLElement>('.project.lit .cartel');
+      return cartel && Number(getComputedStyle(cartel).opacity) > 0.02
+        ? cartel.style.getPropertyValue('--cartel-width')
+        : '';
+    });
+    if (width) widths.add(width);
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  expect(widths.size).toBe(1);
+});
