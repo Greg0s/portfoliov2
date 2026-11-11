@@ -536,36 +536,74 @@ test('?mesure=visite goes through a case study and back to the screen, and lists
   await expectAnchor(page, CONTACT);
 });
 
-test('back from a case study, the live planet and office come back at once, without being prepared again', async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(isMobile, 'one run is enough: the scenes are kept the same way on phones');
-  test.setTimeout(180_000);
-  const marks = (name: string): Promise<number> =>
-    page.evaluate((mark) => performance.getEntriesByName(mark, 'mark').length, name);
-  const linked = (): Promise<number> =>
-    page.evaluate(
-      () =>
-        performance.getEntriesByType('measure').filter((e) => /^(planet|office):(link|shader|compile)/.test(e.name))
-          .length,
-    );
-  await page.goto('./?planete=live&office=live&lite=0#lyrix');
-  await expectAnchor(page, RING);
-  await expect.poll(() => marks('journey:planet-ready'), { timeout: 120_000 }).toBe(1);
-  await expect.poll(() => marks('journey:office-ready'), { timeout: 120_000 }).toBe(1);
-  const before = await linked();
+/** How many times a performance mark was set on the page. */
+function marks(page: Page, name: string): Promise<number> {
+  return page.evaluate((mark) => performance.getEntriesByName(mark, 'mark').length, name);
+}
 
+/** How many of the scenes' shader programs were linked or compiled so far, by their measures. */
+function linked(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      performance.getEntriesByType('measure').filter((e) => /^(planet|office):(link|shader|compile)/.test(e.name))
+        .length,
+  );
+}
+
+/** Opens the case study in front on the ring, then comes back to the ring. */
+async function throughCaseStudy(page: Page): Promise<void> {
   // The page draws in software here: the dive takes its time.
   await page.locator('#lyrix a.card').click({ force: true });
   await expect(page).toHaveURL(/projets\/lyrix\/$/, { timeout: 30_000 });
   await page.getByRole('link', { name: 'Retour aux projets' }).click({ timeout: 30_000 });
   await expectAnchor(page, RING);
-  await expect.poll(() => marks('journey:planet-ready'), { timeout: 10_000 }).toBe(2);
-  await expect.poll(() => marks('journey:office-ready'), { timeout: 10_000 }).toBe(2);
+}
+
+// The two scenes are kept apart in these two tests. Without a GPU, each frame of the live planet takes about a second
+// to draw, and the office, which prepares one step a frame, needed over a minute with the planet on screen: two such
+// tests side by side on CI's shared machines ran past any reasonable wait.
+test('back from a case study, the live planet comes back at once, without being prepared again', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'one run is enough: the scenes are kept the same way on phones');
+  test.slow();
+  // The office over its layers: nothing of it to link.
+  await page.goto('./?planete=live&office=layers&lite=0#lyrix');
+  await expectAnchor(page, RING);
+  await expect.poll(() => marks(page, 'journey:planet-ready'), { timeout: 60_000 }).toBe(1);
+  const before = await linked(page);
+  expect(before).toBeGreaterThan(0);
+
+  await throughCaseStudy(page);
+  await expect.poll(() => marks(page, 'journey:planet-ready'), { timeout: 10_000 }).toBe(2);
   // Nothing compiled or linked again.
-  expect(await linked()).toBe(before);
+  expect(await linked(page)).toBe(before);
+  await expect(page.locator('html')).toHaveAttribute('data-planet', 'live');
+});
+
+test('back from a case study, the live office comes back at once, without being prepared again', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'one run is enough: the scenes are kept the same way on phones');
+  test.slow();
+  // The planet already found too slow keeps its image: the office gets ready between light frames.
+  await page.addInitScript(() => {
+    sessionStorage.setItem('portfolio:slow', 'planet');
+  });
+  await page.goto('./?office=live&lite=0#lyrix');
+  await expectAnchor(page, RING);
+  await expect.poll(() => marks(page, 'journey:office-ready'), { timeout: 60_000 }).toBe(1);
+  const before = await linked(page);
+  expect(before).toBeGreaterThan(0);
+
+  await throughCaseStudy(page);
+  await expect.poll(() => marks(page, 'journey:office-ready'), { timeout: 10_000 }).toBe(2);
+  // Nothing compiled or linked again.
+  expect(await linked(page)).toBe(before);
   await expect(page.locator('html')).toHaveAttribute('data-office', 'live');
+  await expect(page.locator('html')).toHaveAttribute('data-office-scene', 'live');
 });
 
 test('nothing of the office loads while the opening plays its arrival', async ({ page }) => {
