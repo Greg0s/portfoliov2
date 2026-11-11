@@ -147,21 +147,53 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
   room.style.transformOrigin = `${px(axis[0])} ${px(axis[1])}`;
   desk.style.transformOrigin = `${px(axis[0])} ${px(axis[1])}`;
 
-  // A layer that will change its transform keeps the scale it was first drawn at, and the arrival starts at 14 times
-  // the rest: on a phone, drawing the town, the room and the desk that large runs out of GPU memory, and the desk and
-  // the screen stay half drawn, even at rest. Once the camera rests, each layer lets go of its hint for a frame, so
-  // that it is drawn again at its size; the hint comes back for the head's moves.
-  let resting = false;
-  let redrawn = 0;
-  const redrawAtRest = (): void => {
-    cancelAnimationFrame(redrawn);
-    const layers = [city, room, desk];
-    layers.forEach((node) => (node.style.willChange = 'auto'));
-    redrawn = requestAnimationFrame(() => {
-      redrawn = requestAnimationFrame(() => {
-        layers.forEach((node) => (node.style.willChange = ''));
+  // A layer hinted with `will-change` keeps the scale it was first drawn at, whatever its transform does next. The room
+  // and the desk come in at many times their size and shrink to it as the camera backs to the seat: drawn once at the
+  // start, they would be held far larger than shown, and on a phone the GPU's tile memory runs out on the way, so the
+  // desk, the screen and parts of the room show half drawn until the camera rests (Grégoire, 11 November 2026).
+  // Each layer is drawn again whenever its scale has moved by more than `REPIN` from the one it was drawn at, by
+  // letting go of its hint for a frame: a handful of redraws over the arrival, never more than about twice the
+  // screen's pixels held per layer, and never softer than shown once at rest.
+  const REPIN = 1.35;
+  interface Pinned {
+    node: HTMLElement;
+    /** The scale the layer was last drawn at, 0 while hidden (it is drawn at its scale when it shows again). */
+    at: number;
+    frame: number;
+  }
+  const pinned: Pinned[] = [city, room, desk].map((node) => ({ node, at: 0, frame: 0 }));
+  const repin = (layer: Pinned, scale: number): void => {
+    layer.at = scale;
+    cancelAnimationFrame(layer.frame);
+    layer.node.style.willChange = 'auto';
+    layer.frame = requestAnimationFrame(() => {
+      layer.frame = requestAnimationFrame(() => {
+        layer.node.style.willChange = '';
       });
     });
+  };
+  /** Whether a layer was drawn again in this frame: one at a time, so that their tiles never all go at once. */
+  let repinned = false;
+  const follow = (layer: Pinned, scale: number, shown: boolean): void => {
+    if (!shown) {
+      layer.at = 0;
+      return;
+    }
+    if (repinned) return;
+    // Shown again: drawn at its scale now, the one it had when hidden being long gone.
+    if (layer.at === 0) {
+      repin(layer, scale);
+      repinned = true;
+      return;
+    }
+    const ratio = scale / layer.at;
+    // At rest, a layer drawn smaller than shown would stay soft: it is drawn at its size. One drawn a little larger
+    // stays as it is, so that the three layers are not all drawn again in the frame where the camera stops.
+    const resting = Math.abs(scale - 1) < 1e-4;
+    if (ratio > REPIN || ratio < 1 / REPIN || (resting && layer.at < scale - 1e-4)) {
+      repin(layer, scale);
+      repinned = true;
+    }
   };
 
   return {
@@ -174,15 +206,17 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
       const opacity = { room: layerFade(state.camZ, FADE_PLANES.room), desk: layerFade(state.camZ, FADE_PLANES.desk) };
       const sRoom = layerScale(state.camZ, -1.2);
       const sDesk = layerScale(state.camZ, -0.85);
-      const atRest = Math.abs(sRoom - 1) < 1e-4 && Math.abs(sDesk - 1) < 1e-4;
-      if (atRest && !resting) redrawAtRest();
-      resting = atRest;
       room.style.transform = `translate(${px(-head.x * par.room[0])}, ${px(-head.y * par.room[1])}) scale(${sRoom.toFixed(5)})`;
       room.style.opacity = opacity.room.toFixed(3);
       room.style.visibility = opacity.room > 0.002 ? 'visible' : 'hidden';
       desk.style.transform = `translate(${px(-head.x * par.desk[0])}, ${px(-head.y * par.desk[1])}) scale(${sDesk.toFixed(5)})`;
       desk.style.opacity = opacity.desk.toFixed(3);
       desk.style.visibility = opacity.desk > 0.002 ? 'visible' : 'hidden';
+      const [cityPin, roomPin, deskPin] = pinned as [Pinned, Pinned, Pinned];
+      repinned = false;
+      follow(deskPin, sDesk, opacity.desk > 0.002);
+      follow(roomPin, sRoom, opacity.room > 0.002);
+      follow(cityPin, s, true);
       // The screen goes where the desk takes it.
       const onDesk = ([x, y]: Point): Point => [
         axis[0] + sDesk * (x - axis[0]) - head.x * par.desk[0],
@@ -207,7 +241,9 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
     isLost: () => false,
     whenLost: () => undefined,
     dispose() {
-      cancelAnimationFrame(redrawn);
+      pinned.forEach((layer) => {
+        cancelAnimationFrame(layer.frame);
+      });
       root.remove();
     },
   };
