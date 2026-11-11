@@ -99,3 +99,109 @@ export function easeFrom(startSlope: number): (t: number) => number {
   if (m === 0) return easeInOutCubic;
   return (t) => m * (t * t * t - 2 * t * t + t) + 3 * t * t - 2 * t * t * t;
 }
+
+/**
+ * The magnet between the anchors (journey spec §4): the view follows the wheel, the trackpad or the finger as far as
+ * it goes, one anchor at most, then the magnet takes it to an anchor once the gesture ends. `?scroll=1` (soft),
+ * `?scroll=2` (the default) and `?scroll=3` (firm) tune it; `?scroll=0` brings back the former all-or-nothing gesture.
+ */
+export interface Magnet {
+  /** Whether the view follows the gesture; false: one gesture, one anchor, as before. */
+  follows: boolean;
+  /** The share of the way to the next anchor past which the magnet leads there rather than back. */
+  pass: number;
+  /** A finger faster than this, in px/ms, leads to the next anchor whatever the distance (`FLICK_MIN` px at least). */
+  flick: number;
+  /** How long the wheel stays still, in ms, before the magnet takes over. */
+  settle: number;
+  /** The magnet's glides last this many times their usual duration. */
+  pace: number;
+}
+
+/** The default magnet. */
+export const MAGNET: Magnet = { follows: true, pass: 0.3, flick: 0.4, settle: 160, pace: 1 };
+
+export const MAGNETS: Readonly<Record<string, Magnet>> = {
+  '0': { follows: false, pass: 0, flick: 0, settle: 0, pace: 1 },
+  '1': { follows: true, pass: 0.35, flick: 0.5, settle: 240, pace: 1.25 },
+  '2': MAGNET,
+  '3': { follows: true, pass: 0.22, flick: 0.3, settle: 90, pace: 0.8 },
+};
+
+/** The magnet the URL asks for (`?scroll=0` to `3`), the default one otherwise. */
+export function magnetOf(search: string): Magnet {
+  const asked = new URLSearchParams(search).get('scroll') ?? '';
+  return MAGNETS[asked] ?? MAGNET;
+}
+
+/** A flick shorter than this, in px, is a tap. */
+export const FLICK_MIN = 24;
+
+/**
+ * Where the magnet takes a gesture that started on the anchor `from` and left the view at `position`: the next anchor
+ * in the gesture's direction if the view went past `magnet.pass` of the way there, if the gesture was a mouse notch
+ * (`notch`, which always leads one anchor further), or if it ended fast that way (`speed`, px/ms, positive down); else
+ * back to `from`. Never further than the next anchor.
+ */
+export function magnetAnchor(
+  position: number,
+  positions: readonly number[],
+  from: number,
+  speed: number,
+  notch: boolean,
+  magnet: Magnet,
+): number {
+  const start = positions[from];
+  if (start === undefined) return nearestAnchor(position, positions);
+  const moved = position - start;
+  if (Math.abs(moved) <= ON_ANCHOR) return from;
+  const way = Math.sign(moved);
+  const next = Math.max(0, Math.min(positions.length - 1, from + way));
+  const end = positions[next];
+  if (next === from || end === undefined) return from;
+  const share = Math.abs(moved) / Math.max(1, Math.abs(end - start));
+  const fast = speed * way >= magnet.flick && Math.abs(moved) >= FLICK_MIN;
+  return notch || share >= magnet.pass || fast ? next : from;
+}
+
+/** The anchors on either side of `position`, as indexes: the one it is on, and its neighbours. */
+export function bracket(position: number, positions: readonly number[]): [number, number] {
+  const on = anchorAt(position, positions);
+  if (on >= 0) return [Math.max(0, on - 1), Math.min(positions.length - 1, on + 1)];
+  let below = 0;
+  positions.forEach((anchor, i) => {
+    if (anchor < position) below = i;
+  });
+  return [below, Math.min(positions.length - 1, below + 1)];
+}
+
+/**
+ * Whether a wheel event starting a gesture comes from a mouse's notched wheel rather than a trackpad: lines or pages
+ * rather than pixels, or a first step as large as a notch (a trackpad starts with a few px).
+ */
+export function isNotch(deltaY: number, deltaMode: number): boolean {
+  return deltaMode !== 0 || Math.abs(deltaY) >= 50;
+}
+
+/** A wheel event's move in px (`deltaMode` 1 counts lines, 2 pages). */
+export function wheelPixels(deltaY: number, deltaMode: number, screen: number): number {
+  if (deltaMode === 1) return deltaY * 40;
+  if (deltaMode === 2) return deltaY * screen;
+  return deltaY;
+}
+
+/**
+ * An even glide: it speeds up over the first `ramp` of its time, cruises, and slows down over the last `ramp` (at
+ * most half). The arrival at the office keeps this pace, 0.3 s to speed up and to slow down.
+ */
+export function easeRamp(ramp: number): (t: number) => number {
+  const r = Math.max(0.001, Math.min(0.5, ramp));
+  const top = 1 / (1 - r);
+  return (t) => {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    if (t < r) return (top * t * t) / (2 * r);
+    if (t > 1 - r) return 1 - (top * (1 - t) * (1 - t)) / (2 * r);
+    return top * (t - r / 2);
+  };
+}

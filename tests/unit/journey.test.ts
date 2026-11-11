@@ -17,10 +17,17 @@ import { sceneFor, seeded, worldCount } from '../../src/scene/journey/layout';
 import {
   anchorAt,
   anchorPositions,
+  bracket,
   easeFrom,
+  easeRamp,
+  isNotch,
+  MAGNET,
+  magnetAnchor,
+  magnetOf,
   settleAnchor,
   stepAnchor,
   wheelGestures,
+  wheelPixels,
 } from '../../src/scene/journey/snap';
 import { step, stepSpeed } from '../../src/scene/journey/steps';
 
@@ -242,5 +249,78 @@ describe('the blur of the cards', () => {
     expect(blurFilter(2.6)).toBe('blur(2.50px)');
     expect(blurFilter(6.3)).toBe('blur(6.50px)');
     expect(blurFilter(17.4)).toBe('blur(17.00px)');
+  });
+});
+
+describe('the magnet between the anchors', () => {
+  const positions = [0, 1540, 3550];
+
+  it('leads on past 30 % of the way, else back', () => {
+    expect(magnetAnchor(400, positions, 0, 0, false, MAGNET)).toBe(0);
+    expect(magnetAnchor(500, positions, 0, 0, false, MAGNET)).toBe(1);
+    expect(magnetAnchor(1540 + 500, positions, 1, 0, false, MAGNET)).toBe(1);
+    expect(magnetAnchor(1540 + 700, positions, 1, 0, false, MAGNET)).toBe(2);
+    expect(magnetAnchor(1540 - 500, positions, 1, 0, false, MAGNET)).toBe(0);
+  });
+
+  it('leads on after a quick flick or a mouse notch, whatever the distance', () => {
+    expect(magnetAnchor(100, positions, 0, 0.8, false, MAGNET)).toBe(1);
+    expect(magnetAnchor(100, positions, 0, -0.8, false, MAGNET)).toBe(0);
+    expect(magnetAnchor(10, positions, 0, 2, false, MAGNET)).toBe(0);
+    expect(magnetAnchor(120, positions, 0, 0, true, MAGNET)).toBe(1);
+    expect(magnetAnchor(1540 - 120, positions, 1, 0, true, MAGNET)).toBe(0);
+  });
+
+  it('never goes further than the next anchor, nor past the ends', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 3550 }),
+        fc.integer({ min: 0, max: 2 }),
+        fc.double({ min: -5, max: 5 }),
+        fc.boolean(),
+        (position, from, speed, notch) => {
+          const index = magnetAnchor(position, positions, from, speed, notch, MAGNET);
+          expect(Math.abs(index - from)).toBeLessThanOrEqual(1);
+          expect(index).toBeGreaterThanOrEqual(0);
+          expect(index).toBeLessThan(positions.length);
+        },
+      ),
+    );
+    expect(magnetAnchor(0, positions, 0, -3, true, MAGNET)).toBe(0);
+  });
+
+  it('lets a gesture move over the stretches around its anchor', () => {
+    expect(bracket(0, positions)).toEqual([0, 1]);
+    expect(bracket(1540, positions)).toEqual([0, 2]);
+    expect(bracket(2000, positions)).toEqual([1, 2]);
+    expect(bracket(3550, positions)).toEqual([1, 2]);
+  });
+
+  it('tells a mouse notch from a trackpad, and counts lines and pages in px', () => {
+    expect(isNotch(100, 0)).toBe(true);
+    expect(isNotch(3, 1)).toBe(true);
+    expect(isNotch(4, 0)).toBe(false);
+    expect(wheelPixels(3, 1, 900)).toBe(120);
+    expect(wheelPixels(1, 2, 900)).toBe(900);
+  });
+
+  it('reads its tuning from the address', () => {
+    expect(magnetOf('')).toBe(MAGNET);
+    expect(magnetOf('?scroll=0').follows).toBe(false);
+    expect(magnetOf('?scroll=3').pass).toBeLessThan(MAGNET.pass);
+    expect(magnetOf('?scroll=9')).toBe(MAGNET);
+  });
+
+  it('glides at an even pace between its ramps', () => {
+    const ease = easeRamp(0.1);
+    expect(ease(0)).toBe(0);
+    expect(ease(1)).toBe(1);
+    expect(ease(0.5)).toBeCloseTo(0.5, 12);
+    let last = 0;
+    for (let t = 0.01; t <= 1; t += 0.01) {
+      expect(ease(t)).toBeGreaterThanOrEqual(last);
+      last = ease(t);
+    }
+    expect((ease(0.4) - ease(0.3)) / 0.1).toBeCloseTo(1 / 0.9, 6);
   });
 });
