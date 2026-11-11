@@ -38,22 +38,33 @@ export interface Ring {
   card: number;
 }
 
+/** On a phone, the gap between the card in front and its cartel, under it, in px. */
+export const CARTEL_GAP = 22;
+
+/** The ring's centre on a phone as drawn for 390 × 844, in px from the vanishing point. */
+const mobileCentre = (view: View): number => -0.02 * view.height;
+
 /**
  * The ring for a screen. On desktop (drawn for 1440 × 900), the card in front sits just under the planet, its cartel
- * beside it; on a phone (drawn for 390 × 844), the card in front is 78 % of the width, its cartel under it.
+ * beside it; on a phone (drawn for 390 × 844), the card in front is 78 % of the width, its cartel under it. A phone
+ * shorter than that may have the ring raised and scaled down (`view.ring`, see `fitRing`).
  */
 export function ringFor(view: View): Ring {
   if (view.mobile) {
     const w = view.width;
     const rz = 0.25;
+    const f = view.ring?.scale ?? 1;
+    const lift = view.ring?.lift ?? 0;
     return {
       cx: 0,
-      cy: -0.02 * view.height,
+      // Raised all of a piece: the planet, at the centre, by `lift`, and the card in front, nearer the camera, by as
+      // much on screen, its ring stretched for it by the share of the lift its depth would add.
+      cy: mobileCentre(view) - lift,
       rx: 0.72 * w,
-      ry: 0.145 * view.height,
+      ry: 0.145 * view.height * f + rz * lift,
       rz,
-      planet: 0.4 * w,
-      card: 0.78 * w * (1 - rz),
+      planet: 0.4 * w * f,
+      card: 0.78 * w * (1 - rz) * f,
     };
   }
   const sx = view.width / 1440;
@@ -95,4 +106,62 @@ export function ringPose(i: number, s: number, n: number, view: View): Pose {
     opacity: Math.exp(-((a / 0.68) ** 2)) * (1 - smooth(1.5, 2.1, a)),
     blur: 12 * (1 - near),
   };
+}
+
+/** The ring of a phone fitted to its screen; `clears` is the index, in `RingRoom.bottoms`, of the limit it keeps. */
+export interface RingFit {
+  lift: number;
+  scale: number;
+  clears: number;
+}
+
+/** What the ring of a phone must fit between, in px from the top of the screen. */
+export interface RingRoom {
+  /** The highest the planet may reach: under the header. */
+  top: number;
+  /** The lowest the cartel may reach, in order of preference: above the loading pause's pill, above the arrows. */
+  bottoms: readonly number[];
+  /** The height, in px, of the tallest cartel laid out `width` px wide. */
+  cartel: (width: number) => number;
+}
+
+/** How far the planet, with the Little Prince and the fox on it, reaches above its centre, in planet diameters. */
+const PLANET_REACH = 0.5;
+/** How far the card in front floats down, with the camera's sway, in px: the cartel follows it. */
+const FLOAT = 12;
+/** The smallest scale the ring may be drawn at, on the smallest phones; to clear the loading pause's pill too. */
+const SMALLEST = 0.72;
+const SMALLEST_FOR_PILL = 0.88;
+
+/**
+ * Fits the ring of a phone to its screen (Grégoire, 11 November 2026): on a phone shorter than 390 × 844, the cartel
+ * of the card in front would pass under the arrows. The ring then rises all of a piece into the sky under the header
+ * and, only once the planet reaches the header, is drawn smaller, until the tallest cartel ends above the loading
+ * pause's pill (down to 88 %), or else above the arrows (down to 72 %; the text then fades out under the pill while it
+ * shows). On a phone tall enough, the ring stays as drawn. Null for desktop.
+ */
+export function fitRing(view: View, room: RingRoom): RingFit | null {
+  if (!view.mobile) return null;
+  const top = view.vpY + mobileCentre(view);
+  /** The least lift that ends the cartel at `bottom`, the ring drawn at `f`; and whether the planet clears the header. */
+  const place = (f: number, bottom: number): { lift: number; fits: boolean } => {
+    const ring = ringFor({ ...view, ring: { lift: 0, scale: f } });
+    const k = 1 / (1 - ring.rz);
+    const height = room.cartel(ring.card * k);
+    // The card's lower edge on screen, as drawn, then where it must end: above the cartel and the gap. The cartel,
+    // nearer the camera, is drawn smaller in proportion, so it shows where it is placed, at its size (`journey.ts`).
+    const drawn = view.vpY + (ring.cy + ring.ry) * k + ((ring.card * 9) / 32) * k;
+    const lift = Math.max(0, drawn - (bottom - FLOAT - height - CARTEL_GAP));
+    return { lift, fits: top - lift - PLANET_REACH * ring.planet >= room.top };
+  };
+  for (const [i, bottom] of room.bottoms.entries()) {
+    const smallest = i < room.bottoms.length - 1 ? SMALLEST_FOR_PILL : SMALLEST;
+    for (let f = 1; f >= smallest - 1e-9; f -= 0.02) {
+      const { lift, fits } = place(f, bottom);
+      if (fits) return { lift, scale: f, clears: i };
+    }
+  }
+  const last = room.bottoms.length - 1;
+  const bottom = room.bottoms[last];
+  return bottom === undefined ? null : { lift: place(SMALLEST, bottom).lift, scale: SMALLEST, clears: last };
 }
