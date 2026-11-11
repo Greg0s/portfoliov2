@@ -24,13 +24,13 @@ async function expectFront(page: Page, project: number): Promise<void> {
 
 /**
  * A swipe of a finger, `distance` px up (a negative distance swipes down), or to the left with `sideways`, drifting
- * `drift` px up on the way. Returns how far the page scrolled while the finger was down.
+ * `drift` px up on the way; `fast`, a flick. Returns how far the page scrolled while the finger was down.
  */
-async function swipe(page: Page, distance: number, sideways = false, drift = 0): Promise<number> {
+async function swipe(page: Page, distance: number, sideways = false, drift = 0, fast = false): Promise<number> {
   const cdp = await page.context().newCDPSession(page);
   const x = sideways ? (distance > 0 ? 340 : 50) : 195;
-  const y = sideways ? 450 : distance > 0 ? 650 : 250;
-  const steps = 10;
+  const y = sideways ? 450 : distance > 0 ? 780 : 120;
+  const steps = fast ? 2 : 10;
   const from = await page.evaluate(() => window.scrollY);
   let scrolled = 0;
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
@@ -41,6 +41,7 @@ async function swipe(page: Page, distance: number, sideways = false, drift = 0):
       type: 'touchMove',
       touchPoints: [sideways ? { x: x - moved, y: y - drifted } : { x, y: y - moved }],
     });
+    if (fast) continue;
     await page.waitForTimeout(16);
     scrolled = Math.max(scrolled, Math.abs((await page.evaluate(() => window.scrollY)) - from));
   }
@@ -177,18 +178,74 @@ test('the wheel goes anchor by anchor to the contact, and back; sideways, it tur
   await expectFront(page, 1);
 });
 
+test('the view follows a trackpad, and the magnet ends the move: back short of a third, else on', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'phones have no trackpad');
+  await openJourney(page);
+  await page.mouse.move(720, 450);
+  await page.evaluate(() => {
+    const furthest = { y: 0 };
+    Object.assign(window, { furthest });
+    window.addEventListener('scroll', () => (furthest.y = Math.max(furthest.y, window.scrollY)));
+  });
+  const cdp = await page.context().newCDPSession(page);
+  /** A trackpad's swipe: steps of a few dozen px, smaller than a mouse's notch. Returns how far the page went. */
+  const pad = async (total: number): Promise<number> => {
+    for (let moved = 0; moved < Math.abs(total); moved += 40) {
+      await cdp.send('Input.dispatchMouseEvent', {
+        type: 'mouseWheel',
+        x: 720,
+        y: 450,
+        deltaX: 0,
+        deltaY: Math.sign(total) * 40,
+      });
+    }
+    return page.evaluate(() => (window as unknown as { furthest: { y: number } }).furthest.y);
+  };
+  expect(await pad(120)).toBeGreaterThan(100);
+  await page.waitForTimeout(400);
+  await expectAnchor(page, 0);
+  await pad(480);
+  await expectAnchor(page, RING);
+});
+
+test('?scroll=0 keeps one gesture, one anchor', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'phones have no trackpad');
+  await openJourney(page, './?scroll=0');
+  await page.mouse.move(720, 450);
+  await page.mouse.wheel(0, 8);
+  await expectAnchor(page, RING);
+});
+
 test('a swipe goes anchor by anchor to the contact, and a short touch stays', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the swipe is a phone gesture');
   await openJourney(page);
   for (let anchor = 1; anchor <= CONTACT; anchor += 1) {
-    await swipe(page, 300);
+    await swipe(page, 640);
     await expectAnchor(page, anchor);
   }
-  await swipe(page, -300);
+  await swipe(page, -640);
   await expectAnchor(page, RING);
   await swipe(page, 20);
   await page.waitForTimeout(800);
   await expectAnchor(page, RING);
+});
+
+test('the page follows a slow finger, and the magnet takes it back short of a third of the way', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'the swipe is a phone gesture');
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  const from = await page.evaluate(() => window.scrollY);
+  // The view went along with the finger, then came back to the ring.
+  expect(await swipe(page, 240)).toBeGreaterThan(150);
+  await page.waitForTimeout(300);
+  await expectAnchor(page, RING);
+  expect(await page.evaluate(() => window.scrollY)).toBe(from);
 });
 
 test('a swipe across the ring turns it to the next or the previous project, the arrows too', async ({
@@ -230,7 +287,8 @@ test('a flick lands one anchor further, its fling held while the page glides the
   test.skip(!isMobile, 'the swipe is a phone gesture');
   await openJourney(page, './#perfmanager');
   await expectAnchor(page, RING);
-  await swipe(page, 400);
+  // A short, quick flick: the magnet carries it on, however short.
+  await swipe(page, 300, false, 0, true);
   // What is left of the finger's fling would carry the page past the next anchor once the glide is over.
   await expect(page.locator('html')).toHaveCSS('overflow-y', 'hidden');
   await expectAnchor(page, CONTACT);

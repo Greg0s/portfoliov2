@@ -23,14 +23,20 @@ import { setJourney } from './registry';
 import {
   anchorAt,
   anchorPositions,
+  bracket,
   easeFrom,
   easeInOutCubic,
+  easeRamp,
   glideDuration,
+  isNotch,
+  magnetAnchor,
+  magnetOf,
   nearestAnchor,
   ON_ANCHOR,
   settleAnchor,
   stepAnchor,
   wheelGestures,
+  wheelPixels,
 } from './snap';
 import { ambientClock } from '../../motion/ambient';
 import { discCursor } from '../../motion/cursor';
@@ -129,6 +135,16 @@ const SHOWCASE_GLIDE_MS = 1150;
 /** How far a finger moves, in px, before it is told whether it turns the ring or scrolls the page: under the
  * browsers' own threshold for scrolling, so that the page has not moved yet. */
 const SIDEWAYS_SLOP = 8;
+/**
+ * Through the end (the arrival at the office), the camera's top speed on the end's clock, per ms: the whole arrival in
+ * 3.2 s, plus 0.3 s to speed up and to slow down, the pace the magnet glides at too. A hand driving the scroll there
+ * may play it faster, down to a second.
+ */
+const END_SPEED = 1 / 3200;
+const END_DRIVEN_SPEED = 1 / 1000;
+const END_RAMP_MS = 300;
+/** How closely the camera follows the scroll through the end, in ms (a light smoothing). */
+const END_EASE_MS = 160;
 
 interface CardParts {
   item: HTMLElement;
@@ -194,6 +210,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // the opening, the ring and the contact.
   const LAST_PROJECT = RING;
   const SHOWCASE_AT = RING;
+  /** How the view follows a gesture between the anchors, and the magnet that ends it (`?scroll=0` to `3`). */
+  const magnet = magnetOf(location.search);
   // Firefox sorts everything in one 3D scene plane by plane: a card's dark shadow, in the card's own plane, would
   // now and then be drawn over the card. There each card is flattened into its own picture, the perspective of its
   // turn given by its own frame, seen from the vanishing point at the card's distance: the same drawing, in one plane.
@@ -268,10 +286,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   let planetRest = { x: 0, y: 0 };
   let planetSize = 0;
 
-  // The camera: where the scroll is (target), where the camera is (current), its speed through the end.
+  // The camera: where the scroll is (target), where the camera is (current).
   let target = 0;
   let current = 0;
-  let endSpeed = 0;
   let focus = -1;
   let hovered = -1;
   /** How lit each card beside the front one is by the mouse, from 0 to 1: it eases in and out of the hover. */
@@ -614,30 +631,21 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     // While the office finishes getting ready, the camera waits on the last project.
     const aim = hold?.reason === 'arrival' ? Math.min(target, LAST_PROJECT) : target;
     if (current >= edge && aim >= edge) {
-      // Through the end, the camera runs on its own clock: it speeds up, cruises and slows down at the same pace both
-      // ways, so the arrival at the office and the way back take the same 3.5 s, even in one gesture.
+      // Through the end, the camera runs on its own clock (the arrival at the office), eased toward the scroll's like
+      // elsewhere. Its speed is held to the arrival's own pace (3.2 s from the ring to the contact) unless a hand drives
+      // the scroll, which it then follows closely, the arrival played as fast as the gesture asks (a second at least).
       const q = endClock(current);
       const goal = endClock(aim);
       const d = goal - q;
-      const vmax = 1 / 3200;
-      const acc = vmax / 300;
-      const want = Math.sign(d) * Math.min(vmax, Math.sqrt(2 * acc * Math.abs(d)));
-      endSpeed += Math.max(-acc * delta, Math.min(acc * delta, want - endSpeed));
-      const next = q + endSpeed * delta;
-      if (Math.abs(d) < 1e-5 || (d > 0 && next >= goal) || (d < 0 && next <= goal)) {
-        current = aim;
-        endSpeed = 0;
-      } else {
-        current = endProgressAt(next);
-      }
+      const cap = (wheel || touching ? END_DRIVEN_SPEED : END_SPEED) * delta;
+      const move = Math.sign(d) * Math.min(cap, Math.abs(d) * (1 - Math.exp(-delta / END_EASE_MS)));
+      if (Math.abs(d) < 1e-4) current = aim;
+      else current = endProgressAt(q + move);
       return;
     }
     // Elsewhere it eases toward the scroll, like a light inertia.
-    const before = current;
     current += (aim - current) * (1 - Math.exp(-delta / (scene.view.mobile ? 150 : 130)));
     if (Math.abs(aim - current) < 0.00002) current = aim;
-    // Entering the end, the clock takes over at the speed the camera had.
-    endSpeed = Math.max(-1 / 3200, Math.min(1 / 3200, (endClock(current) - endClock(before)) / delta || 0));
   }
 
   // ---------- Gliding from anchor to anchor ----------
@@ -672,6 +680,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
    * the anchor) is the speed of the finger that started it.
    */
   function glideTo(index: number, speed = 0): void {
+    // Any other way to an anchor (a key, a click, the magnet) ends a wheel's gesture.
+    if (wheel) {
+      wheel = null;
+      clearTimeout(wheelTimer);
+    }
     const to = positions[index];
     if (to === undefined) return;
     // During a loading pause, the last gesture waits for its end.
@@ -680,19 +693,33 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       return;
     }
     if (glide?.to === to) return;
-    endGlide();
-    const from = window.scrollY;
-    if (Math.abs(to - from) < 2) return;
-    direction = Math.sign(to - from);
+    // The snapping stays off from here: turned on even for a moment, it would pull a page left between two anchors
+    // to the nearest one as soon as the scroll is read.
+    glide = null;
+    holdFling(false);
     setSnap(false);
+    const from = window.scrollY;
+    if (Math.abs(to - from) < 2) {
+      setSnap(true);
+      return;
+    }
+    direction = Math.sign(to - from);
     // Between the opening and the showcase, one long, even move: the camera draws back and turns toward the ring.
     const toShowcase = Math.min(from, to) < 2 && Math.abs(Math.max(from, to) - (positions[1] ?? 0)) < 2;
-    const duration = toShowcase ? SHOWCASE_GLIDE_MS : glideDuration(to - from);
-    const ease = toShowcase
-      ? easeInOutSine
-      : speed > 0
-        ? easeFrom((speed * duration) / Math.abs(to - from))
-        : easeInOutCubic;
+    // Through the end, the glide keeps the arrival's own even pace, which the camera follows.
+    const throughEnd = Math.max(from, to) > (positions[1] ?? 0) + ON_ANCHOR;
+    const clock = Math.abs(endClock(progressOf(to)) - endClock(progressOf(from)));
+    const endDuration = END_RAMP_MS + clock / END_SPEED;
+    const duration = throughEnd
+      ? endDuration * magnet.pace
+      : (toShowcase ? SHOWCASE_GLIDE_MS : glideDuration(to - from)) * magnet.pace;
+    const ease = throughEnd
+      ? easeRamp((END_RAMP_MS * magnet.pace) / duration)
+      : toShowcase
+        ? easeInOutSine
+        : speed > 0
+          ? easeFrom((speed * duration) / Math.abs(to - from))
+          : easeInOutCubic;
     glide = { from, to, start: -1, duration, ease };
   }
 
@@ -719,7 +746,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     scrolled = top;
     target = progressOf(top);
     current = target;
-    endSpeed = 0;
     lastScroll = top;
     draw(performance.now());
   }
@@ -730,7 +756,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   function settleSoon(): void {
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
-      if (glide || touching) return;
+      if (glide || touching || wheel) return;
       const at = window.scrollY;
       if (anchorAt(at, positions) < 0) glideTo(settleAnchor(at, positions, direction));
     }, 220);
@@ -748,8 +774,22 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   const interrupt = (): void => {
     if (glide) endGlide();
   };
-  // The wheel goes anchor by anchor: one gesture, one anchor, whatever the device sends.
+  // The wheel moves the view as far as it goes, toward one anchor at most, and the magnet ends the move once it stays
+  // still (`?scroll=0`: one gesture, one anchor, whatever the device sends).
   const gestureOf = wheelGestures();
+  let wheel: {
+    /** The anchor the gesture started from, and the stretch it may move over. */
+    from: number;
+    low: number;
+    high: number;
+    /** Where it has taken the view. */
+    at: number;
+    /** Whether a mouse's notched wheel drives it: a notch always leads one anchor further. */
+    notch: boolean;
+  } | null = null;
+  let wheelTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Whether the current wheel gesture started with a mouse's notch. */
+  let wheelNotch = false;
   const sidewaysOf = wheelGestures();
   /** Whether the camera is on the showcase's stop, or going there. */
   const atShowcase = (): boolean => Math.abs(target - SHOWCASE_AT) < 0.01;
@@ -767,11 +807,56 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     if (event.deltaY === 0) return;
     event.preventDefault();
     const started = gestureOf(event.deltaY, event.timeStamp);
-    if (started === 0) return;
-    direction = started;
-    const from = glide ? glide.to : window.scrollY;
-    glideTo(stepAnchor(from, positions, started));
+    if (!magnet.follows || hold) {
+      // One gesture, one anchor (`?scroll=0`, or during a loading pause, whose end it waits for).
+      if (started === 0) return;
+      direction = started;
+      const from = glide ? glide.to : window.scrollY;
+      glideTo(stepAnchor(from, positions, started));
+      return;
+    }
+    if (started !== 0 || !wheel) {
+      // A gesture takes the view where it is, even under the magnet's glide (a trackpad's inertia, or a wheel going on
+      // after a short stop, takes it back), and may take it as far as the next anchor in its direction.
+      glide = null;
+      holdFling(false);
+      setSnap(false);
+      const way = Math.sign(event.deltaY);
+      const at = window.scrollY;
+      const [below, above] = bracket(at, positions);
+      const on = anchorAt(at, positions);
+      if (started !== 0) wheelNotch = isNotch(event.deltaY, event.deltaMode);
+      wheel = {
+        from: on >= 0 ? on : way > 0 ? below : above,
+        low: positions[below] ?? 0,
+        high: positions[above] ?? 0,
+        at,
+        notch: wheelNotch,
+      };
+      direction = way;
+    }
+    // Each transition takes about a screen of wheel, however long its stretch of the track.
+    const pixels = wheelPixels(event.deltaY, event.deltaMode, screen);
+    const base = Math.max(wheel.low, Math.min(wheel.high, positions[wheel.from] ?? 0));
+    const stretch = pixels > 0 ? wheel.high - base : base - wheel.low;
+    const move = pixels * Math.max(1, stretch / screen);
+    const top = Math.max(wheel.low, Math.min(wheel.high, wheel.at + move));
+    wheel.at = top;
+    window.scrollTo({ top, behavior: 'instant' });
+    scrolled = top;
+    target = progressOf(top);
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(releaseWheel, magnet.settle);
   };
+  /** The wheel has stayed still: the magnet takes the view to an anchor. */
+  function releaseWheel(): void {
+    const drive = wheel;
+    wheel = null;
+    if (!drive) return;
+    // A trackpad's own inertia has already carried a quick swipe as far as it goes: only the distance counts.
+    const index = magnetAnchor(window.scrollY, positions, drive.from, 0, drive.notch, magnet);
+    glideTo(index);
+  }
   // A finger goes anchor by anchor too: a swipe of more than a few px leads to the next anchor in its direction, from
   // the anchor it started on; a shorter touch comes back to it. The snapping waits while the finger is down, so that
   // it never starts a move the glide would then undo.
@@ -784,6 +869,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   let decided = false;
   let touchY = 0;
   let touchFrom = 0;
+  /** Where the page was when the finger came down. */
+  let touchScroll = 0;
   let touchTime = 0;
   let touchSpeed = 0;
   let pinching = false;
@@ -791,8 +878,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     // Two fingers zoom the page: not a swipe.
     pinching = event.touches.length > 1;
     if (pinching) return;
-    touchFrom = glide ? glide.to : window.scrollY;
+    touchScroll = window.scrollY;
+    touchFrom = glide ? glide.to : touchScroll;
     interrupt();
+    if (wheel) {
+      wheel = null;
+      clearTimeout(wheelTimer);
+    }
     setSnap(false);
     touching = true;
     touchStartY = event.touches[0]?.clientY ?? 0;
@@ -841,6 +933,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       showcase.release(Math.abs(across) > 40 ? Math.sign(across) : 0);
       sideways = false;
       glideTo(settleAnchor(touchFrom, positions, 0));
+    } else if (magnet.follows) {
+      // The view followed the finger: the magnet takes it on to the next anchor, or back.
+      const from = nearestAnchor(touchFrom, positions);
+      // The page scrolls with the finger, but may not have caught up with a quick one yet.
+      const at = Math.abs(moved) > Math.abs(window.scrollY - touchScroll) ? touchScroll + moved : window.scrollY;
+      const index = magnetAnchor(at, positions, from, touchSpeed, false, magnet);
+      const way = Math.sign((positions[index] ?? 0) - window.scrollY);
+      glideTo(index, Math.max(0, touchSpeed * way));
     } else if (Math.abs(moved) > 40) {
       const way = Math.sign(moved);
       glideTo(stepAnchor(touchFrom, positions, way), Math.max(0, touchSpeed * way));
@@ -1930,6 +2030,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     pointer.stop();
     ambient.stop();
     clearTimeout(settleTimer);
+    clearTimeout(wheelTimer);
+    wheel = null;
     cancelAnimationFrame(resizeFrame);
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('wheel', onWheel);
