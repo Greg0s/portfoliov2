@@ -348,12 +348,8 @@ html[data-fusion='0'] * {
 /* Measurement switches (set in `src/layouts/Base.astro`): Firefox on Android draws the ring at 27 fps where Chrome
    draws it at 58 on the same phone (9 November 2026). In Firefox without a GPU, the cards' large soft shadows and the
    fixed gradient behind the page cost most of the frames; these switches tell what they cost on a real phone. */
-html[data-sans-ombres][data-journey='on'] .card {
-  box-shadow: 0 0 0 1px rgb(243 243 241 / 14%) !important;
-}
-
-html[data-sans-ombres][data-journey='on'] .project.lit .card {
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 55%) !important;
+html[data-sans-ombres][data-journey='on'] .shade {
+  box-shadow: none !important;
 }
 
 html[data-sans-fond] {
