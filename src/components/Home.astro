@@ -149,16 +149,23 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
   }
 
   /* The loading pause (`journey.ts`): while a scene finishes getting ready, for a few seconds at most. It shows only
-     past its first moments, so that a short pause never flashes. */
+     past its first moments, so that a short pause never flashes. It sits just above the ring's arrows and counter
+     (`showcase.css`), on a dark pill, so that neither they nor the text under it hide it. */
   :global(html[data-journey='on']) .loading {
     position: absolute;
-    inset: auto 0 calc(40px + env(safe-area-inset-bottom));
+    inset: auto auto calc(7vh + 52px + 20px) 50%;
     z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    color: var(--color-muted);
+    padding: 10px 18px;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    background: rgb(12 12 13 / 88%);
+    color: var(--color-text);
+    translate: -50% 0;
+    white-space: nowrap;
     font-family: var(--font-display);
     font-size: var(--size-label);
     font-weight: 500;
@@ -169,8 +176,25 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
     transition: opacity 200ms ease;
   }
 
+  @media (width < 768px) {
+    :global(html[data-journey='on']) .loading {
+      bottom: calc(28px + 46px + 16px + env(safe-area-inset-bottom));
+    }
+  }
+
   :global(html[data-journey='on']) .home[data-loading] .loading {
     opacity: 1;
+    transition-delay: 250ms;
+  }
+
+  /* On a phone too short to keep the ring's text clear of the pill (`fitRing`), the text fades out under it while it
+     shows, with the same timing. The journey sets the cartels' own opacity frame by frame: their lines fade. */
+  :global(html[data-journey='on']) .home[data-ring-tight] :global(.cartel > *) {
+    transition: opacity 200ms ease;
+  }
+
+  :global(html[data-journey='on']) .home[data-ring-tight][data-loading] :global(.cartel > *) {
+    opacity: 0;
     transition-delay: 250ms;
   }
 

@@ -28,7 +28,7 @@ const xDefault = alternates.find(({ lang }) => lang === defaultLocale)?.href;
 const momentScript = `(${applyMoment.toString()})();`;
 // Measurement switches (`?ombres=0`, `?fond=0`): the page without the cards' large shadows, or without its gradient,
 // to tell what each costs on a browser that draws the ring slowly (see `src/styles/base.css`).
-const switchesScript = `(() => { const asked = new URLSearchParams(location.search); for (const name of ['ombres', 'fond']) if (asked.get(name) === '0') document.documentElement.setAttribute('data-sans-' + name, ''); })();`;
+const switchesScript = `(() => { const asked = new URLSearchParams(location.search); for (const name of ['ombres', 'fond']) if (asked.get(name) === '0') document.documentElement.setAttribute('data-sans-' + name, ''); if (asked.get('ombre') === 'legere') document.documentElement.setAttribute('data-ombre-legere', ''); })();`;
 ---
 
 <!doctype html>

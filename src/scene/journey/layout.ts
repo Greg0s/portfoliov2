@@ -25,6 +25,11 @@ export interface View {
   vpY: number;
   /** The CSS perspective, in px: an object at depth `z` (in perspective units) sits `z · perspective` px away. */
   perspective: number;
+  /**
+   * On a phone, the ring of projects fitted to the screen (`fitRing` in `showcase/ring.ts`): how far it is raised, in
+   * px, and its scale. Absent, the ring is as drawn for 390 × 844.
+   */
+  ring?: { lift: number; scale: number };
 }
 
 export interface CardPlace {
