@@ -46,25 +46,31 @@ test('the last case study leads back to the first', async ({ page }) => {
 test('a case study leads to its live site, from its facts and, for some, from a band at the end', async ({ page }) => {
   await page.goto('projets/lyrix/');
   const facts = page.getByRole('complementary');
-  await expect(facts.getByRole('link', { name: /Ouvrir le projet/ })).toHaveAttribute(
+  await expect(facts.getByRole('link', { name: /Voir le projet/ })).toHaveAttribute(
     'href',
     'https://lyrix.mintymoon.app/',
   );
   await expect(facts.getByText('Stack', { exact: true })).toBeVisible();
   await expect(page.getByText('Lyrix est en ligne.')).toBeVisible();
 
-  // Perfmanager has a site, but no band.
+  // Perfmanager has no main link, so no button: only its company's site, as a plain link, and no band.
   await page.goto('projets/perfmanager/');
-  await expect(page.getByRole('complementary').getByRole('link', { name: /Ouvrir le projet/ })).toBeVisible();
+  const perfmanager = page.getByRole('complementary').getByRole('link');
+  await expect(perfmanager).toHaveCount(1);
+  await expect(perfmanager).toHaveText(/Site de l’entreprise/);
+  await expect(perfmanager).toHaveAttribute('href', 'https://www.perfmanager.com/');
+  await expect(page.getByRole('complementary').locator('.button')).toHaveCount(0);
   await expect(page.getByText('Perfmanager est en ligne.')).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 2, name: 'Ce que je fais' })).toBeVisible();
 
-  // Siemens has no link but its recommendation letter, in the page's language.
+  // Siemens has no main link: its recommendation letter, in the page's language, and an article, as plain links.
   await page.goto('en/projects/siemens/');
   const siemens = page.getByRole('complementary').getByRole('link');
-  await expect(siemens).toHaveCount(1);
-  await expect(siemens).toHaveText(/Read the recommendation/);
-  await expect(siemens).toHaveAttribute('href', /\/letters\/siemens-en\.pdf$/);
+  await expect(siemens).toHaveCount(2);
+  await expect(siemens.first()).toHaveText(/Recommendation/);
+  await expect(siemens.first()).toHaveAttribute('href', /\/letters\/siemens-en\.pdf$/);
+  await expect(siemens.last()).toHaveText(/Article/);
+  await expect(page.getByRole('complementary').locator('.button')).toHaveCount(0);
   expect((await page.request.get('letters/siemens-en.pdf')).headers()['content-type']).toBe('application/pdf');
 });
 

@@ -1,13 +1,12 @@
 ---
 title: What we play?
-kind: Web · 3D en CSS
+kind: Hub de jeux web
 role: Conception, design et développement
 summary: Trouver un jeu en ligne à plusieurs, dans une interface colorée et dynamique.
-coverAlt: "L'accueil de What we play? dans un navigateur, « À quoi on joue à 6 ? » et ses filtres de jeux, et le même écran sur un téléphone."
-stats:
-  - { value: '30+', label: jeux sélectionnés à la main }
+coverAlt: L'accueil de What we play? dans un navigateur, « À quoi on joue à 6 ? » et ses filtres de jeux, et le même écran sur un téléphone.
 outcomes:
-  - De nouveaux jeux ajoutés régulièrement.
+  - Un site mis à jour régulièrement.
+  - Une identité graphique unique.
   - Un affichage en 2D et en 3D pensé pour tous les écrans.
 did:
   - Maquette et direction artistique
@@ -21,5 +20,4 @@ challenges:
   - { title: Multilingue, text: 'Le même site, en plusieurs langues.' }
 ---
 
-Un projet personnel né d’une question qui revient à chaque soirée : à quoi joue-t-on ? On donne le nombre de joueurs,
-et le site propose des jeux en ligne gratuits qui correspondent, à filtrer selon ses envies.
+Un projet personnel né d’une question qui revient à chaque soirée : à quoi joue-t-on ? On donne le nombre de joueurs, et le site propose des jeux en ligne gratuits qui correspondent, à filtrer selon ses envies.

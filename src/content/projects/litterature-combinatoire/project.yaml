@@ -3,7 +3,7 @@ year: 2023
 stack: [PHP (Slim), SQL, Node.js, Socket.io, HTML, CSS, Premiere Pro, After Effects]
 links:
   live: https://combimac.oulico.fr/
-  video: https://youtu.be/k7d7twiG1os
   code: https://github.com/Greg0s/litteratureCombinatoireFront
+  video: https://youtu.be/k7d7twiG1os
 cover: ./cover.jpg
 colors: ['#d4c8fd', '#c6d3fd']

@@ -1,6 +1,9 @@
 order: 2
 year: 2024
 stack: [Vue, Vuex, React, React Flow, JSON Schema, Plotly, Docker]
+links:
+  article: https://blog.siemens.com/2021/12/light-years-ahead-with-the-arc/
 cover: ./cover.jpg
 colors: ['#13b5bd', '#2dc5cf']
+button: false
 letter: true

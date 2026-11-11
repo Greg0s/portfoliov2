@@ -1,13 +1,12 @@
 ---
 title: What we play?
-kind: Web · CSS 3D
+kind: Web game hub
 role: Concept, design and development
 summary: Find an online game to play together, in a colourful, lively interface.
-coverAlt: 'The What we play? home in a browser, “À quoi on joue à 6 ?” and its game filters, and the same screen on a phone.'
-stats:
-  - { value: '30+', label: hand-picked games }
+coverAlt: The What we play? home in a browser, “À quoi on joue à 6 ?” and its game filters, and the same screen on a phone.
 outcomes:
-  - New games added regularly.
+  - A regularly updated site.
+  - A unique visual identity.
   - 2D and 3D displays designed for every screen.
 did:
   - Mockup and art direction

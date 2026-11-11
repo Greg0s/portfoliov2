@@ -34,6 +34,10 @@ const projects = defineCollection({
             video: z.url().optional(),
             /** A gallery of the project elsewhere, such as Behance. */
             gallery: z.url().optional(),
+            /** An article about the project: a secondary link, never the button. */
+            article: z.url().optional(),
+            /** The company's site, for work done there: a secondary link, never the button. */
+            company: z.url().optional(),
           })
           .default({}),
         cover: image(),
@@ -43,6 +47,8 @@ const projects = defineCollection({
          * to carry dark text: the case study's main buttons take them as a light gradient (9 November 2026).
          */
         colors: z.tuple([hex, hex]),
+        /** The facts show a button to the main link; false for a project with none (every link is then a plain link). */
+        button: z.boolean().default(true),
         /** The card's muted video loop, added at step 9. */
         loop: z.string().optional(),
         /**
@@ -84,16 +90,16 @@ const projectTexts = defineCollection({
       coverAlt: z.string().min(1),
       /** The results that read as figures, first on the page: the figure ("100+") and what it counts. */
       stats: z
-        .array(z.strictObject({ value: z.string().min(1).max(10), label: z.string().min(1).max(48) }))
+        .array(z.strictObject({ value: z.string().min(1).max(10), label: z.string().min(1).max(54) }))
         .max(4)
         .default([]),
       /** The results said in a sentence, after the figures or in their place. */
-      outcomes: z.array(z.string().min(1).max(100)).max(3).default([]),
+      outcomes: z.array(z.string().min(1).max(130)).max(3).default([]),
       /** What I did (or do), one short item each. */
-      did: z.array(z.string().min(1).max(48)).min(3).max(8),
+      did: z.array(z.string().min(1).max(60)).min(3).max(8),
       /** The technical challenges: a title and one line. */
       challenges: z
-        .array(z.strictObject({ title: z.string().min(1).max(36), text: z.string().min(1).max(80) }))
+        .array(z.strictObject({ title: z.string().min(1).max(40), text: z.string().min(1).max(80) }))
         .min(1)
         .max(3),
     })
