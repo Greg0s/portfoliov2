@@ -51,6 +51,8 @@ export const en: Record<Key, string> = {
   'case.stack': 'Stack',
   'case.link.live': 'View the project',
   'case.link.code': 'Code',
+  'case.link.codeFrontend': 'Front-end code',
+  'case.link.codeBackend': 'Back-end code',
   'case.link.video': 'Video',
   'case.link.gallery': 'Gallery',
   'case.link.letter': 'Recommendation',

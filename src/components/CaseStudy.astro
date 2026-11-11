@@ -35,6 +35,11 @@ const label = t(locale);
 const { title, lede, summary, coverAlt, period, stats, outcomes, references, did, challenges } = project.text.data;
 const { cover, coverFocus, colors, order, band, links } = project.data;
 const { Content } = await render(project.text);
+// The context's links to other sites open in a new tab, like every other outside link of the case study.
+const contextHtml = project.text.rendered?.html.replace(
+  /<a href="(https?:\/\/[^"]*)"/g,
+  '<a href="$1" target="_blank" rel="noopener"',
+);
 const total = projects.length;
 const { previous, next } = neighbours(projects, projects.indexOf(project));
 
@@ -175,9 +180,13 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 
               <section aria-labelledby="case-context">
                 <h2 id="case-context">{label('case.context')}</h2>
-                <div class="context">
-                  <Content />
-                </div>
+                {contextHtml === undefined ? (
+                  <div class="context">
+                    <Content />
+                  </div>
+                ) : (
+                  <div class="context" set:html={contextHtml} />
+                )}
               </section>
 
               <section aria-labelledby="case-did">
@@ -753,14 +762,16 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
   }
 
   .outcomes a,
-  .references a {
+  .references a,
+  .context :global(a) {
     text-decoration: underline;
     text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
     text-underline-offset: 3px;
   }
 
   .outcomes a:hover,
-  .references a:hover {
+  .references a:hover,
+  .context :global(a:hover) {
     color: var(--color-accent);
     text-decoration-color: currentColor;
   }

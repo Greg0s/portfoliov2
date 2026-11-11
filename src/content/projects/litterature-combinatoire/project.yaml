@@ -4,6 +4,7 @@ stack: [PHP (Slim), SQL, Node.js, Socket.io, HTML, CSS, Premiere Pro, After Effe
 links:
   live: https://combimac.oulico.fr/
   code: https://github.com/Greg0s/litteratureCombinatoireFront
+  codeBackend: https://github.com/Greg0s/litteratureCombinatoireBack
   video: https://youtu.be/k7d7twiG1os
 cover: ./cover.jpg
 colors: ['#d4c8fd', '#c6d3fd']

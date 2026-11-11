@@ -32,6 +32,8 @@ const projects = defineCollection({
           .strictObject({
             live: z.url().optional(),
             code: z.url().optional(),
+            /** A second repository, the back end, when the code is split in two: `code` is then the front end. */
+            codeBackend: z.url().optional(),
             video: z.url().optional(),
             /** A gallery of the project elsewhere, such as Behance. */
             gallery: z.url().optional(),
