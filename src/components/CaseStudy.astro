@@ -17,6 +17,7 @@ import ProjectFacts from './ProjectFacts.astro';
 import { config } from '../config';
 import { pathFor, t, type Locale } from '../i18n';
 import Base from '../layouts/Base.astro';
+import { inlineParts } from '../lib/inline';
 import { coverWidths, projectNumber, projectTag, type Project } from '../lib/projects';
 import { projectAccent } from '../lib/project-accent';
 import { neighbours } from '../lib/ring';
@@ -31,7 +32,7 @@ interface Props {
 
 const { locale, project, projects } = Astro.props;
 const label = t(locale);
-const { title, lede, summary, coverAlt, period, stats, outcomes, did, challenges } = project.text.data;
+const { title, lede, summary, coverAlt, period, stats, outcomes, references, did, challenges } = project.text.data;
 const { cover, coverFocus, colors, order, band, links } = project.data;
 const { Content } = await render(project.text);
 const total = projects.length;
@@ -143,9 +144,32 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
                 {outcomes.length > 0 && (
                   <ul class:list={['outcomes', { alone: stats.length === 0 }]}>
                     {outcomes.map((outcome) => (
-                      <li>{outcome}</li>
+                      <li>
+                        {inlineParts(outcome).map(({ text, href }) =>
+                          href ? (
+                            <a href={href} target="_blank" rel="noopener">
+                              {text}
+                              <span class="visually-hidden"> {label('case.newTab')}</span>
+                            </a>
+                          ) : (
+                            text
+                          ),
+                        )}
+                      </li>
                     ))}
                   </ul>
+                )}
+                {references.length > 0 && (
+                  <p class="references">
+                    {label('case.reference')}
+                    {' : '}
+                    {references.map(({ label: name, url }) => (
+                      <a href={url} target="_blank" rel="noopener">
+                        {name} <span aria-hidden="true">↗</span>
+                        <span class="visually-hidden">{label('case.newTab')}</span>
+                      </a>
+                    ))}
+                  </p>
                 )}
               </section>
 
@@ -726,6 +750,31 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 
   .stats + .outcomes {
     margin-top: 12px;
+  }
+
+  .outcomes a,
+  .references a {
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  .outcomes a:hover,
+  .references a:hover {
+    color: var(--color-accent);
+    text-decoration-color: currentColor;
+  }
+
+  /* The references close the results, small, like a footnote. */
+  .references {
+    margin-top: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-muted);
+  }
+
+  .references a + a {
+    margin-left: 14px;
   }
 
   /* Without figures, the results said in a sentence take their place, larger. */

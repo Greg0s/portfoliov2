@@ -6,7 +6,7 @@ summary: A complete multimedia exhibition, from the interactive website to physi
 coverAlt: The Combimac home in a browser, “Bienvenue dans le projet littérature & combinatoire”, and the creations page on a phone.
 outcomes:
   - A project shown at the Cité de la science in Paris.
-  - An interactive, playful site to discover combinatorial literature, approved by members of the OULIPO literary movement
+  - An interactive, playful site to discover combinatorial literature, approved by members of the [OULIPO](https://oulipo.net/) literary movement
   - An exhibition projection that visitors control in real time from their phones (Socket.io)
 did:
   - Back end of the site (PHP API with Slim and SQL database)
@@ -14,6 +14,11 @@ did:
   - A screen driven from a phone (Socket.io)
   - Working on the mockup
   - 'Promotional video: shoot and edit'
+references:
+  - {
+      label: Creative Engineers Weekend 2023 (Cité des sciences),
+      url: https://www.cite-sciences.fr/fr/au-programme/activites-spectacles/animations/un-ingenieur-un-projet/week-end-ingenieurs-creatifs-2023,
+    }
 challenges:
   - { title: Making a literary discipline playful, text: Turning different literary formats into interactive ones. }
   - { title: Building a multimodal experience, text: An exhibition mixing physical and digital. }

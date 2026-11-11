@@ -6,6 +6,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { plainText } from './lib/inline';
 
 const hex = z.string().regex(/^#[0-9a-f]{6}$/, 'a colour is a lowercase hex such as "#ec6a2c"');
 
@@ -94,7 +95,20 @@ const projectTexts = defineCollection({
         .max(4)
         .default([]),
       /** The results said in a sentence, after the figures or in their place. */
-      outcomes: z.array(z.string().min(1).max(130)).max(3).default([]),
+      outcomes: z
+        .array(
+          z
+            .string()
+            .min(1)
+            .refine((text) => plainText(text).length <= 130, 'a result is 130 characters or fewer'),
+        )
+        .max(3)
+        .default([]),
+      /** Small references after the results, such as the event a project was shown at: a label and an address. */
+      references: z
+        .array(z.strictObject({ label: z.string().min(1).max(70), url: z.url() }))
+        .max(3)
+        .default([]),
       /** What I did (or do), one short item each. */
       did: z.array(z.string().min(1).max(60)).min(3).max(8),
       /** The technical challenges: a title and one line. */

@@ -6,7 +6,7 @@ summary: Faciliter la configuration et le monitoring en direct de processus indu
 coverAlt: "Le tableau de bord de Siemens dans un navigateur : courbes de capteurs de deux salles, carte de chaleur d'un compteur et simulation des couches d'une pièce."
 outcomes:
   - Outil de configuration nodal pour création de fichiers à structure complexe adopté par l’équipe
-  - Extension de l’interface de suivi en direct étendu à un nouveau procédé d’impression (SLM).
+  - Extension de l’interface de suivi en direct à un nouveau procédé d’impression (SLM).
   - Ajout de fonctionnalités sur les graphiques de données en direct
 did:
   - Développement d’une app de configuration nodale (ReactFlow)

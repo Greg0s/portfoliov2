@@ -59,6 +59,7 @@ export const fr = {
   'case.cta.gallery': 'Voir la galerie',
   'case.cta.letter': 'Lire la recommandation',
   'case.results': 'Résultats',
+  'case.reference': 'Référence',
   'case.context': 'Contexte',
   'case.did': 'Ce que j’ai fait',
   'case.doing': 'Ce que je fais',
