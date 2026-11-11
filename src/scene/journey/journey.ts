@@ -1556,9 +1556,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   /** On a computer, how long after the ambient motions start the office starts getting ready at the opening, in ms. */
   const OFFICE_EARLY_DELAY = 2500;
   let ambientAt = 0;
-  // `?bureau=tot`: on a phone too, at the opening once the planet is ready, to try (Grégoire's choice to come; he chose
-  // on 9 November 2026 not to start it at launch on phones, to keep the opening smooth).
-  const officeEarlyOnPhones = new URLSearchParams(location.search).get('bureau') === 'tot';
   // Not ready by the middle of the journey, its layers get ready too.
   const OFFICE_WARM = SHOWCASE_AT;
   // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
@@ -1760,7 +1757,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       // the visitor going fast through the projects then never meets its preparation.
       if (ambientAt === 0 && ambient.started()) ambientAt = now;
       const early =
-        (!scene.view.mobile || officeEarlyOnPhones) &&
+        !scene.view.mobile &&
         ambientAt > 0 &&
         now - ambientAt > OFFICE_EARLY_DELAY &&
         !(planetLoading && !livePlanet && !planetSlow && !planetFailed && options.webgl);
