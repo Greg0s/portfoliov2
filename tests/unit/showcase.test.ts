@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { viewFor } from '../../src/scene/journey/layout';
-import { offset, ringFor, ringPose } from '../../src/scene/showcase/ring';
+import { CARTEL_GAP, fitRing, offset, ringFor, ringPose } from '../../src/scene/showcase/ring';
 
 describe('the ring of projects', () => {
   it('wraps the offsets around the selection', () => {
@@ -42,5 +42,39 @@ describe('the ring of projects', () => {
         }
       }
     }
+  });
+
+  describe('on a phone, fitted to its screen', () => {
+    /** Where the card in front and its cartel `height` px tall end on screen, and how high the planet reaches. */
+    const extent = (view: ReturnType<typeof viewFor>, height: number): { cartel: number; planet: number } => {
+      const ring = ringFor(view);
+      const k = 1 / (1 - ring.rz);
+      const card = view.vpY + (ring.cy + ring.ry) * k + ((ring.card * 9) / 32) * k;
+      return { cartel: card + CARTEL_GAP + height, planet: view.vpY + ring.cy - ring.planet / 2 };
+    };
+    const room = (height: number, bottoms: number[]) => ({ top: 78, bottoms, cartel: () => height });
+
+    it('leaves the ring as drawn on a phone tall enough', () => {
+      const view = viewFor(390, 844);
+      expect(fitRing(view, room(150, [700, 756]))).toEqual({ lift: 0, scale: 1, clears: 0 });
+      expect(fitRing(viewFor(1440, 900), room(150, [700]))).toBeNull();
+    });
+
+    it.each([
+      [375, 667, 150],
+      [360, 640, 150],
+      [320, 568, 170],
+    ])('keeps the text above the arrows and the planet under the header at %i × %i', (width, height, cartel) => {
+      const view = viewFor(width, height);
+      const arrows = height - 74 - 14;
+      const fit = fitRing(view, room(cartel, [arrows - 58, arrows]));
+      expect(fit).not.toBeNull();
+      if (!fit) return;
+      const bottom = [arrows - 58, arrows][fit.clears] ?? arrows;
+      const at = extent({ ...view, ring: { lift: fit.lift, scale: fit.scale } }, cartel);
+      expect(at.cartel).toBeLessThanOrEqual(bottom);
+      expect(at.planet).toBeGreaterThanOrEqual(78 - 0.01);
+      expect(fit.scale).toBeGreaterThanOrEqual(0.72);
+    });
   });
 });

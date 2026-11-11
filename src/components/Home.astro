@@ -187,6 +187,17 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
     transition-delay: 250ms;
   }
 
+  /* On a phone too short to keep the ring's text clear of the pill (`fitRing`), the text fades out under it while it
+     shows, with the same timing. The journey sets the cartels' own opacity frame by frame: their lines fade. */
+  :global(html[data-journey='on']) .home[data-ring-tight] :global(.cartel > *) {
+    transition: opacity 200ms ease;
+  }
+
+  :global(html[data-journey='on']) .home[data-ring-tight][data-loading] :global(.cartel > *) {
+    opacity: 0;
+    transition-delay: 250ms;
+  }
+
   .loading-ring {
     width: 14px;
     height: 14px;

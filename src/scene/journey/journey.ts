@@ -62,7 +62,7 @@ import {
   takeRenderer,
   type KeptOffice,
 } from '../keep';
-import type { Pose } from '../showcase/ring';
+import { CARTEL_GAP, fitRing, type Pose, type RingRoom } from '../showcase/ring';
 
 /** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
 const LIGHT = {
@@ -106,6 +106,8 @@ const AMBIENT_FRAME = 50;
 
 /** How far in front of the cards the cartels sit, in px (see where they are placed). */
 const CARTEL_Z = 120;
+/** On a phone, the room kept between the ring and the header above it, the arrows below it, in px. */
+const RING_MARGIN = 14;
 
 /** How far the sharp card stands out toward the mouse over it, in px. */
 const HOVER_LIFT = 24;
@@ -303,10 +305,58 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     return marker;
   });
 
+  /**
+   * The ring of a phone fitted to its screen (`fitRing`): between the header above, the loading pause's pill and the
+   * arrows below, as the CSS places them, for the cartels as they lay out.
+   */
+  function fitShowcase(view: View): View['ring'] {
+    const top = stage.getBoundingClientRect().top;
+    const header = document.querySelector('[data-site-header]')?.getBoundingClientRect();
+    const arrows = root.querySelector('.showcase-arrows')?.getBoundingClientRect();
+    const pill = document.querySelector('.loading')?.getBoundingClientRect();
+    const limits = [pill, arrows].flatMap((box) => (box && box.height > 0 ? [box.top - top - RING_MARGIN] : []));
+    // A hidden copy of each cartel, laid out at the width asked: the cartels themselves keep the styles frames set.
+    const copies = cards.flatMap(({ cartel }) => {
+      if (!cartel?.parentElement) return [];
+      const copy = cartel.cloneNode(true) as HTMLElement;
+      copy.removeAttribute('id');
+      copy.setAttribute('aria-hidden', 'true');
+      copy.style.cssText = 'visibility: hidden; translate: none; scale: none; transform: none;';
+      cartel.parentElement.append(copy);
+      return [copy];
+    });
+    const heights = new Map<number, number>();
+    const room: RingRoom = {
+      top: (header ? header.bottom - top : 0) + RING_MARGIN,
+      bottoms: limits.length > 0 ? limits : [view.height - RING_MARGIN],
+      cartel: (width) => {
+        const key = Math.round(width);
+        let height = heights.get(key);
+        if (height === undefined) {
+          for (const copy of copies) copy.style.setProperty('--cartel-width', `${String(key)}px`);
+          height = Math.max(0, ...copies.map((copy) => copy.offsetHeight));
+          heights.set(key, height);
+        }
+        return height;
+      },
+    };
+    const fit = fitRing(view, room);
+    for (const copy of copies) copy.remove();
+    // Too short a phone to keep the text clear of the loading pause's pill too: while the pill shows, the text fades
+    // under it (Home.astro).
+    if (fit && limits.length > 1 && fit.clears > 0) root.dataset.ringTight = '';
+    else delete root.dataset.ringTight;
+    return fit ? { lift: fit.lift, scale: fit.scale } : undefined;
+  }
+
   function layout(): void {
     const width = stage.clientWidth;
     const height = stage.clientHeight;
     scene = sceneFor(width, height);
+    if (scene.view.mobile) {
+      const ring = fitShowcase(scene.view);
+      if (ring) scene = { ...scene, view: { ...scene.view, ring } };
+    } else delete root.dataset.ringTight;
     const { view } = scene;
     screen = height;
     range = SCREENS * screen;
@@ -1068,7 +1118,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         // the finger (Grégoire, 4 November 2026). It follows the card's centre and its lower edge.
         const frontHalf = frontCardHalf(view, plane.depth);
         x = at.x - frontHalf;
-        y = at.y + (half * 9) / 16 + 22 + rise;
+        y = at.y + (half * 9) / 16 + CARTEL_GAP + rise;
         cartelWidth = frontHalf * 2;
       } else {
         x = at.x + half * Math.cos((pose.rotateY * Math.PI) / 180) + 40;
@@ -1912,5 +1962,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       item.classList.remove('lit');
     });
     root.dataset.anchor = '';
+    delete root.dataset.ringTight;
   };
 }

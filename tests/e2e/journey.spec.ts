@@ -608,3 +608,29 @@ test('once the device is found too slow, the visit goes on in the light version'
   await expect(page.locator('html')).not.toHaveAttribute('data-journey', 'on');
   await expect(page.getByRole('list', { name: 'Projets' }).getByRole('listitem')).toHaveCount(7);
 });
+
+test('on a short phone, the text of the card in front stays above the arrows and the loading pill', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'the ring fits a phone');
+  await page.setViewportSize({ width: 375, height: 667 });
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  const next = page.getByRole('button', { name: 'Projet suivant' });
+  for (let project = 0; project < 7; project += 1) {
+    await expectFront(page, project);
+    // The card in front floats a few px: the room kept is larger.
+    const gaps = await page.evaluate(() => {
+      const cartel = document.querySelector('.project.lit .cartel')?.getBoundingClientRect();
+      const arrows = document.querySelector('.showcase-arrows')?.getBoundingClientRect();
+      const pill = document.querySelector('.loading')?.getBoundingClientRect();
+      if (!cartel || !arrows || !pill) return null;
+      return { arrows: arrows.top - cartel.bottom, pill: pill.top - cartel.bottom };
+    });
+    expect(gaps).not.toBeNull();
+    expect(gaps?.arrows).toBeGreaterThan(0);
+    expect(gaps?.pill).toBeGreaterThan(0);
+    await next.click();
+  }
+});
