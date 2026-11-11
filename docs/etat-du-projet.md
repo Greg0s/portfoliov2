@@ -38,7 +38,7 @@ Grégoire veut que toute la visite se fasse sans ralentissement ni chargement (8
 
 Les vidéos des cartes entreront dans la même file, sous 600 Ko chacune.
 
-Le 10 novembre 2026, Grégoire a signalé que, sur téléphone, à la première visite, le passage de l'anneau au contact montrait toujours la pause « Chargement », illisible sous les flèches de l'anneau. Depuis l'anneau, le contact n'est qu'à un geste : le bureau en temps réel, qui lie ses programmes un à un sur téléphone, n'avait plus les secondes que lui laissaient les huit projets de l'ancien parcours. Sur téléphone, ses couches (presque identiques) se préparent maintenant dès l'anneau et jouent l'arrivée sans pause quand il n'est pas prêt ; la pause ne reste que si rien n'est prêt, et s'affiche dans une pastille au-dessus des flèches. `?bureau=tot` essaie la préparation du bureau en temps réel dès l'ouverture sur téléphone (choix laissé à Grégoire).
+Le 10 novembre 2026, Grégoire a signalé que, sur téléphone, à la première visite, le passage de l'anneau au contact montrait toujours la pause « Chargement », illisible sous les flèches de l'anneau. Depuis l'anneau, le contact n'est qu'à un geste : le bureau en temps réel, qui lie ses programmes un à un sur téléphone, n'avait plus les secondes que lui laissaient les huit projets de l'ancien parcours. Sur téléphone, ses couches (presque identiques) se préparent maintenant dès l'anneau et jouent l'arrivée sans pause quand il n'est pas prêt ; la pause ne reste que si rien n'est prêt, et s'affiche dans une pastille au-dessus des flèches.
 
 ## Performance et qualité du code
 
