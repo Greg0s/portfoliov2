@@ -2,6 +2,7 @@ order: 4
 year: 2026
 stack: [Nuxt 4, Symfony, PostgreSQL, Drizzle, Docker]
 links:
-  live: https://perfmanager.com/
+  company: https://www.perfmanager.com/
 cover: ./cover.jpg
 colors: ['#38a89f', '#4cb7a6']
+button: false

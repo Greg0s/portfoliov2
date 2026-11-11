@@ -1,21 +1,20 @@
 ---
 title: Lyrix
-kind: Multiplayer game
-role: Concept and development
+kind: Multiplayer web game
+role: Design and web development
 summary: Find a song from its hidden lyrics, alone or with others in real time.
-coverAlt: "Lyrix's song of the day in a browser, its hidden lyrics as orange bars, and the same game on a phone."
-stats:
-  - { value: '1', label: new song every day }
-  - { value: '30', label: days of archives still playable }
+coverAlt: Lyrix's song of the day in a browser, its hidden lyrics as orange bars, and the same game on a phone.
 outcomes:
-  - An original game that already wins over many players.
+  - An original, accessible concept
+  - A new song every day, with the last 30 days always playable
+  - Playable solo, or in a group in real time
 did:
   - Game design
   - Art direction
   - React + TypeScript front end
   - Cloudflare Workers + Hono API
   - Real-time multiplayer
-  - Proximity hints
+  - Word similarity integration
   - Installable app (PWA)
   - Unit and end-to-end tests
 challenges:
@@ -24,5 +23,5 @@ challenges:
   - { title: All in the browser, text: The players’ data stays with them. }
 ---
 
-A free web game in the vein of Pedantix, on song lyrics: every word you try reveals the lyrics, until you find the
-title. Alone, or with others in real time.
+A fan of Pedantix, I wanted to build a similar game about music.
+Lyrix is a free web game you play in the browser. Find a song’s title by gradually revealing its lyrics. You can play alone, or in a group in real time, on any device.

@@ -1,24 +1,21 @@
 ---
 title: SNCF Wrapped
-kind: Data storytelling
-role: Concept, design and development
+kind: Personalised data recap
+role: Concept, design and web development
 summary: Your year on the train told screen by screen, without any data leaving your browser.
-coverAlt: 'The SNCF Wrapped home in a browser, “Le palmarès de vos années de voyage”, and its pink card to share on a phone.'
-stats:
-  - { value: '0', label: data sent out of the browser }
+coverAlt: The SNCF Wrapped home in a browser, “Le palmarès de vos années de voyage”, and its pink card to share on a phone.
 outcomes:
-  - 'Privacy as a constraint checked on every change, not a promise.'
-  - 'Honest figures, for one trip a year as well as for a commuter.'
+  - A complete wrapped that stages the raw data
+  - Full respect for privacy
+  - User guidance from getting the data to viewing the recap
 did:
-  - Reading the file and the maths
-  - The text of every screen
-  - Design and animations
-  - A guide to request your data
-  - Testing tools with no real data
+  - Complete development of the site
+  - Varied screens based on the GDPR export’s data
+  - Overall design and animations
 challenges:
-  - { title: 'Sending nothing, and proving it', text: A test fails if a network API shows up in the code. }
-  - { title: A story from an incomplete file, text: 'Estimated distances, and hundreds of fake profiles tested.' }
+  - { title: Simple user journey, text: The user is guided through getting their data }
+  - { title: Natural visualisation, text: The recap is presented as a story }
+  - { title: Easy sharing, text: Unique shareable cards for social media }
 ---
 
-A personal, unofficial project: doing for trains what year-end recaps do for music. You import your SNCF Connect data,
-obtained through the GDPR, and the site tells your year of travel, screen by screen, down to a card to share.
+A fan of trains and year-end wrapped recaps, I wanted to offer a retrospective of our SNCF travel data that goes further and is more engaging than what exists. This personal, unofficial project presents the travel data obtained through a GDPR request as successive screens and a final card to share.

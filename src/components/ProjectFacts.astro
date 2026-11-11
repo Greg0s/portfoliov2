@@ -15,7 +15,7 @@ interface Props {
 
 const { locale, project } = Astro.props;
 const label = t(locale);
-const { year, stack, links, letter } = project.data;
+const { year, stack, links, letter, button } = project.data;
 const { period, role } = project.text.data;
 
 /** The links in their order of importance: the first one present is the button, the others follow it. */
@@ -25,6 +25,8 @@ const kinds = [
   { key: 'video', button: label('case.cta.video'), text: label('case.link.video') },
   { key: 'code', button: label('case.cta.code'), text: label('case.link.code') },
   { key: 'letter', button: label('case.cta.letter'), text: label('case.link.letter') },
+  { key: 'article', button: label('case.link.article'), text: label('case.link.article') },
+  { key: 'company', button: label('case.link.company'), text: label('case.link.company') },
 ] as const;
 const hrefs: Partial<Record<(typeof kinds)[number]['key'], string | undefined>> = {
   ...links,
@@ -34,7 +36,9 @@ const present = kinds.flatMap((kind) => {
   const href = hrefs[kind.key];
   return href ? [{ ...kind, href }] : [];
 });
-const [main, ...others] = present;
+// A project may have no main link (`button: false`): all its links are then plain links.
+const main = button ? present[0] : undefined;
+const others = button ? present.slice(1) : present;
 ---
 
 <aside class="facts" aria-label={label('case.facts')}>

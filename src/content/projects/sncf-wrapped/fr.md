@@ -1,28 +1,21 @@
 ---
 title: SNCF Wrapped
-kind: Récit de données
-role: Conception, design et développement
+kind: Bilan personnalisé de données
+role: Conception, design et développement web
 summary: Votre année en train racontée écran par écran, sans qu’aucune donnée ne quitte votre navigateur.
-coverAlt: "L'accueil de SNCF Wrapped dans un navigateur, « Le palmarès de vos années de voyage », et sa carte à partager rose sur un téléphone."
-stats:
-  - { value: '0', label: donnée envoyée hors du navigateur }
+coverAlt: L'accueil de SNCF Wrapped dans un navigateur, « Le palmarès de vos années de voyage », et sa carte à partager rose sur un téléphone.
 outcomes:
-  - 'La confidentialité : une contrainte vérifiée à chaque modification, pas une promesse.'
-  - 'Des chiffres honnêtes, pour un trajet par an comme pour un abonné.'
+  - Un wrapped complet mettant en scène les données brutes
+  - Un respect total de la confidentialité
+  - Un accompagnement utilisateur de l’obtention des données à la visualisation du récap
 did:
-  - Lecture du fichier et calculs
-  - Textes de chaque écran
-  - Design et animations
-  - Aide pour demander ses données
-  - Outils de test sans vraies données
+  - Développement complet du site
+  - Écrans variés selon les données de l’export RGPD
+  - Design global et animations
 challenges:
-  - { title: 'Ne rien envoyer, et le prouver', text: Un test échoue si une API réseau apparaît dans le code. }
-  - {
-      title: Raconter avec un fichier incomplet,
-      text: 'Des distances estimées, et des centaines de profils fictifs testés.',
-    }
+  - { title: Parcours utilisateur simple, text: L’utilisateur est guidé pour obtenir ses données }
+  - { title: Visualisation naturelle, text: Le récap se présente sous la forme d’une story }
+  - { title: Partage facilité, text: Création de cartes à partager uniques pour les réseaux sociaux }
 ---
 
-Un projet personnel, non officiel : faire pour le train ce que les bilans de fin d’année font pour la musique. On
-importe ses données SNCF Connect, obtenues grâce au RGPD, et le site raconte son année de voyages, écran par écran,
-jusqu’à une carte à partager.
+Adepte du train et des wrapped de fin d’année, je souhaitais proposer une rétrospective de nos données de voyages avec la SNCF plus poussée et attractive que ce qui peut exister. Ce projet personnel, non officiel, présente les données de voyages obtenues par demande RGPD, sous forme d’écrans successifs et d’une carte à partager finale.
