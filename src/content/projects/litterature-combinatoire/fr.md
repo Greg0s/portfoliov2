@@ -2,7 +2,7 @@
 title: Littérature & Combinatoire
 kind: Site web & vidéo
 role: Maquette, back-end, front-end temps réel et vidéo
-summary: Une exposition multimédia complète, du site web interactif aux installations physiques, mettant en scène la littérature combinatoire (création de texte par combinaison).
+summary: Une exposition multimédia, du site interactif aux installations, sur la littérature combinatoire.
 coverAlt: L'accueil de Combimac dans un navigateur, « Bienvenue dans le projet littérature & combinatoire », et la page des créations sur un téléphone.
 outcomes:
   - Un projet présenté à la Cité de la science à Paris.
