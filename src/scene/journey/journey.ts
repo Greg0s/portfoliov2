@@ -758,8 +758,60 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     settleTimer = setTimeout(() => {
       if (glide || touching || wheel) return;
       const at = window.scrollY;
-      if (anchorAt(at, positions) < 0) glideTo(settleAnchor(at, positions, direction));
+      if (anchorAt(at, positions) >= 0) return;
+      // A few px off an anchor (the anchors moved under the page, or the browser nudged it), the page goes back onto it,
+      // whatever way the last gesture went: that way could lead a whole screen off.
+      const near = nearestAnchor(at, positions);
+      if (Math.abs((positions[near] ?? 0) - at) < OFF_ANCHOR * screen) backOnto(near);
+      else glideTo(settleAnchor(at, positions, direction));
     }, 220);
+  }
+
+  /**
+   * After the screen's size changed (a phone's address bar hiding, a turn), a page left resting a little off its anchor
+   * goes back onto it. A browser may keep the scroll where it was while the anchors moved (Grégoire's Pixel 9, 11
+   * November 2026: the ring's anchor at 1264 px, the page at 1205): the camera then never counted as resting there.
+   */
+  /** How far off an anchor, as a share of the screen, a resting page still belongs to it. */
+  const OFF_ANCHOR = 0.15;
+  let reanchorTimer: ReturnType<typeof setTimeout> | undefined;
+  function reanchorSoon(): void {
+    clearTimeout(reanchorTimer);
+    reanchorTimer = setTimeout(() => {
+      if (glide || touching || wheel || hold) return;
+      const at = window.scrollY;
+      if (anchorAt(at, positions) >= 0) return;
+      const near = nearestAnchor(at, positions);
+      if (Math.abs((positions[near] ?? 0) - at) < OFF_ANCHOR * screen) backOnto(near);
+    }, 300);
+  }
+
+  /**
+   * Glides back onto anchor `index`, once in a while at most: should the browser itself keep the page off it (its
+   * snapping, with the address bar shown), gliding again and again would only shake the view. The page then rests where
+   * it is, which still counts as that anchor (`restingAnchor`).
+   */
+  let backAt = -Infinity;
+  function backOnto(index: number): void {
+    const now = performance.now();
+    if (now - backAt < 2000) return;
+    backAt = now;
+    glideTo(index);
+  }
+
+  /** The anchor one step from `position` in `direction`, from the anchor the page rests on, even a little off it. */
+  function stepFrom(position: number, way: number): number {
+    const from = restingAnchor(position);
+    if (from < 0) return stepAnchor(position, positions, way);
+    return Math.max(0, Math.min(positions.length - 1, from + Math.sign(way)));
+  }
+
+  /** The anchor the page rests on: exactly, or a little off it, as `backOnto` may leave it. */
+  function restingAnchor(at: number): number {
+    const on = anchorAt(at, positions);
+    if (on >= 0) return on;
+    const near = nearestAnchor(at, positions);
+    return Math.abs((positions[near] ?? 0) - at) < OFF_ANCHOR * screen ? near : -1;
   }
 
   const onScroll = (): void => {
@@ -812,7 +864,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       if (started === 0) return;
       direction = started;
       const from = glide ? glide.to : window.scrollY;
-      glideTo(stepAnchor(from, positions, started));
+      glideTo(stepFrom(from, started));
       return;
     }
     if (started !== 0 || !wheel) {
@@ -943,7 +995,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       glideTo(index, Math.max(0, touchSpeed * way));
     } else if (Math.abs(moved) > 40) {
       const way = Math.sign(moved);
-      glideTo(stepAnchor(touchFrom, positions, way), Math.max(0, touchSpeed * way));
+      glideTo(stepFrom(touchFrom, way), Math.max(0, touchSpeed * way));
     } else {
       glideTo(settleAnchor(touchFrom, positions, 0));
     }
@@ -982,9 +1034,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const at = glide ? glide.to : window.scrollY;
     let index: number | undefined;
     if (event.key === 'ArrowDown' || event.key === 'PageDown' || (event.key === ' ' && !event.shiftKey)) {
-      index = stepAnchor(at, positions, 1);
+      index = stepFrom(at, 1);
     } else if (event.key === 'ArrowUp' || event.key === 'PageUp' || (event.key === ' ' && event.shiftKey)) {
-      index = stepAnchor(at, positions, -1);
+      index = stepFrom(at, -1);
     } else if (event.key === 'Home') {
       index = 0;
     } else if (event.key === 'End') {
@@ -1073,6 +1125,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
           renderer.resize(scene.view);
           stars?.resize(scene.view, renderer.pixelRatio);
         }
+        reanchorSoon();
         return;
       }
       const progress = current;
@@ -1083,6 +1136,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       if (officeLoading && officeFraming !== (scene.view.mobile ? 'mobile' : 'desktop')) freeOffice();
       else officeView?.resize();
       jumpTo(settleAnchor(Math.round(progress * range), positions, 0));
+      reanchorSoon();
     });
   };
 
@@ -1477,7 +1531,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     }
 
     // Where the camera rests, for the navigation and the tests.
-    const resting = current === target && !glide ? anchorAt(scrolled, positions) : -1;
+    const resting = current === target && !glide && !touching && !wheel ? restingAnchor(scrolled) : -1;
     root.dataset.anchor = resting >= 0 ? String(resting) : '';
   }
 
@@ -1502,9 +1556,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   /** On a computer, how long after the ambient motions start the office starts getting ready at the opening, in ms. */
   const OFFICE_EARLY_DELAY = 2500;
   let ambientAt = 0;
-  // `?bureau=tot`: on a phone too, at the opening once the planet is ready, to try (Grégoire's choice to come; he chose
-  // on 9 November 2026 not to start it at launch on phones, to keep the opening smooth).
-  const officeEarlyOnPhones = new URLSearchParams(location.search).get('bureau') === 'tot';
   // Not ready by the middle of the journey, its layers get ready too.
   const OFFICE_WARM = SHOWCASE_AT;
   // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
@@ -1706,7 +1757,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       // the visitor going fast through the projects then never meets its preparation.
       if (ambientAt === 0 && ambient.started()) ambientAt = now;
       const early =
-        (!scene.view.mobile || officeEarlyOnPhones) &&
+        !scene.view.mobile &&
         ambientAt > 0 &&
         now - ambientAt > OFFICE_EARLY_DELAY &&
         !(planetLoading && !livePlanet && !planetSlow && !planetFailed && options.webgl);
@@ -1845,11 +1896,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   let lagHeld = false;
   let arrivalHeld = false;
 
-  /** Whether a scene is still being prepared: the planet, the live office or its layers. */
+  /**
+   * Whether a scene is still being prepared: the planet, or the live office (or its layers taking its place). The layers
+   * getting ready to stand in do not count: decoding their pictures holds no frame, and on a phone they get ready on
+   * the ring, where a pause would show for nothing.
+   */
   const preparing = (): boolean =>
     (planetLoading && !livePlanet && !planetSlow && !planetFailed) ||
     (officeLoading && !officeView && !officeFailed) ||
-    standInLoading ||
     officeReplacing;
   /** Whether the live office is still getting ready, not found too slow: worth waiting for at the arrival. */
   const officeComing = (): boolean => officeLoading && !officeView && !officeFailed && !officeSlow;
@@ -2031,6 +2085,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     pointer.stop();
     ambient.stop();
     clearTimeout(settleTimer);
+    clearTimeout(reanchorTimer);
     clearTimeout(wheelTimer);
     wheel = null;
     cancelAnimationFrame(resizeFrame);

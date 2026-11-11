@@ -612,6 +612,20 @@ test('the address bar coming and going leaves the contact at the end of its arri
   }
 });
 
+test('a page left a little off the ring when the bar hides goes back onto it', async ({ page }) => {
+  await openJourney(page, './#lyrix');
+  await expectAnchor(page, RING);
+  // A phone's browser may keep the scroll where it was while the anchors move: the page rests a little above the ring.
+  await page.evaluate(() => {
+    document.documentElement.style.scrollSnapType = 'none';
+    const ring = document.querySelectorAll<HTMLElement>('.journey-anchor')[1]?.offsetTop ?? 0;
+    window.scrollTo({ top: ring - 60, behavior: 'instant' });
+  });
+  const size = page.viewportSize() ?? { width: 0, height: 0 };
+  await page.setViewportSize({ width: size.width, height: size.height + 80 });
+  await expectAnchor(page, RING, 5000);
+});
+
 test('the page keeps room under the contact, for a bar that hides before the journey hears of it', async ({ page }) => {
   await openJourney(page, './?office=layers#contact');
   await expectAnchor(page, CONTACT);
