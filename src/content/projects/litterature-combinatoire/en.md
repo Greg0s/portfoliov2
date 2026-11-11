@@ -5,7 +5,7 @@ role: Mockup, back end, real-time front end and video
 summary: A multimedia exhibition, from the interactive site to installations, on combinatorial literature.
 coverAlt: The Combimac home in a browser, “Bienvenue dans le projet littérature & combinatoire”, and the creations page on a phone.
 outcomes:
-  - A project shown at the Cité de la science in Paris.
+  - A project shown at the Cité des sciences in Paris.
   - An interactive, playful site to discover combinatorial literature, approved by members of the [OULIPO](https://oulipo.net/) literary movement
   - An exhibition projection that visitors control in real time from their phones (Socket.io)
 did:
