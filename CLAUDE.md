@@ -14,7 +14,7 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
 - `public/` — files served as they are. `scripts/budgets.ts` — the budgets of main spec §9.4, checked on `dist/`.
 - `tests/unit/` (Vitest) and `tests/e2e/` (Playwright, on the built site, `desktop` 1440 × 900 and `mobile` Pixel 7).
 - `.github/workflows/` — `ci.yml` (every push and pull request) and `deploy.yml` (push to `main` → GitHub Pages,
-  preview at https://greg0s.github.io/portfoliov2/).
+  live at https://gregoiretinn.es, the custom domain set in the repository's Pages settings and in `public/CNAME`).
 - `docs/etat-du-projet.md` — where the project stands, what comes next, what Grégoire still has to provide.
 - `docs/specs/` — design specs, in French, the source of truth. Read the relevant one before any change.
   - `2026-10-14-portfolio-design.md` — main spec: content, art direction, 3D scenes (§6), stack and architecture
@@ -56,12 +56,14 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
 - Commands: `pnpm dev`, `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm format` / `pnpm format:check`, `pnpm check`,
   `pnpm test`, `pnpm test:e2e`, `pnpm budgets`, `pnpm optimize-media` (wall originals → web versions), `pnpm optimize-screen` (the screen's captures and icons),
   `pnpm render-planet-fallbacks` (the planet's still images, from `docs/prototypes/petit-prince`), `pnpm render-office-layers`
-  (the office's layers and `placement.json`, from the site's own scene);
+  (the office's layers and `placement.json`, from the site's own scene), `pnpm render-share-images` (the link previews,
+  from the built site);
   Lighthouse with `pnpm exec lhci autorun` (after a build).
 - Before calling a change done, run what CI runs, in this order: lint, format:check, check, test, build, budgets,
   test:e2e (main spec §9). Lighthouse warns until step 7 and fails from step 7 on.
-- The site lives under the base path `/portfoliov2/` until it goes live (`BASE_PATH` overrides it). Never write an
-  internal URL by hand: use `withBase()`. Playwright tests use relative paths (`en/`), resolved under the base.
+- The site lives at the root of https://gregoiretinn.es (`BASE_PATH` and `SITE_URL` override the base path and the
+  domain). Never write an internal URL by hand: use `withBase()`. Playwright tests use relative paths (`en/`),
+  resolved under the base.
 - `astro preview` keeps a lock file for one server at a time: Playwright and Lighthouse start theirs with
   `--ignore-lock`; `pnpm exec astro preview stop` stops a background one.
 - Headless Chromium behind a proxy needs `--no-proxy-server` to reach `localhost` (e.g. for Lighthouse:

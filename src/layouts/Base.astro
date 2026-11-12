@@ -2,8 +2,10 @@
 import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
 import Menu from '../components/Menu.astro';
+import { config } from '../config';
 import { alternate, defaultLocale, locales, t, type Locale } from '../i18n';
 import { stripBase } from '../i18n';
+import { ogLocales, SHARE_SIZE } from '../lib/share';
 import { withBase } from '../lib/url';
 import { applyMoment } from '../scene/time';
 import { fontFaceCss, preloadedFonts } from '../styles/fonts';
@@ -16,14 +18,21 @@ interface Props {
   description: string;
   /** False for a page with no equivalent in the other language (the 404): no canonical, no alternates. */
   indexable?: boolean;
+  /** What a shared link shows (Open Graph, Twitter): its image, a site path under `public/`, and that image's text. */
+  share?: { image: string; alt: string; type?: 'website' | 'article' };
+  /** The page's schema.org description, written as JSON-LD. */
+  structuredData?: Record<string, unknown>;
 }
 
-const { locale, title, description, indexable = true } = Astro.props;
+const { locale, title, description, indexable = true, share, structuredData } = Astro.props;
 const label = t(locale);
 const path = indexable ? stripBase(Astro.url.pathname) : '/';
 const absolute = (sitePath: string): string => new URL(withBase(sitePath), Astro.site).href;
 const alternates = locales.map((lang) => ({ lang, href: absolute(lang === locale ? path : alternate(path, lang)) }));
 const xDefault = alternates.find(({ lang }) => lang === defaultLocale)?.href;
+const shareImage = share ? absolute(share.image) : undefined;
+// Escapes "<" so that no text in the data can close the script element.
+const jsonLd = structuredData ? JSON.stringify(structuredData).replaceAll('<', '\\u003c') : undefined;
 // The moment is set before the first paint, from the same function the tests cover.
 const momentScript = `(${applyMoment.toString()})();`;
 // Measurement switches (`?ombres=0`, `?fond=0`): the page without the cards' large shadows, or without its gradient,
@@ -47,6 +56,28 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
           <link rel="alternate" hreflang={lang} href={href} />
         ))}
         <link rel="alternate" hreflang="x-default" href={xDefault} />
+        <meta property="og:site_name" content={config.name} />
+        <meta property="og:type" content={share?.type ?? 'website'} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={absolute(path)} />
+        <meta property="og:locale" content={ogLocales[locale]} />
+        {locales
+          .filter((lang) => lang !== locale)
+          .map((lang) => (
+            <meta property="og:locale:alternate" content={ogLocales[lang]} />
+          ))}
+        {share && (
+          <>
+            <meta property="og:image" content={shareImage} />
+            <meta property="og:image:type" content="image/jpeg" />
+            <meta property="og:image:width" content={String(SHARE_SIZE.width)} />
+            <meta property="og:image:height" content={String(SHARE_SIZE.height)} />
+            <meta property="og:image:alt" content={share.alt} />
+          </>
+        )}
+        <meta name="twitter:card" content={share ? 'summary_large_image' : 'summary'} />
+        {jsonLd && <script type="application/ld+json" is:inline set:html={jsonLd} />}
       </>
     ) : (
       <meta name="robots" content="noindex" />

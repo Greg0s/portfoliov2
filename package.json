@@ -22,6 +22,7 @@
     "optimize-media": "node scripts/optimize-media.ts",
     "render-planet-fallbacks": "node scripts/render-planet-fallbacks.ts",
     "render-office-layers": "node scripts/render-office-layers.ts",
+    "render-share-images": "node scripts/render-share-images.ts",
     "optimize-screen": "node scripts/optimize-screen.ts"
   },
   "dependencies": {

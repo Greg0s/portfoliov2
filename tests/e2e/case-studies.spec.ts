@@ -101,7 +101,7 @@ test('a case study declares its alternates and switches language on the same pro
   await page.goto('projets/lyrix/');
   await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute(
     'href',
-    /\/portfoliov2\/en\/projects\/lyrix\/$/,
+    /\/en\/projects\/lyrix\/$/,
   );
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /paroles cachées/);
   await page.getByRole('link', { name: /^EN/ }).first().click();

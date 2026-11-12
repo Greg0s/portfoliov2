@@ -40,14 +40,14 @@ test('the copy button copies the address and says so', async ({ page, context, b
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('gregoire.tinnes@gmail.com');
 });
 
-test('a card leads to its case study, and the back link returns to it', async ({ page }) => {
+test('a card leads to its case study, and the back link returns to it', async ({ page, baseURL }) => {
   // Frozen time: the card in focus stops floating, so that the click can wait for it to be still.
   await page.goto('./?still=1#lyrix');
   const card = page.getByRole('listitem').filter({ hasText: 'Lyrix' }).getByRole('link');
   await card.click();
   await expect(page).toHaveURL(/\/projets\/lyrix\/$/);
   await page.getByRole('link', { name: 'Retour aux projets' }).click();
-  await expect(page).toHaveURL(/\/portfoliov2\/#lyrix$/);
+  await expect(page).toHaveURL(new URL('./#lyrix', baseURL).href);
   await expect(page.locator('#lyrix')).toBeInViewport();
 });
 
