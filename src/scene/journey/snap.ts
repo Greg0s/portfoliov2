@@ -103,7 +103,7 @@ export function easeFrom(startSlope: number): (t: number) => number {
 /**
  * The magnet between the anchors (journey spec §4): the view follows the wheel, the trackpad or the finger as far as
  * it goes, one anchor at most, then the magnet takes it to an anchor once the gesture ends. `?scroll=1` (soft),
- * `?scroll=2` (the default) and `?scroll=3` (firm) tune it; `?scroll=0` brings back the former all-or-nothing gesture.
+ * `?scroll=2` (medium) and `?scroll=3` (firm, the default) tune it; `?scroll=0` brings back the former all-or-nothing gesture.
  */
 export interface Magnet {
   /** Whether the view follows the gesture; false: one gesture, one anchor, as before. */
@@ -118,14 +118,14 @@ export interface Magnet {
   pace: number;
 }
 
-/** The default magnet. */
-export const MAGNET: Magnet = { follows: true, pass: 0.3, flick: 0.4, settle: 160, pace: 1 };
+/** The default magnet, the firm one (Grégoire's choice of 11 November 2026). */
+export const MAGNET: Magnet = { follows: true, pass: 0.22, flick: 0.3, settle: 90, pace: 0.8 };
 
 export const MAGNETS: Readonly<Record<string, Magnet>> = {
   '0': { follows: false, pass: 0, flick: 0, settle: 0, pace: 1 },
   '1': { follows: true, pass: 0.35, flick: 0.5, settle: 240, pace: 1.25 },
-  '2': MAGNET,
-  '3': { follows: true, pass: 0.22, flick: 0.3, settle: 90, pace: 0.8 },
+  '2': { follows: true, pass: 0.3, flick: 0.4, settle: 160, pace: 1 },
+  '3': MAGNET,
 };
 
 /** The magnet the URL asks for (`?scroll=0` to `3`), the default one otherwise. */
