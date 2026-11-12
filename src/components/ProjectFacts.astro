@@ -23,7 +23,13 @@ const kinds = [
   { key: 'live', button: label('case.link.live'), text: label('case.link.live') },
   { key: 'gallery', button: label('case.cta.gallery'), text: label('case.link.gallery') },
   { key: 'video', button: label('case.cta.video'), text: label('case.link.video') },
-  { key: 'code', button: label('case.cta.code'), text: label('case.link.code') },
+  {
+    key: 'code',
+    button: label('case.cta.code'),
+    // Split in two repositories, the code names its half.
+    text: label(links.codeBackend ? 'case.link.codeFrontend' : 'case.link.code'),
+  },
+  { key: 'codeBackend', button: label('case.link.codeBackend'), text: label('case.link.codeBackend') },
   { key: 'letter', button: label('case.cta.letter'), text: label('case.link.letter') },
   { key: 'article', button: label('case.link.article'), text: label('case.link.article') },
   { key: 'company', button: label('case.link.company'), text: label('case.link.company') },

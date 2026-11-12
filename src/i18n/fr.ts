@@ -49,6 +49,8 @@ export const fr = {
   'case.stack': 'Stack',
   'case.link.live': 'Voir le projet',
   'case.link.code': 'Code',
+  'case.link.codeFrontend': 'Code front-end',
+  'case.link.codeBackend': 'Code back-end',
   'case.link.video': 'Vidéo',
   'case.link.gallery': 'Galerie',
   'case.link.letter': 'Recommandation',

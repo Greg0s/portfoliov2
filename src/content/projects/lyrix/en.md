@@ -6,7 +6,7 @@ summary: Find a song from its hidden lyrics, alone or with others in real time.
 coverAlt: Lyrix's song of the day in a browser, its hidden lyrics as orange bars, and the same game on a phone.
 outcomes:
   - An original, accessible concept
-  - A new song every day, with the last 30 days always playable
+  - A new playable song every day, with access to the last 30 days
   - Playable solo, or in a group in real time
 did:
   - Game design
@@ -23,5 +23,5 @@ challenges:
   - { title: All in the browser, text: The players’ data stays with them. }
 ---
 
-A fan of Pedantix, I wanted to build a similar game about music.
+A fan of [Pedantix](https://pedantix.certitudes.org/), I wanted to build a similar game about music.
 Lyrix is a free web game you play in the browser. Find a song’s title by gradually revealing its lyrics. You can play alone, or in a group in real time, on any device.

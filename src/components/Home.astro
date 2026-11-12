@@ -112,7 +112,8 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
     scroll-snap-stop: always;
   }
 
-  /* The "See the project" disc, over the sharp card, on desktop. */
+  /* The "See the project" disc, over the sharp card, on desktop: a gradient of the accent's blues only, from a turquoise-leaning blue, close to the job title's, to
+     its sky blue, without its green (Grégoire's choice of 11 November 2026). */
   :global(html[data-journey='on']) .cursor {
     position: absolute;
     inset: auto;
@@ -126,7 +127,7 @@ const modeScript = `(${applyJourneyMode.toString()})();`;
     height: 96px;
     padding: 12px;
     border-radius: 50%;
-    background: var(--color-accent-fill);
+    background: linear-gradient(135deg, #5fb3d4, #71c4cf 50%, #90d3f4);
     color: var(--color-accent-ink);
     font-family: var(--font-display);
     font-size: 11px;
