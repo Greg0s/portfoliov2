@@ -18,8 +18,13 @@ import { SHARE_DIR, SHARE_SIZE } from '../src/lib/share-image.ts';
 
 const PORT = '4329';
 const BASE = process.env.BASE_PATH ?? '/portfoliov2/';
-const OUT = resolve('public', SHARE_DIR.replace(/^\//, ''));
+
 const LIMIT = 200 * 1024;
+/** The moment the pages are rendered at (`-- --heure=aube`), and where (`-- --out=<dir>`, to compare before replacing). */
+const arg = (name: string): string | undefined =>
+  process.argv.find((value) => value.startsWith(`--${name}=`))?.split('=')[1];
+const MOMENT = arg('heure') ?? 'crepuscule';
+const OUT = resolve(arg('out') ?? join('public', SHARE_DIR.replace(/^\//, '')));
 const locales = ['fr', 'en'] as const;
 const slugs = readdirSync(resolve('src/content/projects')).filter((name) =>
   statSync(resolve('src/content/projects', name)).isDirectory(),
@@ -61,7 +66,7 @@ try {
     ...slugs.map((slug) => ({ locale, name: slug, path: pathFor({ id: 'project', slug }, locale), signed: true })),
   ]);
   for (const { locale, name, path, signed } of pages) {
-    await page.goto(`${origin}${path.replace(/^\//, '')}?heure=crepuscule`);
+    await page.goto(`${origin}${path.replace(/^\//, '')}?heure=${MOMENT}`);
     // The home waits for its arrival to end and its planet to turn into the live one; a case study, for its cover.
     await page.waitForFunction(() => !document.documentElement.hasAttribute('data-arrival'), null, {
       timeout: 30_000,
