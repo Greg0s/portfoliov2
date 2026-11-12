@@ -61,6 +61,7 @@ export const fr = {
   'case.cta.gallery': 'Voir la galerie',
   'case.cta.letter': 'Lire la recommandation',
   'case.results': 'Résultats',
+  'case.note': 'Comment ce chiffre est mesuré',
   'case.reference': 'Référence',
   'case.context': 'Contexte',
   'case.did': 'Ce que j’ai fait',

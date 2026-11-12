@@ -8,7 +8,9 @@ coverAlt: 'Perfmanager dans un navigateur, la revue de direction 2019 : la carto
 stats:
   - { value: 100+, label: entreprises clientes }
   - { value: 2 000+, label: utilisateurs en France }
-  - { value: −50%, label: baisse du nombre d’anomalies depuis la prise de poste }
+  - value: −25%
+    label: baisse du nombre d’anomalies depuis la prise de poste
+    note: Sur une période de 4 mois, de juillet à octobre, comparé à l’année précédant la prise de poste.
   - { value: 50+, label: 'tickets résolus, en 1 h 30 en moyenne' }
 did:
   - Nouvelles fonctionnalités (Symfony, AngularJS)

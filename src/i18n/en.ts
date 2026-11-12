@@ -63,6 +63,7 @@ export const en: Record<Key, string> = {
   'case.cta.gallery': 'See the gallery',
   'case.cta.letter': 'Read the recommendation',
   'case.results': 'Results',
+  'case.note': 'How this figure is measured',
   'case.reference': 'Reference',
   'case.context': 'Context',
   'case.did': 'What I did',

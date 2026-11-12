@@ -114,6 +114,7 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
   import { initDive } from '../motion/dive';
   import { initMenu } from '../motion/menu';
   import { initNav } from '../motion/nav';
+  import { initNote } from '../motion/note';
   import { initSlide } from '../motion/slide';
   import { initSwipe } from '../motion/swipe';
   import { initSection } from '../motion/section';
@@ -122,6 +123,7 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
   // Module scripts run once per visit; the client router keeps the document, so delegated listeners stay.
   initMenu();
   initNav();
+  initNote();
   initDive();
   initSlide();
   initSwipe();
