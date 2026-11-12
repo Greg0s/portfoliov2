@@ -174,8 +174,8 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
                                 aria-expanded="false"
                                 data-note
                               >
-                                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                                  <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.3" />
+                                <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                                  <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.1" />
                                   <path
                                     d="M8 7.2v4.3"
                                     stroke="currentColor"
@@ -813,7 +813,8 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     border: 0;
     border-radius: 50%;
     background: none;
-    color: var(--color-muted);
+    /* Quieter than the label it follows: the figure's detail, not a call to act. */
+    color: color-mix(in srgb, var(--color-muted) 60%, transparent);
     vertical-align: middle;
     cursor: help;
     transition: color 160ms ease;
@@ -822,7 +823,7 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
   .note-button:hover,
   .note-button:focus-visible,
   .note-button[aria-expanded='true'] {
-    color: var(--color-accent);
+    color: var(--color-text);
   }
 
   .note-tip {
