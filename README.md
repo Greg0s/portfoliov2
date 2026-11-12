@@ -1,6 +1,6 @@
 # Grégoire Tinnes — portfolio
 
-The portfolio of Grégoire Tinnes, creative developer: "I code images." The home page is a single camera move
+The portfolio of Grégoire Tinnes, creative developer. The home page is a single camera move
 back through the night, from the Little Prince's planet, past eight projects hung like works in a museum, to the desk
 of the dreamer who watches the planet. Each project opens into a case study, in French and in English.
 
