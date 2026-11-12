@@ -52,7 +52,7 @@ import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
 import type { OfficeScene } from '../office/live';
 import { withBase } from '../../lib/url';
-import { frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
+import { drawsInSoftware, frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
 import { lowerResolution } from '../resolution';
 import { blurFilter } from './blur';
 import { coverTop } from '../../lib/cover';
@@ -432,10 +432,17 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   /** Whether the scenes are kept as the journey stops (the home is left for another page), rather than let go. */
   let keeping = false;
   let swayMatrixOf: ((sway: Sway) => Matrix4) | null = null;
+  /**
+   * Whether the stars' WebGL context was made, or could not be: the live planet waits for it, which tells it, without a
+   * context of its own, whether the device draws in software (see `drawsInSoftware()`).
+   */
+  let starsSettled = !options.webgl;
   if (options.webgl) {
     void Promise.all([import('../renderer'), import('../stars/stars'), import('./camera3d')]).then(
       ([{ createRenderer }, { createStars }, { swayMatrix }]) => {
         if (stopped) return;
+        starsSettled = true;
+        redraw = true;
         // The renderer of a former visit of the home, if any: its canvas comes back into this page.
         const kept = takeRenderer();
         if (kept) {
@@ -476,8 +483,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
 
   // ---------- The live planet ----------
 
-  // It loads once the ambient motions start, while the camera is near the opening, and is let go from the middle of
-  // the journey on, so that its GPU memory is free before the office.
+  // It loads as the journey starts, once the stars tell whether the device has a GPU, while the camera is near the
+  // opening: the arrival already lights it up live, its wind blowing from its first frame (Grégoire, 11 November 2026).
+  // It is let go from the middle of the journey on, so that its GPU memory is free before the office.
   // It stays while the ring shows.
   const PLANET_KEEP = SHOWCASE_AT + 0.02;
   const PLANET_FREE = SHOWCASE_AT + 0.2;
@@ -501,6 +509,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     planetLoading = true;
     // The planet of a former visit of the home, if any: ready at once.
     const kept = takePlanet();
+    // Drawn in software (a machine without a GPU, Lighthouse's), the image stays, and nothing more is downloaded.
+    if (!kept && !planetForced && drawsInSoftware()) {
+      planetLoading = false;
+      planetSlow = true;
+      markSlow('planet');
+      return;
+    }
     void Promise.all([import('../planet/planet'), import('../planet/handoff')])
       .then(async ([{ createPlanet, SlowRenderer }, { planetHandoff }]) => {
         if (kept) {
@@ -587,15 +602,17 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     }
     if (!livePlanet || !handoff) {
       // A planet kept from a former visit of the home is ready: it comes back at once.
-      if ((ambient.started() || hasKept().planet) && u <= PLANET_KEEP) loadPlanet();
+      if ((starsSettled || ambient.started() || hasKept().planet) && u <= PLANET_KEEP) loadPlanet();
       return;
     }
     const previousDraw = lastPlanetDraw;
-    const delta = ambient.started() && !options.still ? Math.min(100, now - previousDraw) : 0;
+    const delta = !options.still && previousDraw > 0 ? Math.min(100, now - previousDraw) : 0;
     lastPlanetDraw = now;
     const draws = handoff.update(blur < PLANET_SHARP, now);
     html.dataset.planet = handoff.state();
     if (!draws || probing('planete')) return;
+    // The planet moves from its first frame on screen, and the weightless motions around it with it.
+    if (!options.still) ambient.start();
     livePlanet.setMoment(moment);
     livePlanet.render(delta);
     if (planetSampler && previousDraw > 0) {
@@ -615,6 +632,17 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         freePlanet();
       }
     }
+  }
+
+  /**
+   * Between the frames drawn at rest (20 a second), the live planet alone draws the wind in its scarf, which moves
+   * too much to be drawn less often than the screen.
+   */
+  function blowPlanet(now: number): void {
+    if (!livePlanet || !handoff || options.still || lastPlanetDraw <= 0 || probing('planete')) return;
+    if (handoff.state() === 'image') return;
+    livePlanet.render(Math.min(100, now - lastPlanetDraw));
+    lastPlanetDraw = now;
   }
 
   // ---------- Following the scroll ----------
@@ -2008,7 +2036,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const atRest = !glide && current === target && pointer.settled() && !redraw && !officeView?.busy();
     // Before the ambient motions start, nothing moves at rest: the frame drawn last still holds. The frame where the
     // camera comes to rest is always drawn, so that it says where it rests.
-    if (atRest && restDrawn && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) return;
+    if (atRest && restDrawn && (now - lastDraw < AMBIENT_FRAME || !ambient.started())) {
+      blowPlanet(now);
+      return;
+    }
     restDrawn = atRest;
     lastDraw = now;
     redraw = false;
