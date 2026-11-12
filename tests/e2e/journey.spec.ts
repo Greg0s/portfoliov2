@@ -110,15 +110,14 @@ test('before its scripts run, the home shows the opening alone', async ({ page }
   await expect(page.locator('.journey')).toBeHidden();
 });
 
-test('the live planet takes over its image after a gesture, stays in the ring, and is let go at the contact', async ({
+test('the live planet takes over its image without a gesture, stays in the ring, and is let go at the contact', async ({
   page,
 }) => {
   test.slow();
   const errors = trackErrors(page);
   // Forced live: without a GPU, the measured rate would hand the planet back to its image.
   await openJourney(page, './?planete=live');
-  await expect(page.locator('html')).not.toHaveAttribute('data-planet', /.*/);
-  await page.mouse.move(200, 200);
+  // No gesture: it loads as the journey starts, and lights up live with the arrival.
   await expect(page.locator('html')).toHaveAttribute('data-planet', 'live', { timeout: 60_000 });
   await expect(page.locator('.planet-canvas')).toHaveCount(1);
   // The ring keeps it sharp in its middle; the contact leaves it behind, and its canvas goes.
