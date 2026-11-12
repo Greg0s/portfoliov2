@@ -63,7 +63,6 @@
     background-color 250ms var(--ease-ui),
     color 250ms var(--ease-ui),
     scale 250ms var(--ease-ui);
-  -webkit-tap-highlight-color: transparent;
 }
 
 @media (width < 768px) {

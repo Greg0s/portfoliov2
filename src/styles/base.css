@@ -16,6 +16,12 @@ html {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-size-adjust: 100%;
+
+  /*
+   * No browser tap highlight on phones (the blue or grey box over what a finger touches, e.g. the office's screen):
+   * every control gives its own feedback, and keyboard focus keeps its outline (:focus-visible below).
+   */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
