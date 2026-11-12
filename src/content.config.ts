@@ -146,6 +146,11 @@ const wall = defineCollection({
       place: z.union([z.string().min(1), localized]).optional(),
       year: z.number().int().optional(),
       credit: z.string().min(1).optional(),
+      /** The picture's post on Instagram: the picture links to it (office spec §3). */
+      instagram: z
+        .url()
+        .refine((url) => new URL(url).hostname === 'www.instagram.com', { message: 'an Instagram post' })
+        .optional(),
       focus,
     }),
 });

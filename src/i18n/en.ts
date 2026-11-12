@@ -21,6 +21,7 @@ export const en: Record<Key, string> = {
   'projects.label': 'Projects',
   'card.see': 'See the project',
   'journey.loading': 'Loading',
+  'wall.instagram': 'See on Instagram',
   'contact.label': 'Contact',
   'contact.copy': 'Copy the address',
   'contact.copied': 'Address copied',

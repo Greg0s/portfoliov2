@@ -36,6 +36,7 @@ interface PictureData {
   src: string;
   focus?: string;
   cartel?: Cartel;
+  link?: string;
 }
 
 const focusOf = (focus: string | undefined): [number, number] => {
@@ -141,7 +142,12 @@ export async function viewOffice(
   const pools = new Map<string, WallPicture[]>(
     Object.entries(JSON.parse(host.dataset.pictures ?? '{}') as Record<string, PictureData[]>).map(([frame, pool]) => [
       frame,
-      pool.map((picture) => ({ src: picture.src, focus: focusOf(picture.focus), cartel: picture.cartel ?? null })),
+      pool.map((picture) => ({
+        src: picture.src,
+        focus: focusOf(picture.focus),
+        cartel: picture.cartel ?? null,
+        link: picture.link ?? null,
+      })),
     ]),
   );
   const view = createOfficeView(host, scene, {
@@ -153,6 +159,7 @@ export async function viewOffice(
     locale: document.documentElement.lang,
     pools,
     planetName: 'B 612',
+    linkLabel: host.dataset.linkLabel ?? 'Instagram',
   });
   section.getBoundingClientRect();
   // One draw at rest, out of sight: textures, shadow maps and buffers go to the GPU now, not on the way in. Then where

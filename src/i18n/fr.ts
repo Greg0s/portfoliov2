@@ -19,6 +19,7 @@ export const fr = {
   'projects.label': 'Projets',
   'card.see': 'Voir le projet',
   'journey.loading': 'Chargement',
+  'wall.instagram': 'Voir sur Instagram',
   'contact.label': 'Contact',
   'contact.copy': 'Copier l’adresse',
   'contact.copied': 'Adresse copiée',

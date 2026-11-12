@@ -126,7 +126,7 @@ test.describe('on desktop', () => {
     await expect(cartels).toHaveCount(7);
     const poster = cartels.filter({ hasText: 'Projet Dernière Chance' });
     await expect(poster).toHaveCSS('opacity', '0');
-    const hit = poster.locator('xpath=preceding-sibling::div[contains(@class, "office-cartel-hit")][1]');
+    const hit = poster.locator('xpath=preceding-sibling::*[contains(@class, "office-cartel-hit")][1]');
     const box = await hit.boundingBox();
     if (!box) throw new Error('no hit area for the poster');
     await page.mouse.move(box.x + 20, box.y + box.height - 20);
@@ -136,6 +136,36 @@ test.describe('on desktop', () => {
     await expect(poster).not.toContainText('Project Hail Mary');
     await page.mouse.move(700, 860);
     await expect(poster).not.toHaveAttribute('data-open');
+  });
+
+  test('a photo with a post on Instagram links to it, under the disc', async ({ page }) => {
+    // The middle photo of the desk's pool: Chasing souls, which has a post; Project Hail Mary, on the wall, has none.
+    await page.addInitScript(() => {
+      Math.random = () => 0.5;
+    });
+    await openOffice(page);
+    const cartel = page.locator('.office-cartel', { hasText: 'Chasing souls' });
+    const hit = cartel.locator('xpath=preceding-sibling::*[contains(@class, "office-cartel-hit")][1]');
+    await expect(hit).toHaveAttribute('href', 'https://www.instagram.com/p/DJ9jaq7vFbQ/');
+    await expect(hit).toHaveAttribute('target', '_blank');
+    await expect(hit).toHaveAttribute('rel', 'noopener');
+    const disc = page.locator('.office-disc');
+    await expect(disc).toHaveText('Voir sur Instagram');
+    await expect(disc).not.toHaveClass(/\bon\b/);
+    const box = await hit.boundingBox();
+    if (!box) throw new Error('no hit area for the desk');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(disc).toHaveClass(/\bon\b/);
+    await expect(cartel).toHaveAttribute('data-open', '');
+    // A picture without a post stays as it was: no link, no disc.
+    const poster = page.locator('.office-cartel', { hasText: 'Projet Dernière Chance' });
+    const posterHit = poster.locator('xpath=preceding-sibling::*[contains(@class, "office-cartel-hit")][1]');
+    await expect(posterHit).not.toHaveAttribute('href');
+    const posterBox = await posterHit.boundingBox();
+    if (!posterBox) throw new Error('no hit area for the poster');
+    await page.mouse.move(posterBox.x + 20, posterBox.y + posterBox.height - 20);
+    await expect(poster).toHaveAttribute('data-open', '');
+    await expect(disc).not.toHaveClass(/\bon\b/);
   });
 
   test('the copy icon turns into a check for 1.8 s', async ({ page, context, browserName }) => {
@@ -181,6 +211,32 @@ test.describe('on phones', () => {
     // The links open directly, and the Recycle Bin stays still.
     await expect(page.locator('a[data-screen-page="LinkedIn"]')).toHaveAttribute('href', /linkedin\.com/);
     await expect(page.locator('.office-screen .desktop')).not.toHaveAttribute('data-bin-live');
+  });
+
+  test('a tap on the desk’s photo opens its cartel, with the link to its post', async ({ page }) => {
+    await page.addInitScript(() => {
+      Math.random = () => 0.5;
+    });
+    await openOffice(page);
+    const cartel = page.locator('.office-cartel', { hasText: 'Chasing souls' });
+    const hit = cartel.locator('xpath=preceding-sibling::*[contains(@class, "office-cartel-hit")][1]');
+    // The photo opens its cartel, not the post.
+    await expect(hit).not.toHaveAttribute('href');
+    const box = await hit.boundingBox();
+    if (!box) throw new Error('no hit area for the desk');
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(cartel).toHaveAttribute('data-open', '');
+    const link = cartel.locator('a.office-cartel-link');
+    await expect(link).toHaveText('Voir sur Instagram');
+    await expect(link).toHaveAttribute('href', 'https://www.instagram.com/p/DJ9jaq7vFbQ/');
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener');
+    await expect(link).toHaveCSS('pointer-events', 'auto');
+    // The post opens in a new tab (served here, so that the test stays offline).
+    await page.context().route('https://www.instagram.com/**', (route) => route.fulfill({ body: 'post' }));
+    const [popup] = await Promise.all([page.waitForEvent('popup'), link.tap()]);
+    await popup.waitForURL('https://www.instagram.com/p/DJ9jaq7vFbQ/');
+    await popup.close();
   });
 
   test('a tap on the screen opens the pages in turn, the next tap closes, the email left out', async ({ page }) => {

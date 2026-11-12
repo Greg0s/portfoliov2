@@ -33,6 +33,8 @@ export interface ViewOptions {
   pools: ReadonlyMap<string, readonly WallPicture[]>;
   /** The planet's name, on its label. */
   planetName: string;
+  /** What a picture's link says: on the disc that follows the mouse, and in the cartel on phones. */
+  linkLabel: string;
 }
 
 export interface OfficeView {
@@ -273,7 +275,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
     : null;
   if (desktop) screen.append(desktop.element);
   el('div', 'office-glare', screen);
-  const cartels = createCartels(front, rest, framing, frame);
+  const cartels = createCartels(front, root, rest, framing, frame, options.linkLabel);
   const skyFront = el('div', 'office-layer', front);
   const planet = el('div', 'office-planet', skyFront);
   Object.assign(planet.style, { left: px(frame.planet[0]), top: px(frame.planet[1]) });
