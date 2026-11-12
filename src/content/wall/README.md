@@ -12,6 +12,7 @@ author: Hayao Miyazaki # optional
 place: { fr: Vienne, en: Vienna } # or a plain string; optional, where a photo was taken
 year: 2001 # optional
 credit: Studio Ghibli # optional, required by some pictures
+instagram: https://www.instagram.com/p/… # optional, the picture's post: the picture links to it
 focus: 50% 40% # optional, the point kept when cropping
 ```
 

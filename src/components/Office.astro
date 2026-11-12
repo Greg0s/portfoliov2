@@ -7,12 +7,12 @@
  * visitor's shows, and lazy loading leaves the hidden one unloaded. In the journey, it waits for the camera to reach
  * the first project (`data-office` on the root element), and the live office (step 7) lays itself over it: the sky in
  * HTML, the scene in its canvas, the screen. Its data attributes carry what the live office shows: the screen and
- * the pictures each frame draws from.
+ * the pictures each frame draws from, and what their links say.
  */
 import { getCollection } from 'astro:content';
 import { getImage } from 'astro:assets';
 import Screen from './office/Screen.astro';
-import type { Locale } from '../i18n';
+import { t, type Locale } from '../i18n';
 import { withBase } from '../lib/url';
 import { cartelFields } from '../lib/wall';
 import '../styles/office.css';
@@ -47,7 +47,8 @@ const cartelOf = (info: Parameters<typeof cartelFields>[0]) => {
     ...(fields.credit ? { note: fields.credit } : {}),
   };
 };
-const pictures: Record<string, { src: string; focus?: string; cartel?: ReturnType<typeof cartelOf> }[]> = {};
+const pictures: Record<string, { src: string; focus?: string; cartel?: ReturnType<typeof cartelOf>; link?: string }[]> =
+  {};
 for (const entry of await getCollection('wall')) {
   const frame = entry.id.split('/')[0] ?? '';
   const image = await getImage({ src: entry.data.image, width: WIDTHS[frame] ?? 400, format: 'webp', quality: 80 });
@@ -56,6 +57,7 @@ for (const entry of await getCollection('wall')) {
     src: image.src,
     ...(entry.data.focus ? { focus: entry.data.focus } : {}),
     ...(cartel ? { cartel } : {}),
+    ...(entry.data.instagram ? { link: entry.data.instagram } : {}),
   });
 }
 ---
@@ -65,6 +67,7 @@ for (const entry of await getCollection('wall')) {
   aria-hidden="true"
   data-layers={withBase('/images/office/layers')}
   data-pictures={JSON.stringify(pictures)}
+  data-link-label={t(locale)('wall.instagram')}
 >
   <Screen locale={locale} />
   {moments.map((moment) => (

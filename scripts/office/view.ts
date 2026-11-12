@@ -47,6 +47,7 @@ async function main(): Promise<void> {
     locale: 'fr',
     pools: new Map(),
     planetName: 'B 612',
+    linkLabel: 'Instagram',
   });
   window.__show = (e, hx = 0, hy = 0) => {
     view.setHead(hx, hy);
