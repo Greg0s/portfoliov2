@@ -1,6 +1,5 @@
 /**
- * The live planet (main spec §6): Grégoire's model, its generated relief and hair, the museum spot of the visitor's
- * moment, the wind in the scarf, the rose and the fox's ears and tail. It draws in its own small canvas inside the opening's planet, seen from
+ * The live planet (main spec §6): Grégoire's model, its generated relief and hair, the museum spot, the wind in the scarf, the rose and the fox's ears and tail. It draws in its own small canvas inside the opening's planet, seen from
  * above with the prototype's camera, so that it lands exactly on its fallback image and takes the opening's float,
  * recession and blur from the CSS like the image did. The journey draws it while it is sharp enough to be seen
  * (`handoff.ts`).
@@ -21,13 +20,12 @@ import {
   type MeshStandardMaterial,
   type Object3D,
 } from 'three';
-import { addLights, CENTER, mixMoments } from './lights';
+import { addLights, CENTER } from './lights';
 import { isMesh, loadPlanetModel, meshIn, type PlanetModel } from './load';
 import { foxWind } from './fox';
 import { createWind, type WindState } from './wind';
 import { scenePixelRatio } from '../resolution';
 import { drawsInSoftware } from '../quality';
-import type { Moment } from '../time';
 import type { Arrays } from '../workers/relief';
 import type { GeometryRequest } from '../workers/geometry.worker';
 import { runGeometry, type ReplyTo } from '../workers/client';
@@ -37,7 +35,6 @@ export interface PlanetOptions {
   modelUrl: string;
   /** Draw even with a software renderer (`?planete=live`). */
   forced: boolean;
-  moment: Moment;
   mobile: boolean;
   /** The canvas's size in CSS px: the opening's planet square. */
   size: number;
@@ -47,7 +44,6 @@ export interface LivePlanet {
   canvas: HTMLCanvasElement;
   /** Draws a frame: `delta` ms of wind since the last one (0 holds the pose). */
   render(delta: number): void;
-  setMoment(moment: Moment): void;
   resize(size: number, mobile: boolean): void;
   /**
    * Whether its programs linked slowly, one after the other (no parallel compiling, two links of 200 ms and more):
@@ -333,8 +329,7 @@ async function assemble(
   await pause('canvas');
   const scene = new Scene();
   scene.add(model.root);
-  let moment = options.moment;
-  const lights = addLights(scene, renderer, moment, 2048);
+  const lights = addLights(scene, renderer, 2048);
   await pause('environment');
   const blow = scarfWind(model);
   const sway = roseSway(model);
@@ -349,7 +344,6 @@ async function assemble(
   const wind = createWind();
   let windState: WindState = { scarfPhase: 0, roseDeg: 0, tailDeg: 0, earsDeg: [0, 0] };
   let moving = 0;
-  let fade: { from: Moment; to: Moment; elapsed: number } | null = null;
 
   const resize = (size: number, mobile: boolean): void => {
     renderer.setPixelRatio(scenePixelRatio(window.devicePixelRatio || 1, mobile));
@@ -391,17 +385,7 @@ async function assemble(
         sway(windState.roseDeg * amount);
         fox(windState.tailDeg * amount, [windState.earsDeg[0] * amount, windState.earsDeg[1] * amount]);
       }
-      if (fade) {
-        fade.elapsed += Math.max(delta, 16);
-        lights.setColors(mixMoments(fade.from, fade.to, fade.elapsed));
-        if (fade.elapsed >= 2000) fade = null;
-      }
       renderer.render(scene, camera);
-    },
-    setMoment(next) {
-      if (next === moment) return;
-      fade = { from: moment, to: next, elapsed: 0 };
-      moment = next;
     },
     resize,
     linksSlowly: slowLinks >= 2,

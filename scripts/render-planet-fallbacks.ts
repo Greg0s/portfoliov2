@@ -1,7 +1,8 @@
 /**
  * Renders the planet's fallbacks (main spec §6, plan step 5): the image shown before the 3D planet is ready, without
  * WebGL or with "reduce motion". The planet prototype (docs/prototypes/petit-prince) renders it alone on a transparent
- * background for each moment; each render becomes a desktop and a mobile WebP of at most 50 kB. The decor around it
+ * background, in the dusk light the opening keeps at any hour (12 November 2026); the render becomes a desktop and a
+ * mobile WebP of at most 50 kB. The decor around it
  * (`decor.webp`, white stars and glowing planets) is the mockup's, rendered by the same prototype. The planet's lights
  * take the site's accent (src/scene/accent.ts), as the live planet's do.
  *
@@ -21,7 +22,8 @@ const PROTOTYPE = resolve('docs/prototypes/petit-prince');
 const OUT = resolve('public/images/planet');
 const PORT = 8765;
 const LIMIT = 50 * 1024;
-const moments = { aube: 'aube', crepuscule: 'crepuscule' } as const;
+/** The prototype's moment the planet is lit by, at any hour of the visit. */
+const moments = { crepuscule: 'crepuscule' } as const;
 /** Width in pixels of the square around the planet: 600 CSS px at 1.5x on desktop, 360 CSS px at 2x on mobile. */
 const sizes = { desktop: 900, mobile: 720 } as const;
 
@@ -71,7 +73,7 @@ try {
         quality -= 6;
         output = await sharp(square).resize({ width }).webp({ quality, alphaQuality: 80, effort: 6 }).toBuffer();
       }
-      const file = join(OUT, `planet-${moment}-${framing}.webp`);
+      const file = join(OUT, `planet-${framing}.webp`);
       await sharp(output).toFile(file);
       const { height } = await sharp(output).metadata();
       console.log(
