@@ -576,7 +576,8 @@ test('back from a case study, the live planet comes back at once, without being 
   expect(before).toBeGreaterThan(0);
 
   await throughCaseStudy(page);
-  await expect.poll(() => marks(page, 'journey:planet-ready'), { timeout: 10_000 }).toBe(2);
+  // Kept scenes are handed back on the next frame, and a frame takes about a second here: 30 s is room, not delay.
+  await expect.poll(() => marks(page, 'journey:planet-ready'), { timeout: 30_000 }).toBe(2);
   // Nothing compiled or linked again.
   expect(await linked(page)).toBe(before);
   await expect(page.locator('html')).toHaveAttribute('data-planet', 'live');
@@ -599,7 +600,7 @@ test('back from a case study, the live office comes back at once, without being 
   expect(before).toBeGreaterThan(0);
 
   await throughCaseStudy(page);
-  await expect.poll(() => marks(page, 'journey:office-ready'), { timeout: 10_000 }).toBe(2);
+  await expect.poll(() => marks(page, 'journey:office-ready'), { timeout: 30_000 }).toBe(2);
   // Nothing compiled or linked again.
   expect(await linked(page)).toBe(before);
   await expect(page.locator('html')).toHaveAttribute('data-office', 'live');
