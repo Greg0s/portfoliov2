@@ -1,11 +1,29 @@
 ---
 import Home from '../components/Home.astro';
-import { t } from '../i18n';
+import { config } from '../config';
+import { pathFor, t } from '../i18n';
 import Base from '../layouts/Base.astro';
+import { homeData, shareImagePath } from '../lib/share';
+import { withBase } from '../lib/url';
 
 const label = t('fr');
+const image = shareImagePath('fr', 'home');
+const absolute = (path: string): string => new URL(withBase(path), Astro.site).href;
+const structuredData = homeData({
+  siteUrl: absolute(pathFor({ id: 'home' }, 'fr')),
+  locale: 'fr',
+  description: label('site.description'),
+  jobTitle: label('opening.job'),
+  image: absolute(image),
+});
 ---
 
-<Base locale="fr" title={label('site.title')} description={label('site.description')}>
+<Base
+  locale="fr"
+  title={`${label('site.title')} · ${label('opening.job')}`}
+  description={label('site.description')}
+  share={{ image, alt: `${config.name}, ${label('opening.job')}. ${label('opening.planet')}` }}
+  structuredData={structuredData}
+>
   <Home locale="fr" />
 </Base>

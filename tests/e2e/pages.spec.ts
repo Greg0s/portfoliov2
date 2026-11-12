@@ -23,6 +23,22 @@ for (const { path, lang } of homes) {
   });
 }
 
+test('a shared link shows a title, a description and a share image that loads', async ({ page, request }) => {
+  for (const path of ['./', 'en/projects/lyrix/']) {
+    await page.goto(path);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', await page.title());
+    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /\S/);
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+    const image = await page.locator('meta[property="og:image"]').getAttribute('content');
+    expect(image).toMatch(/^https:\/\/.+\.jpg$/);
+    // The image's address is absolute, for the production host: its path is fetched from the preview.
+    const response = await request.get(new URL(image ?? '').pathname);
+    expect(response.status()).toBe(200);
+    const data = await page.locator('script[type="application/ld+json"]').textContent();
+    expect(JSON.parse(data ?? '{}')).toHaveProperty('@context', 'https://schema.org');
+  }
+});
+
 test('an unknown path serves the 404 page, in both languages', async ({ page }) => {
   const response = await page.goto('cette-page-n-existe-pas/');
   expect(response?.status()).toBe(404);

@@ -457,7 +457,8 @@ check fails on placeholders (`[année]`, `TODO`) in production builds.
 **Goal**: accessibility, performance, SEO, share images, sitemap, the full e2e suite.
 
 **Files**: `@astrojs/sitemap` with alternates; `scripts/render-share-images.ts` (1200 × 630 per page); `Person`
-JSON-LD; favicons; the last §9.3 tests.
+JSON-LD; favicons; the last §9.3 tests. Done ahead on 12 November 2026: the sitemap's alternates, the share images,
+Open Graph and Twitter tags, and the JSON-LD (`src/lib/share.ts`, `src/lib/sitemap.ts`).
 
 **Tests**: axe on every page in both languages; a manual pass with VoiceOver and TalkBack; Lighthouse mobile ≥ 90
 performance, 100 accessibility, 100 SEO as errors; WebKit e2e on the whole suite.

@@ -1,6 +1,7 @@
 import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 import contentChecks from './src/integrations/content-checks';
+import { sitemapLinks } from './src/lib/sitemap';
 import { buildRedirects } from './src/redirects';
 
 // The preview lives under /portfoliov2/ on GitHub Pages; going live (main spec §10) sets BASE_PATH to "/".
@@ -15,5 +16,11 @@ export default defineConfig({
   redirects: buildRedirects(base),
   // Only where the code asks for it: a card's case study, from the first touch (src/motion/dive.ts).
   prefetch: { prefetchAll: false },
-  integrations: [contentChecks(), sitemap({ i18n: { defaultLocale: 'fr', locales: { fr: 'fr', en: 'en' } } })],
+  integrations: [
+    contentChecks(),
+    sitemap({
+      // Each page with its language versions, from the site's routes (the case studies' paths differ by language).
+      serialize: (item) => ({ ...item, links: sitemapLinks(item.url, base) }),
+    }),
+  ],
 });

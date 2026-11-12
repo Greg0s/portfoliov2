@@ -56,7 +56,8 @@ specs in `docs/specs/` and the plan in `docs/plans/`. The v3 mockup, built in a 
 - Commands: `pnpm dev`, `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm format` / `pnpm format:check`, `pnpm check`,
   `pnpm test`, `pnpm test:e2e`, `pnpm budgets`, `pnpm optimize-media` (wall originals → web versions), `pnpm optimize-screen` (the screen's captures and icons),
   `pnpm render-planet-fallbacks` (the planet's still images, from `docs/prototypes/petit-prince`), `pnpm render-office-layers`
-  (the office's layers and `placement.json`, from the site's own scene);
+  (the office's layers and `placement.json`, from the site's own scene), `pnpm render-share-images` (the link previews,
+  from the built site);
   Lighthouse with `pnpm exec lhci autorun` (after a build).
 - Before calling a change done, run what CI runs, in this order: lint, format:check, check, test, build, budgets,
   test:e2e (main spec §9). Lighthouse warns until step 7 and fails from step 7 on.
