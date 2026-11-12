@@ -271,8 +271,8 @@
   line-height: 15px;
 }
 
-/* A picture's post on Instagram (office spec §3). On phones, a link at the foot of the cartel, that answers only while
-   the cartel shows. */
+/* A picture's post on Instagram (office spec §3). On phones, a quiet link at the foot of the cartel, in white at 55 %
+   (Grégoire's choice of 12 November 2026), that answers only while the cartel shows. */
 .office-cartel-link {
   display: inline-flex;
   align-items: center;
@@ -281,9 +281,9 @@
   margin: 8px -6px -4px;
   padding: 4px 6px;
   border-radius: 6px;
-  color: var(--color-accent);
+  color: rgb(243 243 241 / 55%);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 16px;
   text-decoration: none;
   pointer-events: none;
