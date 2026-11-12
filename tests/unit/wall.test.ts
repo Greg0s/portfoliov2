@@ -39,11 +39,11 @@ describe('cartelFields', () => {
     });
   });
 
-  it('leads with the author when there is no title', () => {
+  it('puts what is known on a single author line when there is no title', () => {
     expect(cartelFields({ author: 'Bill Anders', year: 1968, credit: 'NASA, Apollo 8' }, 'en')).toEqual({
-      main: 'Bill Anders',
+      main: 'Bill Anders, 1968',
       isTitle: false,
-      sub: '1968',
+      sub: undefined,
       credit: 'NASA, Apollo 8',
     });
   });
@@ -56,11 +56,11 @@ describe('cartelFields', () => {
       credit: undefined,
     });
     const eibsee = { place: { fr: 'Eibsee, Allemagne', en: 'Eibsee, Germany' }, year: 2024 };
-    expect(cartelFields(eibsee, 'fr')).toMatchObject({ main: 'Eibsee, Allemagne' });
+    expect(cartelFields(eibsee, 'fr')).toMatchObject({ main: 'Eibsee, Allemagne, 2024' });
     expect(cartelFields(eibsee, 'en')).toMatchObject({
-      main: 'Eibsee, Germany',
+      main: 'Eibsee, Germany, 2024',
       isTitle: false,
-      sub: '2024',
+      sub: undefined,
     });
   });
 
