@@ -2,7 +2,7 @@
 /**
  * The opening (main spec §4, journey spec §6): the planet on the left (above the text on mobile), the name, the job
  * and the one call, "See the projects". Until the 3D planet arrives (step 6), and without WebGL, the planet is its
- * fallback render for the visitor's moment: a CSS background, so that only the moment's image loads. In the journey,
+ * fallback render, the same at any hour (12 November 2026): a CSS background, so that only the screen's image loads. In the journey,
  * a visit starts with the arrival (src/motion/arrival.ts): in the dark, the planet lights up, then the rest shows;
  * then the planet recedes to a point of light (`.planet-glow`) and the text fades out.
  */
@@ -19,19 +19,16 @@ interface Props {
 const { locale } = Astro.props;
 const label = t(locale);
 const image = (name: string): string => `url('${withBase(`/images/planet/${name}.webp`)}')`;
-// The planet is the opening's largest paint: the right image is preloaded before the first paint, since its moment
-// and the screen's width are only known in the browser (the others are never requested).
+// The planet is the opening's largest paint: the right image is preloaded before the first paint, since the screen's
+// width is only known in the browser (the others are never requested).
 const preload = `(${preloadPlanet.toString()})(${JSON.stringify(withBase('/images/planet/'))});`;
 // The arrival is decided before the first paint, and plays from the page itself, without waiting for the site's
 // scripts.
 const arrival = `(${applyArrival.toString()})(${JSON.stringify(fragments.opening[locale])});`;
 const play = `(${playArrival.toString()})();`;
-const images = [
-  `--planet-aube-desktop: ${image('planet-aube-desktop')}`,
-  `--planet-aube-mobile: ${image('planet-aube-mobile')}`,
-  `--planet-crepuscule-desktop: ${image('planet-crepuscule-desktop')}`,
-  `--planet-crepuscule-mobile: ${image('planet-crepuscule-mobile')}`,
-].join('; ');
+const images = [`--planet-desktop: ${image('planet-desktop')}`, `--planet-mobile: ${image('planet-mobile')}`].join(
+  '; ',
+);
 ---
 
 <script is:inline set:html={preload} />
@@ -103,10 +100,6 @@ const images = [
     opacity: 0.42;
   }
 
-  :global(html[data-moment='aube']) .decor {
-    opacity: 0.33;
-  }
-
   .halo {
     position: absolute;
     inset: -40px;
@@ -116,11 +109,7 @@ const images = [
   }
 
   .planet-image {
-    background: var(--planet-crepuscule-desktop) center / contain no-repeat;
-  }
-
-  :global(html[data-moment='aube']) .planet-image {
-    background-image: var(--planet-aube-desktop);
+    background: var(--planet-desktop) center / contain no-repeat;
   }
 
   /* The live planet (step 7) draws over its image, then takes its place (src/scene/planet/handoff.ts). */
@@ -254,11 +243,7 @@ const images = [
     }
 
     .planet-image {
-      background-image: var(--planet-crepuscule-mobile);
-    }
-
-    :global(html[data-moment='aube']) .planet-image {
-      background-image: var(--planet-aube-mobile);
+      background-image: var(--planet-mobile);
     }
 
     .intro {

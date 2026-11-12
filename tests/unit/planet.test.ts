@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { HANDOFF_FADE, planetHandoff } from '../../src/scene/planet/handoff';
-import { MOMENT_FADE, mixMoments, momentColors } from '../../src/scene/planet/lights';
 import { createWind, foxAngles, roseAngle, SCARF_LOOP } from '../../src/scene/planet/wind';
 import { frameSampler, JOURNEY_MIN_FPS, SLOW_WINDOWS, WINDOW_TIME, type FrameSampler } from '../../src/scene/quality';
 import { craterPlanet, crumpledBall, type Arrays, type Calm } from '../../src/scene/workers/relief';
@@ -72,19 +71,6 @@ describe('the wind', () => {
     const steps = rates.slice(1).map((rate, i) => Math.abs(rate - (rates[i] ?? 1)));
     expect(Math.max(...steps)).toBeLessThan(0.1);
     expect(rates.at(-1)).toBe(1);
-  });
-});
-
-describe('the moment', () => {
-  it('cross-fades the spot and the sky at noon', () => {
-    const start = mixMoments('aube', 'crepuscule', 0);
-    const end = mixMoments('aube', 'crepuscule', MOMENT_FADE);
-    expect(start.spot.getHex()).toBe(momentColors.aube.spot);
-    expect(end.spot.getHex()).toBe(momentColors.crepuscule.spot);
-    expect(end.sky.getHex()).toBe(momentColors.crepuscule.sky);
-    const mid = mixMoments('aube', 'crepuscule', MOMENT_FADE / 2).spot.getHex();
-    expect(mid).not.toBe(momentColors.aube.spot);
-    expect(mid).not.toBe(momentColors.crepuscule.spot);
   });
 });
 

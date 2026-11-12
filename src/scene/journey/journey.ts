@@ -70,11 +70,11 @@ import {
 } from '../keep';
 import { CARTEL_GAP, fitRing, type Pose, type RingRoom } from '../showcase/ring';
 
-/** The moment's light on the scene (journey spec §4): how bright the planet's sky and the stars are. */
-const LIGHT = {
-  aube: { sky: 0.55, stars: 0.7 },
-  crepuscule: { sky: 0.7, stars: 0.8 },
-} as const;
+/**
+ * The light on the scene (journey spec §4): how bright the planet's sky and the stars are. The same at any hour: the
+ * two moments looked alike there (Grégoire's choice of 12 November 2026); only the office keeps them.
+ */
+const LIGHT = { sky: 0.7, stars: 0.8 } as const;
 
 /**
  * Writes styles only when they change, so that a resting scene costs the browser nothing, and remembers them, so
@@ -527,7 +527,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
           (await createPlanet(container, {
             modelUrl: withBase('/models/petit-prince.glb'),
             forced: planetForced,
-            moment: html.dataset.moment === 'aube' ? 'aube' : 'crepuscule',
             mobile: scene.view.mobile,
             size: planetSize,
           }).catch((error: unknown) => {
@@ -594,7 +593,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   }
 
   /** Draws the live planet when it shows, loads it near the opening and lets it go past the middle. */
-  function drawPlanet(now: number, u: number, blur: number, moment: 'aube' | 'crepuscule'): void {
+  function drawPlanet(now: number, u: number, blur: number): void {
     if (!options.webgl || planetSlow) return;
     if (u > PLANET_FREE) {
       if (planetLoading) freePlanet();
@@ -613,7 +612,6 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     if (!draws || probing('planete')) return;
     // The planet moves from its first frame on screen, and the weightless motions around it with it.
     if (!options.still) ambient.start();
-    livePlanet.setMoment(moment);
     livePlanet.render(delta);
     if (planetSampler && previousDraw > 0) {
       // Measured at every frame, not at the resting pace.
@@ -1369,8 +1367,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const arrival = arrivalAt(u);
     const starsK = 1 - smoothstep(0, 0.04, arrival);
     const time = options.still ? 0 : ambient.time(now);
-    const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
-    const light = LIGHT[moment];
+    const light = LIGHT;
     const tiltOn = !view.mobile && !options.still;
     // The dive: how far the card has flown (0 to 1, eased), how much the rest still shows, how much has come to rest.
     let diveT = 0;
@@ -1477,7 +1474,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       set(glow, 'transform', group);
       set(glow, 'opacity', (planetState.glowOpacity * others).toFixed(3));
     }
-    drawPlanet(now, u, planetState.blur, moment);
+    drawPlanet(now, u, planetState.blur);
     {
       const relative = SHOWCASE_Z - depth;
       const ring = projectCss(held.x, held.y, 0, view, sway);

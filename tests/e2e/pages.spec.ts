@@ -81,6 +81,21 @@ test("the page's background glows with the accent's ends, the same at dawn and a
   expect(await glow()).toBe(dawn);
 });
 
+test('the opening is the same at dawn and at dusk: one planet image, one decor', async ({ page }) => {
+  const look = (): Promise<string[]> =>
+    page.evaluate(() =>
+      ['.planet-image', '.decor'].map((selector) => {
+        const style = getComputedStyle(document.querySelector(selector) ?? document.body);
+        return `${style.backgroundImage} ${style.opacity}`;
+      }),
+    );
+  await page.goto('./?heure=aube&still=1');
+  const dawn = await look();
+  expect(dawn[0]).toMatch(/planet-(desktop|mobile)\.webp/);
+  await page.goto('./?heure=crepuscule&still=1');
+  expect(await look()).toEqual(dawn);
+});
+
 test('the moment survives a page change through the client router', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(new Date(2026, 9, 23, 20, 0));
   await page.goto('./');
