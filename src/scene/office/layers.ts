@@ -155,6 +155,11 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
   // letting go of its hint for a frame: a handful of redraws over the arrival, never more than about twice the
   // screen's pixels held per layer, and never softer than shown once at rest.
   const REPIN = 1.35;
+  // Letting go of the hint must not take the layer off the compositor: painted into its neighbour for that frame, the
+  // town's whole layer was drawn again with it, and on a phone the town vanished for a frame or two as the desk came
+  // in, then again as its hint came back (Grégoire, 12 November 2026). A 3D transform keeps each layer on its own
+  // through the redraw, which then only changes the scale it is drawn at.
+  const HELD = ' translateZ(0)';
   interface Pinned {
     node: HTMLElement;
     /** The scale the layer was last drawn at, 0 while hidden (it is drawn at its scale when it shows again). */
@@ -202,14 +207,14 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
     draw(state: ArrivalState, head: Head): Drawn {
       const s = 4.67 / (state.camZ + 4.67);
       const par = frame.par;
-      city.style.transform = `translate(${px(-head.x * par.city[0])}, ${px(state.tiltY - head.y * par.city[1])}) scale(${s.toFixed(5)})`;
+      city.style.transform = `translate(${px(-head.x * par.city[0])}, ${px(state.tiltY - head.y * par.city[1])}) scale(${s.toFixed(5)}) ${HELD}`;
       const opacity = { room: layerFade(state.camZ, FADE_PLANES.room), desk: layerFade(state.camZ, FADE_PLANES.desk) };
       const sRoom = layerScale(state.camZ, -1.2);
       const sDesk = layerScale(state.camZ, -0.85);
-      room.style.transform = `translate(${px(-head.x * par.room[0])}, ${px(-head.y * par.room[1])}) scale(${sRoom.toFixed(5)})`;
+      room.style.transform = `translate(${px(-head.x * par.room[0])}, ${px(-head.y * par.room[1])}) scale(${sRoom.toFixed(5)}) ${HELD}`;
       room.style.opacity = opacity.room.toFixed(3);
       room.style.visibility = opacity.room > 0.002 ? 'visible' : 'hidden';
-      desk.style.transform = `translate(${px(-head.x * par.desk[0])}, ${px(-head.y * par.desk[1])}) scale(${sDesk.toFixed(5)})`;
+      desk.style.transform = `translate(${px(-head.x * par.desk[0])}, ${px(-head.y * par.desk[1])}) scale(${sDesk.toFixed(5)}) ${HELD}`;
       desk.style.opacity = opacity.desk.toFixed(3);
       desk.style.visibility = opacity.desk > 0.002 ? 'visible' : 'hidden';
       const [cityPin, roomPin, deskPin] = pinned as [Pinned, Pinned, Pinned];
