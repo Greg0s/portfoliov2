@@ -1,19 +1,19 @@
 # Grégoire Tinnes — portfolio
 
-The portfolio of Grégoire Tinnes, creative developer: "I code images." The home page is a single camera move
-back through the night, from the Little Prince's planet, past eight projects hung like works in a museum, to the desk
-of the dreamer who watches the planet. Each project opens into a case study, in French and in English.
+The portfolio of Grégoire Tinnes, creative developer: "I code images." The home page is one scroll-driven camera move
+through the night, in three stops: the Little Prince's planet, alive in the wind; a ring of seven projects turning
+around it, each one a card with its label; and the desk of the dreamer who watches the planet, where the computer
+screen, the picture wall and the contact links live. Each project opens into a case study, in French and in English.
 
-- **Preview**: https://greg0s.github.io/portfoliov2/ (under construction; the current site stays at
-  [gregoiretinn.es](https://gregoiretinn.es) until this one goes live)
-- **Contact**: gregoire.tinnes@gmail.com
+**Preview**: https://greg0s.github.io/portfoliov2/ (the current site stays at [gregoiretinn.es](https://gregoiretinn.es)
+until this one goes live)
 
 ## Stack
 
 - [Astro](https://astro.build), static output, strict TypeScript
 - [Three.js](https://threejs.org) for the planet, the stars and the office; the project cards stay in HTML and CSS 3D
   over the canvas, so they remain accessible
-- [GSAP](https://gsap.com) and [Lenis](https://lenis.darkroom.engineering) for one animation loop over native scrolling
+- Native scrolling, with no smooth-scroll or animation library
 - Vitest, Playwright and Lighthouse CI; deployed to GitHub Pages by GitHub Actions
 
 Everything stays readable without JavaScript, without WebGL and with reduced motion: the 3D is decoration over
@@ -45,9 +45,10 @@ every internal link goes through `withBase()` in `src/lib/url.ts`.
 
 ## Add a project
 
-From step 4 of the build, each project is a folder in `src/content/projects/<slug>/`:
+Each project is a folder in `src/content/projects/<slug>/`:
 
-- `project.yaml` for what does not translate: `order`, `year`, `stack`, `links`, `cover`, and the card's video loop;
+- `project.yaml` for what does not translate: `order`, `year`, `stack`, `links`, `cover`, its two accent `colors`, and
+  card's video loop;
 - `fr.md` and `en.md` for the title, kind, role, summary and the case study itself.
 
 The build fails with an explicit message if a field is missing, a translation is missing or two projects share the
