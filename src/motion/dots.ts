@@ -2,7 +2,9 @@
  * The case studies' dots, on a touch screen (CaseStudy.astro): going from one case study to another, the light leaves
  * the dot of the case study left like a drop of liquid, gliding in one smooth move to the dot that comes in. Both its
  * edges travel together, the back one only a breath behind, so that it lengthens a little as it goes and rounds up
- * again as it settles. Meanwhile the old dot narrows and the new one widens, so that the row ends as the page drew it.
+ * again as it settles. Meanwhile the old dot's place narrows and the new one's widens, so that the row ends as the page
+ * drew it; both stay plain dim dots, at their centres, under the drop: a widening dim dot would show beside the drop as
+ * a dot that comes and goes (fixed on 12 November 2026).
  *
  * A swipe (swipe.ts) carries the drop with the finger: it goes as far toward the neighbour's dot as the page went toward
  * the neighbour, comes back if the page springs back, and once the finger lets go, the new page's drop goes on from
@@ -47,6 +49,8 @@ function lay(from: number, to: number): Drop | null {
   const dim = getComputedStyle(narrowDot).backgroundColor;
   const light = getComputedStyle(wide).backgroundColor;
   const height = wide.offsetHeight;
+  const wideWidth = wide.offsetWidth;
+  const narrow = narrowDot.offsetWidth;
   // The drop carries the light; both dots stay dim under it until it lands.
   const element = document.createElement('span');
   element.className = 'drop';
@@ -62,15 +66,19 @@ function lay(from: number, to: number): Drop | null {
   });
   found.row.style.position = 'relative';
   found.row.append(element);
-  for (const dot of [left, current]) dot.style.backgroundColor = dim;
+  // Under the drop, both places show a plain dim dot at their centre: their margins, not their widths, make the room.
+  for (const dot of [left, current]) {
+    dot.style.width = `${String(narrow)}px`;
+    dot.style.backgroundColor = dim;
+  }
   return {
     element,
     left,
     current,
     from,
     to,
-    wide: wide.offsetWidth,
-    narrow: narrowDot.offsetWidth,
+    wide: wideWidth,
+    narrow,
     height,
     progress: 0,
   };
@@ -80,27 +88,28 @@ function lay(from: number, to: number): Drop | null {
 function draw(drop: Drop, progress: number): void {
   const { left, current, wide, narrow, height } = drop;
   drop.progress = progress;
-  // The dots change width along the way, the row shifting smoothly.
-  left.style.width = `${String(lerp(wide, narrow, progress))}px`;
-  current.style.width = `${String(lerp(narrow, wide, progress))}px`;
-  const a = { start: left.offsetLeft, end: left.offsetLeft + left.offsetWidth };
-  const b = { start: current.offsetLeft, end: current.offsetLeft + current.offsetWidth };
-  // The front edge a breath ahead, the back one a breath behind.
+  // The places change width along the way, the row shifting smoothly.
+  left.style.marginInline = `${String(((wide - narrow) / 2) * (1 - progress))}px`;
+  current.style.marginInline = `${String(((wide - narrow) / 2) * progress)}px`;
+  const a = left.offsetLeft + left.offsetWidth / 2;
+  const b = current.offsetLeft + current.offsetWidth / 2;
+  // The front edge a breath ahead, the back one a breath behind: the drop, as long as the wide dot at rest, stretches
+  // by the gap between them, and keeps covering the dim dots it passes over.
   const front = clamp01(progress / 0.9);
   const back = clamp01((progress - 0.1) / 0.9);
-  const edges =
-    drop.to > drop.from
-      ? { start: lerp(a.start, b.start, back), end: lerp(a.end, b.end, front) }
-      : { start: lerp(a.start, b.start, front), end: lerp(a.end, b.end, back) };
-  const length = Math.max(height, edges.end - edges.start);
+  const ahead = lerp(a, b, front);
+  const behind = lerp(a, b, back);
+  const start = Math.min(ahead, behind) - wide / 2;
+  const length = Math.max(height, Math.abs(ahead - behind) + wide);
   drop.element.style.width = `${String(length)}px`;
-  drop.element.style.transform = `translate(${String(edges.start)}px, -50%)`;
+  drop.element.style.transform = `translate(${String(start)}px, -50%)`;
 }
 
 function lift(drop: Drop): void {
   drop.element.remove();
   for (const dot of [drop.left, drop.current]) {
     dot.style.removeProperty('width');
+    dot.style.removeProperty('margin-inline');
     dot.style.removeProperty('background-color');
   }
 }
