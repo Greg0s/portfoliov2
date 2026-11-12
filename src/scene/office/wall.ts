@@ -13,7 +13,7 @@ import type { Head } from './live';
 /** What a cartel says, as the contact section gives it (`src/lib/wall.ts` decides what is known). */
 export interface Cartel {
   main: string;
-  /** A title of a work, in the light italic of titles; a name alone stays upright. */
+  /** A title of a work, in the light italic of titles; without one, `main` is set like an author line. */
   isTitle: boolean;
   sub?: string;
   /** A last line: a credit the picture requires. */
@@ -115,9 +115,7 @@ export function createCartels(parent: HTMLElement, rest: Placement, framing: Fra
         item.known = cartel !== null;
         item.card.replaceChildren();
         if (!cartel) continue;
-        const main = el('span', 'office-cartel-main', item.card);
-        main.textContent = cartel.main;
-        main.classList.toggle('title', cartel.isTitle);
+        el('span', cartel.isTitle ? 'office-cartel-main' : 'office-cartel-sub', item.card).textContent = cartel.main;
         if (cartel.sub) el('span', 'office-cartel-sub', item.card).textContent = cartel.sub;
         if (cartel.note) el('span', 'office-cartel-note', item.card).textContent = cartel.note;
       }
