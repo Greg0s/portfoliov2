@@ -3,11 +3,7 @@
     "collect": {
       "startServerCommand": "pnpm preview --port 4322 --ignore-lock",
       "startServerReadyPattern": "localhost:4322",
-      "url": [
-        "http://localhost:4322/portfoliov2/",
-        "http://localhost:4322/portfoliov2/en/",
-        "http://localhost:4322/portfoliov2/projets/lyrix/"
-      ],
+      "url": ["http://localhost:4322/", "http://localhost:4322/en/", "http://localhost:4322/projets/lyrix/"],
       "numberOfRuns": 3,
       "settings": {
         "chromeFlags": "--no-sandbox"

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 4321;
-const base = process.env.BASE_PATH ?? '/portfoliov2/';
+const base = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
   testDir: 'tests/e2e',

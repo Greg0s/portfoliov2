@@ -256,7 +256,7 @@ La position, la largeur nette et la rotation des cartes dans le parcours sont d�
 
 **Textes de l'interface** : `fr.ts` fait référence ; `en.ts` est typé pour avoir exactement les mêmes clés.
 
-**URL** : une fonction utilitaire ajoute le chemin de base (`/portfoliov2/` pendant la prévisualisation, `/` après la mise en service). La correspondance FR ↔ EN est définie à un seul endroit (`i18n/routes.ts`).
+**URL** : une fonction utilitaire ajoute le chemin de base (`/` depuis la mise en service sur `gregoiretinn.es` ; `/portfoliov2/` pendant la prévisualisation). La correspondance FR ↔ EN est définie à un seul endroit (`i18n/routes.ts`).
 
 **Vidéos** : les boucles des cartes et des études de cas (muettes, `playsinline`, 4 Mo au plus, avec une image fixe) sont hébergées dans le repo. Dans le parcours, seule la carte nette et ses deux voisines chargent leur vidéo, et seule la carte nette la joue. Avec « réduire les animations », on n'affiche que l'image fixe. Les vidéos longues restent sur YouTube, chargées au clic (`youtube-nocookie.com`).
 
@@ -358,10 +358,10 @@ Déjà fournis, gardés dans les fichiers du canevas : le CV (en anglais seuleme
 - **CI** (`.github/workflows/ci.yml`), à chaque push et à chaque pull request : installation, lint, formatage, `astro check`, tests unitaires, build, tests e2e (répartis sur plusieurs tâches en parallèle), Lighthouse.
 - **Déploiement** (`.github/workflows/deploy.yml`), à chaque push sur `main` : build, puis publication sur GitHub Pages.
 - **Branches** : `main` est la branche publiée ; chaque tâche se fait sur sa propre branche, ouverte depuis `main`, avec sa propre pull request, que Grégoire relit et fusionne.
-- **Prévisualisation** : pendant la construction, le site est publié sur `https://greg0s.github.io/portfoliov2/`. L'ancien site reste en ligne sur `gregoiretinn.es`.
+- **Prévisualisation** : pendant la construction, le site était publié sur `https://greg0s.github.io/portfoliov2/`. Depuis le 12 novembre 2026, le dépôt est réglé pour `gregoiretinn.es` (chemin de base `/`, `site` = `https://gregoiretinn.es`, `public/CNAME`) ; l'ancienne adresse de prévisualisation renvoie vers le domaine une fois celui-ci déclaré dans GitHub Pages.
 - **Mise en service** (étape 12), avec l'accord explicite de Grégoire au moment venu :
   1. retirer le domaine personnalisé du repo `Greg0s/portfolio` ;
-  2. déclarer `gregoiretinn.es` dans les réglages GitHub Pages de `Greg0s/portfoliov2`, et passer le chemin de base à `/` ;
+  2. déclarer `gregoiretinn.es` dans les réglages GitHub Pages de `Greg0s/portfoliov2` (le chemin de base `/` est fait côté dépôt) ;
   3. vérifier le HTTPS et les redirections des anciennes URL ;
   4. archiver `Greg0s/portfolio`.
 

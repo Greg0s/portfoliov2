@@ -1,6 +1,6 @@
 /**
- * Builds internal URLs. Every internal link goes through `withBase`, so that the site works both under the preview's
- * base path (`/portfoliov2/`) and at the root after going live (main spec §7.3).
+ * Builds internal URLs. Every internal link goes through `withBase`, so that the site works at the root of its domain as well
+ * as under a base path (`BASE_PATH`, e.g. `/portfoliov2/`) (main spec §7.3).
  */
 
 /**

@@ -10,15 +10,15 @@ async function switchLanguage(page: Page, isMobile: boolean, name: RegExp): Prom
   }
 }
 
-test('the language switch leads to the equivalent page and keeps the anchor', async ({ page, isMobile }) => {
+test('the language switch leads to the equivalent page and keeps the anchor', async ({ page, isMobile, baseURL }) => {
   await page.goto('./#contact');
   await switchLanguage(page, isMobile, /English/);
-  await expect(page).toHaveURL(/\/portfoliov2\/en\/#contact$/);
+  await expect(page).toHaveURL(new URL('en/#contact', baseURL).href);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
   await page.goto('en/#projects');
   await switchLanguage(page, isMobile, /Français/);
-  await expect(page).toHaveURL(/\/portfoliov2\/#projets$/);
+  await expect(page).toHaveURL(new URL('./#projets', baseURL).href);
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 });
 
