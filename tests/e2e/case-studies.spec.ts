@@ -116,3 +116,32 @@ test('a case study ends on the next project, with no Contact link at the bottom'
   if (testInfo.project.name === 'mobile') await expect(page.locator('.case-footer')).toBeVisible();
   else await expect(page.locator('.case-footer')).toBeHidden();
 });
+
+test('a figure with a note explains it in a tooltip, by tap, keyboard and Escape', async ({ page, isMobile }) => {
+  const errors = trackErrors(page);
+  await page.goto('projets/perfmanager/');
+  await expect(page.locator('.stats dt').nth(2)).toHaveText('−25%');
+  const button = page.getByRole('button', { name: 'Comment ce chiffre est mesuré' });
+  const tip = page.locator('[role="tooltip"]');
+  await expect(button).toHaveAttribute('aria-describedby', (await tip.getAttribute('id')) ?? '');
+  await expect(tip).toContainText('Sur une période de 4 mois, de juillet à octobre');
+  await expect(tip).toBeHidden();
+  if (isMobile) await button.tap();
+  else await button.click();
+  await expect(tip).toBeVisible();
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  // A tap elsewhere closes it.
+  await page.locator('.results h2').click();
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+  if (!isMobile) {
+    await page.mouse.move(0, 0);
+    await button.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(tip).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(tip).toBeHidden();
+    await expect(button).toBeFocused();
+  }
+  expect(errors).toEqual([]);
+});

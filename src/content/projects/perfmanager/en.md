@@ -8,7 +8,9 @@ coverAlt: 'Perfmanager in a browser, the 2019 management review: the map of prod
 stats:
   - { value: 100+, label: client companies }
   - { value: '2,000+', label: users across France }
-  - { value: −50%, label: drop in anomalies since I started the role }
+  - value: −25%
+    label: drop in anomalies since I started the role
+    note: Over a 4-month period, from July to October, compared with the year before I took the role.
   - { value: 50+, label: 'tickets solved, in 1 h 30 on average' }
 did:
   - New features (Symfony, AngularJS)

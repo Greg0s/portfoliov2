@@ -93,7 +93,14 @@ const projectTexts = defineCollection({
       coverAlt: z.string().min(1),
       /** The results that read as figures, first on the page: the figure ("100+") and what it counts. */
       stats: z
-        .array(z.strictObject({ value: z.string().min(1).max(10), label: z.string().min(1).max(54) }))
+        .array(
+          z.strictObject({
+            value: z.string().min(1).max(10),
+            label: z.string().min(1).max(54),
+            /** How the figure was measured, shown in a small tooltip beside its label. */
+            note: z.string().min(1).max(140).optional(),
+          }),
+        )
         .max(4)
         .default([]),
       /** The results said in a sentence, after the figures or in their place. */
