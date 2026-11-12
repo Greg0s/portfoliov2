@@ -178,7 +178,7 @@ test('the wheel goes anchor by anchor to the contact, and back; sideways, it tur
   await expectFront(page, 1);
 });
 
-test('the view follows a trackpad, and the magnet ends the move: back short of a third, else on', async ({
+test('the view follows a trackpad, and the magnet ends the move: back short of a fifth, else on', async ({
   page,
   isMobile,
 }) => {
@@ -233,7 +233,7 @@ test('a swipe goes anchor by anchor to the contact, and a short touch stays', as
   await expectAnchor(page, RING);
 });
 
-test('the page follows a slow finger, and the magnet takes it back short of a third of the way', async ({
+test('the page follows a slow finger, and the magnet takes it back short of a fifth of the way', async ({
   page,
   isMobile,
 }) => {
