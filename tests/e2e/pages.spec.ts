@@ -7,18 +7,20 @@ const homes = [
 ] as const;
 
 for (const { path, lang } of homes) {
-  test(`the ${lang} home answers, declares its language and alternates, and logs no error`, async ({ page }) => {
+  test(`the ${lang} home answers, declares its language and alternates, and logs no error`, async ({
+    page,
+    baseURL,
+  }) => {
     const errors = trackErrors(page);
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.locator('link[rel="alternate"][hreflang="fr"]')).toHaveAttribute('href', /\/portfoliov2\/$/);
-    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute('href', /\/portfoliov2\/en\/$/);
-    await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute(
-      'href',
-      /\/portfoliov2\/$/,
-    );
+    // The alternates are absolute, on the site's domain, under the same base path as the build being tested.
+    const home = new URL(new URL(baseURL ?? '').pathname, process.env.SITE_URL ?? 'https://gregoiretinn.es').href;
+    await expect(page.locator('link[rel="alternate"][hreflang="fr"]')).toHaveAttribute('href', home);
+    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute('href', `${home}en/`);
+    await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute('href', home);
     expect(errors).toEqual([]);
   });
 }
@@ -48,7 +50,7 @@ test('an unknown path serves the 404 page, in both languages', async ({ page }) 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
 
-test('the favicons are declared and served', async ({ page }) => {
+test('the favicons are declared and served', async ({ page, baseURL }) => {
   await page.goto('./');
   const icons = [
     ['link[rel="icon"][type="image/svg+xml"]', 'image/svg+xml'],
@@ -57,7 +59,7 @@ test('the favicons are declared and served', async ({ page }) => {
   ] as const;
   for (const [selector, type] of icons) {
     const href = await page.locator(selector).getAttribute('href');
-    expect(href).toMatch(/^\/portfoliov2\//);
+    expect(href?.startsWith(new URL(baseURL ?? '').pathname)).toBe(true);
     const response = await page.request.get(new URL(href ?? '', page.url()).href);
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toContain(type);

@@ -17,7 +17,7 @@ import { pathFor } from '../src/i18n/routes.ts';
 import { SHARE_DIR, SHARE_SIZE } from '../src/lib/share-image.ts';
 
 const PORT = '4329';
-const BASE = process.env.BASE_PATH ?? '/portfoliov2/';
+const BASE = process.env.BASE_PATH ?? '/';
 
 const LIMIT = 200 * 1024;
 /** The moment the pages are rendered at (`-- --heure=aube`), and where (`-- --out=<dir>`, to compare before replacing). */

@@ -9,7 +9,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const dist = resolve(process.argv[2] ?? 'dist');
-const base = process.env.BASE_PATH ?? '/portfoliov2/';
+const base = process.env.BASE_PATH ?? '/';
 const KB = 1024;
 
 interface Measure {

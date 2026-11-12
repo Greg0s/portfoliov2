@@ -66,7 +66,7 @@ it.
   opened from `main` and named `feat/<step>` (e.g. `feat/foundations`). Within a step, the work lands as a series of
   commits in the order listed per step below, each leaving CI green.
 - **Done means**: CI green (lint, format, `astro check`, unit tests, build with content checks, e2e, budgets), the
-  preview at `https://greg0s.github.io/portfoliov2/` up to date, the spec updated if a decision moved, this plan's
+  site up to date (the preview at `https://greg0s.github.io/portfoliov2/`, then `https://gregoiretinn.es`), the spec updated if a decision moved, this plan's
   status updated, and for anything visible, side-by-side pictures with the mockup validated by Grégoire.
 - **Real devices**: at the end of steps 6, 7 and 9, a run of the preview with `?mesure=1` on Grégoire's laptop and
   Pixel 9 records the frame rates into the bench artifact, with the same phases as the measurement. Headless Chromium
@@ -96,25 +96,25 @@ a console error; step 3 replaces it.
 
 **Files**
 
-| File                                                   | Content                                                                                                                                   |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `package.json`                                         | `packageManager` pinned pnpm; scripts `dev`, `build`, `preview`, `lint`, `format`, `format:check`, `check`, `test`, `test:e2e`, `budgets` |
-| `.nvmrc`, `.npmrc`                                     | Node 24; `engine-strict=true`                                                                                                             |
-| `astro.config.ts`                                      | `output: 'static'`, `site`, `base` from `BASE_PATH` (default `/portfoliov2/`), `trailingSlash: 'always'`                                  |
-| `tsconfig.json`                                        | Astro `strictest` preset, plus `noUncheckedIndexedAccess`                                                                                 |
-| `eslint.config.js`                                     | flat config: `typescript-eslint` strict type-checked, `eslint-plugin-astro`, its a11y rules                                               |
-| `.prettierrc`, `.prettierignore`                       | Prettier with `prettier-plugin-astro`; ignores `docs/prototypes/`, `dist/`, renders                                                       |
-| `vitest.config.ts`                                     | `tests/unit/**`, `getViteConfig` from Astro                                                                                               |
-| `playwright.config.ts`                                 | runs on `astro preview` of the build; projects `desktop` (1440 × 900) and `mobile` (Pixel 7)                                              |
-| `src/lib/url.ts`                                       | `withBase(path)`, the only way to build an internal URL                                                                                   |
-| `src/pages/index.astro`, `en/index.astro`, `404.astro` | placeholders                                                                                                                              |
-| `scripts/budgets.ts`                                   | reads `dist/`, prints and asserts the budgets of main spec §9.4 that exist yet                                                            |
-| `lighthouserc.json`                                    | mobile preset, home FR and EN; warnings only                                                                                              |
-| `.github/workflows/ci.yml`                             | on push to `main` and pull request: install (cached), lint, format, check, unit, build, budgets, e2e, Lighthouse, in parallel jobs        |
-| `.github/workflows/deploy.yml`                         | on push to `main`: build, `actions/upload-pages-artifact`, `actions/deploy-pages`                                                         |
-| `README.md`                                            | in English, for recruiters: what the site is, stack, how to run, how to add a project                                                     |
-| `CLAUDE.md`                                            | the site's commands and layout, the checks of §9, the existing rules kept                                                                 |
-| `.gitignore`                                           | adds `node_modules/`, `dist/`, `.astro/`, `test-results/`, `playwright-report/`                                                           |
+| File                                                   | Content                                                                                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                                         | `packageManager` pinned pnpm; scripts `dev`, `build`, `preview`, `lint`, `format`, `format:check`, `check`, `test`, `test:e2e`, `budgets`               |
+| `.nvmrc`, `.npmrc`                                     | Node 24; `engine-strict=true`                                                                                                                           |
+| `astro.config.ts`                                      | `output: 'static'`, `site`, `base` from `BASE_PATH` (default `/`; `site` from `SITE_URL`, default `https://gregoiretinn.es`), `trailingSlash: 'always'` |
+| `tsconfig.json`                                        | Astro `strictest` preset, plus `noUncheckedIndexedAccess`                                                                                               |
+| `eslint.config.js`                                     | flat config: `typescript-eslint` strict type-checked, `eslint-plugin-astro`, its a11y rules                                                             |
+| `.prettierrc`, `.prettierignore`                       | Prettier with `prettier-plugin-astro`; ignores `docs/prototypes/`, `dist/`, renders                                                                     |
+| `vitest.config.ts`                                     | `tests/unit/**`, `getViteConfig` from Astro                                                                                                             |
+| `playwright.config.ts`                                 | runs on `astro preview` of the build; projects `desktop` (1440 × 900) and `mobile` (Pixel 7)                                                            |
+| `src/lib/url.ts`                                       | `withBase(path)`, the only way to build an internal URL                                                                                                 |
+| `src/pages/index.astro`, `en/index.astro`, `404.astro` | placeholders                                                                                                                                            |
+| `scripts/budgets.ts`                                   | reads `dist/`, prints and asserts the budgets of main spec §9.4 that exist yet                                                                          |
+| `lighthouserc.json`                                    | mobile preset, home FR and EN; warnings only                                                                                                            |
+| `.github/workflows/ci.yml`                             | on push to `main` and pull request: install (cached), lint, format, check, unit, build, budgets, e2e, Lighthouse, in parallel jobs                      |
+| `.github/workflows/deploy.yml`                         | on push to `main`: build, `actions/upload-pages-artifact`, `actions/deploy-pages`                                                                       |
+| `README.md`                                            | in English, for recruiters: what the site is, stack, how to run, how to add a project                                                                   |
+| `CLAUDE.md`                                            | the site's commands and layout, the checks of §9, the existing rules kept                                                                               |
+| `.gitignore`                                           | adds `node_modules/`, `dist/`, `.astro/`, `test-results/`, `playwright-report/`                                                                         |
 
 **Tests**
 
@@ -470,7 +470,8 @@ performance, 100 accessibility, 100 SEO as errors; WebKit e2e on the whole suite
 ## Step 12 — Go live
 
 **Tasks**: main spec §10, with Grégoire's explicit approval at that moment: remove the custom domain from
-`Greg0s/portfolio`, set `gregoiretinn.es` on this repository and `BASE_PATH=/`, check HTTPS and the old URLs, archive
+`Greg0s/portfolio`, set `gregoiretinn.es` on this repository (the repository side, base path `/`, `site` and `public/CNAME`, is done
+since 12 November 2026), check HTTPS and the old URLs, archive
 the old repository.
 
 **Tests**: a post-deploy smoke test against the production address (pages, redirects, HTTPS).

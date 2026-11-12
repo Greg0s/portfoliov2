@@ -5,8 +5,7 @@ through the night, in three stops: the Little Prince's planet, alive in the wind
 around it, each one a card with its label; and the desk of the dreamer who watches the planet, where the computer
 screen, the picture wall and the contact links live. Each project opens into a case study, in French and in English.
 
-**Preview**: https://greg0s.github.io/portfoliov2/ (the current site stays at [gregoiretinn.es](https://gregoiretinn.es)
-until this one goes live)
+**Live**: [gregoiretinn.es](https://gregoiretinn.es)
 
 ## Stack
 
@@ -25,7 +24,7 @@ Node 24 and pnpm (the version is pinned in `package.json`; `corepack enable` pro
 
 ```sh
 pnpm install
-pnpm dev          # http://localhost:4321/portfoliov2/
+pnpm dev          # http://localhost:4321/
 ```
 
 | Command             | What it does                                                    |
@@ -40,8 +39,8 @@ pnpm dev          # http://localhost:4321/portfoliov2/
 | `pnpm test:e2e`     | end-to-end tests on the built site (Playwright, desktop/mobile) |
 | `pnpm budgets`      | checks the performance budgets on `dist/`                       |
 
-The site is served under `/portfoliov2/` during the preview. Set `BASE_PATH=/` to build it for the root of a domain;
-every internal link goes through `withBase()` in `src/lib/url.ts`.
+The site is built for the root of https://gregoiretinn.es. Set `BASE_PATH` (e.g. `/portfoliov2/`) and `SITE_URL` to
+build it for another address; every internal link goes through `withBase()` in `src/lib/url.ts`.
 
 ## Add a project
 
