@@ -253,14 +253,19 @@ describe('the blur of the cards', () => {
 });
 
 describe('the magnet between the anchors', () => {
+  const MEDIUM = magnetOf('?scroll=2');
   const positions = [0, 1540, 3550];
 
-  it('leads on past 30 % of the way, else back', () => {
-    expect(magnetAnchor(400, positions, 0, 0, false, MAGNET)).toBe(0);
-    expect(magnetAnchor(500, positions, 0, 0, false, MAGNET)).toBe(1);
-    expect(magnetAnchor(1540 + 500, positions, 1, 0, false, MAGNET)).toBe(1);
-    expect(magnetAnchor(1540 + 700, positions, 1, 0, false, MAGNET)).toBe(2);
-    expect(magnetAnchor(1540 - 500, positions, 1, 0, false, MAGNET)).toBe(0);
+  it('leads on past the share of the way its setting asks (30 % medium, 22 % firm), else back', () => {
+    expect(magnetAnchor(400, positions, 0, 0, false, MEDIUM)).toBe(0);
+    expect(magnetAnchor(500, positions, 0, 0, false, MEDIUM)).toBe(1);
+    expect(magnetAnchor(1540 + 500, positions, 1, 0, false, MEDIUM)).toBe(1);
+    expect(magnetAnchor(1540 + 700, positions, 1, 0, false, MEDIUM)).toBe(2);
+    expect(magnetAnchor(1540 - 500, positions, 1, 0, false, MEDIUM)).toBe(0);
+
+    // The firm default leads on from a shorter way.
+    expect(magnetAnchor(400, positions, 0, 0, false, MAGNET)).toBe(1);
+    expect(magnetAnchor(300, positions, 0, 0, false, MAGNET)).toBe(0);
   });
 
   it('leads on after a quick flick or a mouse notch, whatever the distance', () => {
@@ -307,7 +312,9 @@ describe('the magnet between the anchors', () => {
   it('reads its tuning from the address', () => {
     expect(magnetOf('')).toBe(MAGNET);
     expect(magnetOf('?scroll=0').follows).toBe(false);
-    expect(magnetOf('?scroll=3').pass).toBeLessThan(MAGNET.pass);
+    expect(magnetOf('?scroll=1').pass).toBeGreaterThan(magnetOf('?scroll=2').pass);
+    expect(magnetOf('?scroll=2').pass).toBeGreaterThan(MAGNET.pass);
+    expect(magnetOf('?scroll=3')).toBe(MAGNET);
     expect(magnetOf('?scroll=9')).toBe(MAGNET);
   });
 

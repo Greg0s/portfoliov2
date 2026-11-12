@@ -145,6 +145,8 @@ const END_DRIVEN_SPEED = 1 / 1000;
 const END_RAMP_MS = 300;
 /** How closely the camera follows the scroll through the end, in ms (a light smoothing). */
 const END_EASE_MS = 160;
+/** The slowest the camera moves on the end's clock, per ms, so that it always arrives (a seventh of its top speed). */
+const END_CREEP = END_SPEED / 7;
 
 interface CardParts {
   item: HTMLElement;
@@ -638,9 +640,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       const goal = endClock(aim);
       const d = goal - q;
       const cap = (wheel || touching ? END_DRIVEN_SPEED : END_SPEED) * delta;
-      const move = Math.sign(d) * Math.min(cap, Math.abs(d) * (1 - Math.exp(-delta / END_EASE_MS)));
-      if (Math.abs(d) < 1e-4) current = aim;
-      else current = endProgressAt(q + move);
+      // The approach never slows below a creep, so that it ends in a moment, however long the frames: a pure
+      // exponential tail took several more frames, which without a graphics card last seconds each.
+      const eased = Math.min(cap, Math.abs(d) * (1 - Math.exp(-delta / END_EASE_MS)));
+      const step = Math.min(Math.abs(d), Math.max(eased, END_CREEP * delta));
+      if (Math.abs(d) < 1e-4 || step >= Math.abs(d)) current = aim;
+      else current = endProgressAt(q + Math.sign(d) * step);
       return;
     }
     // Elsewhere it eases toward the scroll, like a light inertia.
