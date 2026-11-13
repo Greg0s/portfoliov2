@@ -267,6 +267,42 @@ test('a swipe goes anchor by anchor to the contact, and a short touch stays', as
   await expectAnchor(page, RING);
 });
 
+for (const way of ['1', '2']) {
+  test(`with ?doigt=${way}, a swipe still goes anchor by anchor, there and back, and a short touch stays`, async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'the swipe is a phone gesture');
+    const errors = trackErrors(page);
+    await openJourney(page, `./?doigt=${way}`);
+    for (let anchor = 1; anchor <= CONTACT; anchor += 1) {
+      await swipe(page, 400);
+      await expectAnchor(page, anchor);
+    }
+    await swipe(page, -400);
+    await expectAnchor(page, RING);
+    await swipe(page, 20);
+    await page.waitForTimeout(800);
+    await expectAnchor(page, RING);
+    expect(errors).toEqual([]);
+  });
+}
+
+test('with ?doigt=2, the journey moves the page itself: a slow finger reaches further, then comes back', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'the swipe is a phone gesture');
+  await openJourney(page, './?doigt=2#projets');
+  await expectAnchor(page, RING);
+  const from = await page.evaluate(() => window.scrollY);
+  // 60 px of finger: more than 60 px of page, short of the magnet's share of the way.
+  expect(await swipe(page, 60)).toBeGreaterThan(90);
+  await page.waitForTimeout(300);
+  await expectAnchor(page, RING);
+  expect(await page.evaluate(() => window.scrollY)).toBe(from);
+});
+
 test('the page follows a slow finger, and the magnet takes it back short of a fifth of the way', async ({
   page,
   isMobile,

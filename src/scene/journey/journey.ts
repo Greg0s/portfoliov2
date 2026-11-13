@@ -26,7 +26,10 @@ import {
   bracket,
   easeFrom,
   easeInOutCubic,
+  easeLaunch,
   easeRamp,
+  FINGER_SCREEN,
+  fingerOf,
   glideDuration,
   isNotch,
   magnetAnchor,
@@ -147,6 +150,8 @@ const END_RAMP_MS = 300;
 const END_EASE_MS = 160;
 /** The slowest the camera moves on the end's clock, per ms, so that it always arrives (a seventh of its top speed). */
 const END_CREEP = END_SPEED / 7;
+/** With `?doigt=1` or `2`, how closely the camera follows a scroll a finger or a glide moves, in ms: a frame or two. */
+const TIGHT_EASE_MS = 24;
 
 interface CardParts {
   item: HTMLElement;
@@ -214,6 +219,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   const SHOWCASE_AT = RING;
   /** How the view follows a gesture between the anchors, and the magnet that ends it (`?scroll=0` to `3`). */
   const magnet = magnetOf(location.search);
+  /** How a finger drives the journey on a touch screen (`?doigt=0` to `2`, see `fingerOf`). */
+  const finger = fingerOf(location.search);
   // Firefox sorts everything in one 3D scene plane by plane: a card's dark shadow, in the card's own plane, would
   // now and then be drawn over the card. There each card is flattened into its own picture, the perspective of its
   // turn given by its own frame, seen from the vanishing point at the card's distance: the same drawing, in one plane.
@@ -655,6 +662,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   const pastRing = (u: number): boolean => u > LAST_PROJECT + ON_ANCHOR / range;
 
   function followCamera(delta: number): void {
+    // With `?doigt=1` or `2`, on a touch screen, the view keeps to a scroll a finger or a glide moves: the glide is
+    // eased already, and an eased follow on top of it trails behind the finger, then drifts on after the page stopped.
+    const tight = finger.tight && coarse.matches && (touching || glide !== null || fingerDrive !== null) && !hold;
     const edge = LAST_PROJECT - 1 / range;
     // While the office finishes getting ready, the camera waits on the last project.
     const aim = hold?.reason === 'arrival' ? Math.min(target, LAST_PROJECT) : target;
@@ -665,23 +675,31 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       const q = endClock(current);
       const goal = endClock(aim);
       const d = goal - q;
-      const cap = (wheel || touching ? END_DRIVEN_SPEED : END_SPEED) * delta;
+      const cap = (wheel || touching || tight ? END_DRIVEN_SPEED : END_SPEED) * delta;
       // The approach never slows below a creep, so that it ends in a moment, however long the frames: a pure
       // exponential tail took several more frames, which without a graphics card last seconds each.
-      const eased = Math.min(cap, Math.abs(d) * (1 - Math.exp(-delta / END_EASE_MS)));
+      const eased = Math.min(cap, Math.abs(d) * (1 - Math.exp(-delta / (tight ? TIGHT_EASE_MS : END_EASE_MS))));
       const step = Math.min(Math.abs(d), Math.max(eased, END_CREEP * delta));
       if (Math.abs(d) < 1e-4 || step >= Math.abs(d)) current = aim;
       else current = endProgressAt(q + Math.sign(d) * step);
       return;
     }
     // Elsewhere it eases toward the scroll, like a light inertia.
-    current += (aim - current) * (1 - Math.exp(-delta / (scene.view.mobile ? 150 : 130)));
+    current += (aim - current) * (1 - Math.exp(-delta / (tight ? TIGHT_EASE_MS : scene.view.mobile ? 150 : 130)));
     if (Math.abs(aim - current) < 0.00002) current = aim;
   }
 
   // ---------- Gliding from anchor to anchor ----------
 
-  let glide: { from: number; to: number; start: number; duration: number; ease: (t: number) => number } | null = null;
+  let glide: {
+    from: number;
+    to: number;
+    start: number;
+    duration: number;
+    ease: (t: number) => number;
+    /** With `?doigt=1` or `2`, a glide through the end runs on the end's clock, from `clock[0]` to `clock[1]`. */
+    clock?: [number, number];
+  } | null = null;
   /** The loading pause under way, if any (see the frame loop). */
   let hold: Hold | null = null;
 
@@ -696,7 +714,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
    */
   const coarse = matchMedia('(pointer: coarse)');
   function holdFling(on: boolean): void {
-    if (on && coarse.matches) html.style.overflow = 'hidden';
+    // Driven by the journey (`?doigt=2`), the page has no fling to end.
+    if (on && coarse.matches && !finger.drives) html.style.overflow = 'hidden';
     else html.style.removeProperty('overflow');
   }
 
@@ -744,8 +763,23 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const duration = throughEnd
       ? endDuration * magnet.pace
       : (toShowcase ? SHOWCASE_GLIDE_MS : glideDuration(to - from)) * magnet.pace;
+    const ramp = (END_RAMP_MS * magnet.pace) / duration;
+    // With `?doigt=1` or `2`, a glide between the ring and the contact moves evenly on the end's clock rather than
+    // on the page: evenly on the page, it crept through the ring's leaving (the first 12 % of the end over 0.3
+    // screen), then sped up at once to the arrival's pace, which held the camera back. It leaves at the finger's speed.
+    const ringAt = (positions[1] ?? 0) - ON_ANCHOR;
+    if (finger.tight && coarse.matches && throughEnd && Math.min(from, to) >= ringAt) {
+      const q0 = endClock(progressOf(from));
+      const q1 = endClock(progressOf(to));
+      const mean = Math.abs(q1 - q0) / duration;
+      // The finger's speed on the end's clock, from its speed on the page.
+      const perPx = Math.abs(endClock(progressOf(from + direction)) - q0);
+      const start = mean > 0 ? (speed * perPx) / mean : 0;
+      glide = { from, to, start: -1, duration, ease: easeLaunch(start, ramp), clock: [q0, q1] };
+      return;
+    }
     const ease = throughEnd
-      ? easeRamp((END_RAMP_MS * magnet.pace) / duration)
+      ? easeRamp(ramp)
       : toShowcase
         ? easeInOutSine
         : speed > 0
@@ -758,9 +792,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
    * never forces a layout. */
   function stepGlide(now: number): void {
     if (!glide) return;
-    if (glide.start < 0) glide.start = now;
+    // With `?doigt=1` or `2`, the glide moves from its first frame, so that a finger's move goes on without a stop.
+    if (glide.start < 0) glide.start = finger.tight && coarse.matches ? now - 1000 / 60 : now;
     const t = Math.min(1, (now - glide.start) / glide.duration);
-    const top = glide.from + (glide.to - glide.from) * glide.ease(t);
+    const top = glide.clock
+      ? t >= 1
+        ? glide.to
+        : endProgressAt(glide.clock[0] + (glide.clock[1] - glide.clock[0]) * glide.ease(t)) * range
+      : glide.from + (glide.to - glide.from) * glide.ease(t);
     window.scrollTo({ top, behavior: 'instant' });
     scrolled = top;
     target = progressOf(top);
@@ -957,6 +996,35 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   let touchTime = 0;
   let touchSpeed = 0;
   let pinching = false;
+  /**
+   * With `?doigt=2`, the journey moves the page under the finger, the browser's own scrolling held back: from where the
+   * page was (`base`), over the stretch between the anchors on either side, `gain` px of page for a px of finger.
+   */
+  let fingerDrive: { from: number; base: number; low: number; high: number; gain: number; at: number } | null = null;
+  const drivesFinger = (): boolean => finger.drives && coarse.matches;
+  function driveFinger(y: number): void {
+    if (!fingerDrive) {
+      const way = Math.sign(touchStartY - y) || 1;
+      const at = touchScroll;
+      const [below, above] = bracket(at, positions);
+      const on = anchorAt(at, positions);
+      const from = on >= 0 ? on : way > 0 ? below : above;
+      const low = positions[below] ?? 0;
+      const high = positions[above] ?? 0;
+      // Each transition takes the same reach of finger, however long its stretch of the track.
+      const stretch = Math.max(high - (positions[from] ?? 0), (positions[from] ?? 0) - low);
+      const gain = Math.max(1, stretch / (FINGER_SCREEN * screen));
+      fingerDrive = { from, base: at, low, high, gain, at };
+    }
+    const top = Math.max(
+      fingerDrive.low,
+      Math.min(fingerDrive.high, fingerDrive.base + (touchStartY - y) * fingerDrive.gain),
+    );
+    fingerDrive.at = top;
+    window.scrollTo({ top, behavior: 'instant' });
+    scrolled = top;
+    target = progressOf(top);
+  }
   const onTouchStart = (event: TouchEvent): void => {
     // Two fingers zoom the page: not a swipe.
     pinching = event.touches.length > 1;
@@ -978,6 +1046,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     decided = false;
     touchTime = event.timeStamp;
     touchSpeed = 0;
+    fingerDrive = null;
   };
   const onTouchMove = (event: TouchEvent): void => {
     const y = event.touches[0]?.clientY ?? touchY;
@@ -994,6 +1063,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     if (sideways) {
       if (event.cancelable) event.preventDefault();
       showcase.drag(across / (scene.view.width * 0.9));
+    } else if (drivesFinger() && !pinching && event.touches.length === 1 && !isMenuOpen()) {
+      // `?doigt=2`: the browser never scrolls the page itself (nor pulls it to refresh, nor hides its bar); once the
+      // finger is told to go up or down, the journey moves the page.
+      if (event.cancelable) event.preventDefault();
+      if (decided) driveFinger(y);
     }
     if (y !== touchY) direction = Math.sign(touchY - y);
     // The finger's speed, smoothed, in px/ms (positive: scrolling down).
@@ -1016,6 +1090,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       showcase.release(Math.abs(across) > 40 ? Math.sign(across) : 0);
       sideways = false;
       glideTo(settleAnchor(touchFrom, positions, 0));
+    } else if (fingerDrive) {
+      // `?doigt=2`: the magnet goes on at the speed the finger gave the page.
+      const drive = fingerDrive;
+      fingerDrive = null;
+      const index = magnetAnchor(drive.at, positions, drive.from, touchSpeed, false, magnet);
+      const way = Math.sign((positions[index] ?? 0) - drive.at);
+      glideTo(index, Math.max(0, touchSpeed * drive.gain * way));
     } else if (magnet.follows) {
       // The view followed the finger: the magnet takes it on to the next anchor, or back.
       const from = nearestAnchor(touchFrom, positions);
@@ -1047,6 +1128,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       showcase.release(0);
       sideways = false;
     }
+    fingerDrive = null;
     glideTo(settleAnchor(touchFrom, positions, 0));
     holdFling(glide !== null);
   };
