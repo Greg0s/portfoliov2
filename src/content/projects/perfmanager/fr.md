@@ -1,7 +1,7 @@
 ---
 title: Perfmanager
 kind: SaaS B2B
-role: Développement web full-stack et support
+role: Développement full-stack et support
 period: Depuis février 2026
 summary: Développer et maintenir une plateforme de management QSE complexe, utilisée dans toute la France.
 coverAlt: 'Perfmanager dans un navigateur, la revue de direction 2019 : la cartographie des processus de réalisation, de management et de support, en vert, orange et rouge.'

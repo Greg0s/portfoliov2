@@ -1,7 +1,7 @@
 ---
 title: Siemens
 kind: Industrial tools
-role: Web design and development
+role: Concept and front-end development
 summary: Making it easier to configure and monitor industrial 3D printing processes live.
 coverAlt: "The Siemens dashboard in a browser: sensor curves for two rooms, a meter's heatmap and the simulation of a part's layers."
 outcomes:

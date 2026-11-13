@@ -1,7 +1,7 @@
 ---
 title: Lyrix
-kind: Jeu web multijoueur
-role: Conception et développement web
+kind: Jeu multijoueur
+role: Conception, design et développement full-stack
 summary: Retrouver une chanson à partir de ses paroles cachées, seul ou à plusieurs en temps réel.
 coverAlt: La partie du jour de Lyrix dans un navigateur, les paroles cachées en barres orange, et la même partie sur un téléphone.
 outcomes:

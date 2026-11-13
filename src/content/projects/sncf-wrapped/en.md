@@ -1,7 +1,7 @@
 ---
 title: SNCF Wrapped
 kind: Personalised data recap
-role: Concept, design and web development
+role: Concept, design and development
 summary: Your year on the train told screen by screen, without any data leaving your browser.
 coverAlt: The SNCF Wrapped home in a browser, “Le palmarès de vos années de voyage”, and its pink card to share on a phone.
 outcomes:

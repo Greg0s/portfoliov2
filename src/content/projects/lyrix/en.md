@@ -1,7 +1,7 @@
 ---
 title: Lyrix
-kind: Multiplayer web game
-role: Design and web development
+kind: Multiplayer game
+role: Concept, design and full-stack development
 summary: Find a song from its hidden lyrics, alone or with others in real time.
 coverAlt: Lyrix's song of the day in a browser, its hidden lyrics as orange bars, and the same game on a phone.
 outcomes:
