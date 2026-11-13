@@ -62,8 +62,14 @@ a {
   transition: opacity 200ms ease;
 }
 
-a:hover {
-  opacity: 0.6;
+/*
+ * Hover styles only where a pointer can hover: on a touch screen, a tap leaves :hover on until the next tap
+ * elsewhere, so a tapped link would stay faded or coloured (13 November 2026).
+ */
+@media (hover: hover) {
+  a:hover {
+    opacity: 0.6;
+  }
 }
 
 button {
@@ -126,8 +132,10 @@ button {
   transform: none;
 }
 
-.skip-link:hover {
-  opacity: 1;
+@media (hover: hover) {
+  .skip-link:hover {
+    opacity: 1;
+  }
 }
 
 /* The dive into a case study and back (motion/dive.ts): the card's picture over a dark backdrop. */

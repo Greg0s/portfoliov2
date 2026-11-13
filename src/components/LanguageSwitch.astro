@@ -81,9 +81,11 @@ const links = locales.map((lang) => ({
     text-underline-offset: 5px;
   }
 
-  /* Pointed at, the languages take the accent rather than fading. */
-  a:hover {
-    opacity: 1;
-    color: var(--color-accent);
+  /* Pointed at, the languages take the accent rather than fading (only with a pointer that hovers: base.css). */
+  @media (hover: hover) {
+    a:hover {
+      opacity: 1;
+      color: var(--color-accent);
+    }
   }
 </style>

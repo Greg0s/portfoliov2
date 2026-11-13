@@ -54,11 +54,16 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     font-weight: 500;
   }
 
-  /* Pointed at, the links take the accent rather than fading. */
-  .name:hover,
-  .links > a:hover {
-    opacity: 1;
-    color: var(--color-accent);
+  /*
+   * Pointed at, the links take the accent rather than fading. Only with a pointer that hovers: on a phone, a
+   * tapped name kept the accent until the next tap (base.css).
+   */
+  @media (hover: hover) {
+    .name:hover,
+    .links > a:hover {
+      opacity: 1;
+      color: var(--color-accent);
+    }
   }
 
   .menu-button {
@@ -74,8 +79,10 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     transition: opacity 200ms ease;
   }
 
-  .menu-button:hover {
-    opacity: 0.6;
+  @media (hover: hover) {
+    .menu-button:hover {
+      opacity: 0.6;
+    }
   }
 
   @media (width < 768px) {
@@ -103,10 +110,15 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     }
 
     [data-section] .name[aria-current],
-    [data-section] .links > a[aria-current],
-    [data-section] .name:hover,
-    [data-section] .links > a:hover {
+    [data-section] .links > a[aria-current] {
       color: var(--color-accent);
+    }
+
+    @media (hover: hover) {
+      [data-section] .name:hover,
+      [data-section] .links > a:hover {
+        color: var(--color-accent);
+      }
     }
 
     [data-section] .name[aria-current],
