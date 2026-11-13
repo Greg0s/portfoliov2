@@ -19,7 +19,9 @@ import {
   anchorPositions,
   bracket,
   easeFrom,
+  easeLaunch,
   easeRamp,
+  fingerOf,
   isNotch,
   MAGNET,
   magnetAnchor,
@@ -329,5 +331,46 @@ describe('the magnet between the anchors', () => {
       last = ease(t);
     }
     expect((ease(0.4) - ease(0.3)) / 0.1).toBeCloseTo(1 / 0.9, 6);
+  });
+});
+
+describe('how a finger drives the journey (?doigt=)', () => {
+  it('keeps the current way unless the URL asks for another', () => {
+    expect(fingerOf('')).toEqual({ tight: false, drives: false });
+    expect(fingerOf('?doigt=7')).toEqual({ tight: false, drives: false });
+    expect(fingerOf('?doigt=1')).toEqual({ tight: true, drives: false });
+    expect(fingerOf('?doigt=2')).toEqual({ tight: true, drives: true });
+  });
+
+  it('launches a glide at the given speed, then lands it evenly', () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: 0, max: 5, noNaN: true }),
+        fc.double({ min: 0.05, max: 0.5, noNaN: true }),
+        (v0, r) => {
+          const ease = easeLaunch(v0, r);
+          expect(ease(0)).toBe(0);
+          expect(ease(1)).toBe(1);
+          let last = 0;
+          for (let t = 0.005; t < 1; t += 0.005) {
+            const e = ease(t);
+            expect(e).toBeGreaterThanOrEqual(last - 1e-12);
+            expect(e).toBeLessThanOrEqual(1 + 1e-12);
+            last = e;
+          }
+          // It leaves at the asked speed, held to the cruise.
+          const start = (ease(1e-6) - ease(0)) / 1e-6;
+          expect(start).toBeCloseTo(Math.min(v0, 1 / (1 - r / 2)), 3);
+          // It lands at rest.
+          expect((ease(1) - ease(1 - 1e-6)) / 1e-6).toBeLessThan(1e-3);
+        },
+      ),
+    );
+  });
+
+  it('is the even ramp from a standing start', () => {
+    const launch = easeLaunch(0, 0.2);
+    const ramp = easeRamp(0.2);
+    for (let t = 0; t <= 1; t += 0.05) expect(launch(t)).toBeCloseTo(ramp(t), 10);
   });
 });
