@@ -645,14 +645,15 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 
   /*
    * From another case study, the page slides in from beside it (src/motion/slide.ts), whole: its content in place, its
-   * cover with it rather than flying on its own, and the header staying, its number changing in place.
+   * cover with it rather than flying on its own, and the header staying, its number changing in place. In the other
+   * language, the page shows in place too (src/motion/language.ts).
    */
-  :global(html[data-slid]) .case-header,
-  :global(html[data-slid]) .sheet,
-  :global(html[data-slid]) .cover::before,
-  :global(html[data-slid]) .case-content :global(.facts),
-  :global(html[data-slid]) .case-main > section,
-  :global(html[data-slid]) .case-content .band {
+  :global(html:is([data-slid], [data-lang-switched])) .case-header,
+  :global(html:is([data-slid], [data-lang-switched])) .sheet,
+  :global(html:is([data-slid], [data-lang-switched])) .cover::before,
+  :global(html:is([data-slid], [data-lang-switched])) .case-content :global(.facts),
+  :global(html:is([data-slid], [data-lang-switched])) .case-main > section,
+  :global(html:is([data-slid], [data-lang-switched])) .case-content .band {
     animation: none;
   }
 

@@ -112,6 +112,7 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
 
 <script>
   import { initDive } from '../motion/dive';
+  import { initLanguage } from '../motion/language';
   import { initMenu } from '../motion/menu';
   import { initNav } from '../motion/nav';
   import { initNote } from '../motion/note';
@@ -127,6 +128,7 @@ const switchesScript = `(() => { const asked = new URLSearchParams(location.sear
   initDive();
   initSlide();
   initSwipe();
+  initLanguage();
   initSection();
   // The router swaps the root element's attributes for the new page's: the moment is set again on each page.
   document.addEventListener('astro:after-swap', applyMoment);

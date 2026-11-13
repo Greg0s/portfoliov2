@@ -10,6 +10,7 @@
  * hover would, the next one shrinks Firefox back, the third opens GitHub, and so on through the CV and Instagram, then
  * LinkedIn again; the email is left out. The taskbar's clock shows the visitor's time.
  */
+import { reachedBySwitch } from '../../motion/language';
 
 /** The links' pages; the email opens the mail app. */
 export type ScreenPage = 'LinkedIn' | 'GitHub' | 'CV' | 'Instagram' | 'Email';
@@ -46,6 +47,9 @@ export interface Screen {
   dispose(): void;
 }
 
+/** The wallpaper shown last, within the page's document. */
+let lastWallpaper = '';
+
 export function createScreen(template: HTMLTemplateElement, links: ParentNode, options: ScreenOptions): Screen {
   const fragment = template.content.cloneNode(true) as DocumentFragment;
   const element = fragment.firstElementChild as HTMLElement;
@@ -59,15 +63,18 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
   const wallpaper = element.querySelector<HTMLImageElement>('.wallpaper');
   const wallpapers = JSON.parse(wallpaper?.dataset.wallpapers ?? '[]') as string[];
   let current = '';
-  const drawWallpaper = (): HTMLImageElement | null => {
+  const drawWallpaper = (keep = false): HTMLImageElement | null => {
     const candidates = wallpapers.length > 1 ? wallpapers.filter((src) => src !== current) : wallpapers;
-    const next = candidates[Math.floor(Math.random() * candidates.length)];
+    const kept = keep && wallpapers.includes(lastWallpaper) ? lastWallpaper : undefined;
+    const next = kept ?? candidates[Math.floor(Math.random() * candidates.length)];
     if (!wallpaper || next === undefined) return null;
     current = next;
+    lastWallpaper = next;
     wallpaper.src = next;
     return wallpaper;
   };
-  drawWallpaper();
+  // In the other language, the screen keeps the wallpaper it showed.
+  drawWallpaper(reachedBySwitch());
 
   // ---- Windows: which one is open, and the tab in front (kept while Firefox shrinks back).
   let open: ScreenPage | '' = '';

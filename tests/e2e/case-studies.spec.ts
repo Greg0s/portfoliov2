@@ -109,6 +109,31 @@ test('a case study declares its alternates and switches language on the same pro
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
 
+test('the language switch keeps the place on a case study', async ({ page }) => {
+  await page.goto('projets/lyrix/');
+  await page.evaluate(() => {
+    window.scrollTo({ top: (document.documentElement.scrollHeight - innerHeight) / 2, behavior: 'instant' });
+    // Where the page is at the click (on a phone, the languages are at the bottom of the page).
+    document.addEventListener(
+      'click',
+      () => {
+        const room = document.documentElement.scrollHeight - innerHeight;
+        (window as unknown as { share: number }).share = scrollY / room;
+      },
+      { capture: true, once: true },
+    );
+  });
+  await page.getByRole('link', { name: /^EN/ }).first().click();
+  await expect(page).toHaveURL(/\/en\/projects\/lyrix\/$/);
+  await expect(page.locator('html')).not.toHaveAttribute('data-lang-switch');
+  const [share, kept] = await page.evaluate(() => [
+    (window as unknown as { share: number }).share,
+    scrollY / (document.documentElement.scrollHeight - innerHeight),
+  ]);
+  expect(share).toBeGreaterThan(0.3);
+  expect(Math.abs(kept - share)).toBeLessThan(0.02);
+});
+
 test('a case study ends on the next project, with no Contact link at the bottom', async ({ page }, testInfo) => {
   await page.goto('projets/lyrix/');
   await expect(page.locator('.case-footer').getByRole('link', { name: 'Contact' })).toHaveCount(0);
