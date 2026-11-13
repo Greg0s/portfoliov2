@@ -87,6 +87,17 @@ test.describe('mobile menu', () => {
     await expect(name).toHaveCSS('color', 'rgb(243, 243, 241)');
   });
 
+  test('a tapped name does not keep the accent', async ({ page }) => {
+    await page.goto('./#lyrix');
+    const name = page.getByRole('banner').getByRole('link', { name: 'Grégoire Tinnes' });
+    // A phone leaves :hover on the tapped element until the next tap; headless Chromium does not, so the test
+    // puts the pointer on the name, as the phone does. The screen cannot hover: the name must stay as it is.
+    await name.hover();
+    expect(await name.evaluate((element) => element.matches(':hover'))).toBe(true);
+    await expect(name).toHaveCSS('color', 'rgb(243, 243, 241)');
+    await expect(name).toHaveCSS('opacity', '1');
+  });
+
   test('opens and closes with the keyboard and gives the focus back', async ({ page }) => {
     await page.goto('./');
     const button = page.getByRole('button', { name: 'Menu' });

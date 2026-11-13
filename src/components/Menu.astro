@@ -109,8 +109,10 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     transition: opacity 200ms ease;
   }
 
-  .close:hover {
-    opacity: 0.6;
+  @media (hover: hover) {
+    .close:hover {
+      opacity: 0.6;
+    }
   }
 
   .links {
@@ -129,9 +131,11 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     letter-spacing: var(--tracking-title);
   }
 
-  .links a:hover {
-    opacity: 1;
-    color: var(--color-accent);
+  @media (hover: hover) {
+    .links a:hover {
+      opacity: 1;
+      color: var(--color-accent);
+    }
   }
 
   .languages {
