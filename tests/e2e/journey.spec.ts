@@ -150,6 +150,41 @@ test('the language switch keeps the project the journey has scrolled to', async 
   await expectFront(page, perfmanager + 1);
 });
 
+test('the language switch shows the ring at once, never the opening on the way', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the header is the desktop one');
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  // Every frame from the click on: the page is held as it was until the new one stands there, then shows the ring.
+  await page.evaluate(() => {
+    const seen: string[] = [];
+    (window as unknown as { seen: string[] }).seen = seen;
+    const tick = (): void => {
+      const html = document.documentElement;
+      const held = html.matches(':active-view-transition') && html.hasAttribute('data-lang-switch');
+      const intro = document.querySelector('.opening .intro');
+      const opening = intro ? Number(getComputedStyle(intro).opacity) : 0;
+      if (held) seen.push('held');
+      else if (opening > 0) seen.push(`${html.lang}: opening at ${String(opening)}`);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  // A slower processor, as a phone's: the new page takes a few frames to land where the old one was.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  await page
+    .getByRole('banner')
+    .getByRole('link', { name: /English/ })
+    .click();
+  await expect(page).toHaveURL(/\/en\/#projects$/);
+  await expectAnchor(page, RING);
+  await expect(page.locator('html')).not.toHaveAttribute('data-lang-switch');
+  // Held for a few frames, then the ring, the opening never.
+  const seen = await page.evaluate(() => (window as unknown as { seen: string[] }).seen);
+  expect(seen).toContain('held');
+  expect(seen.filter((frame) => frame !== 'held')).toEqual([]);
+});
+
 test('?gl=0 keeps the planet as an image', async ({ page }) => {
   await openJourney(page, './?gl=0');
   await page.mouse.move(200, 200);

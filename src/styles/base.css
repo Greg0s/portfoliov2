@@ -236,6 +236,34 @@ html[data-dive-fade]::view-transition-new(root) {
   }
 }
 
+/* The language switch (motion/language.ts): the old page stays as it was, the new one hidden, until the new one stands
+   in the same place; the script then ends the transition and the new page shows in one frame. The hold is an
+   animation, so that the transition lasts; it ends by itself if the script never does. */
+html[data-lang-switch]::view-transition-group(*) {
+  animation: none !important;
+}
+
+html[data-lang-switch]::view-transition-old(*) {
+  animation: lang-hold 2500ms linear both !important;
+}
+
+html[data-lang-switch]::view-transition-new(*) {
+  animation: lang-hold 2500ms linear both !important;
+  opacity: 0;
+}
+
+/* Meanwhile, what the journey sets on its first frame (the opening's call to action gone, a card lit) is set at once
+   rather than eased from the opening's look. */
+html[data-lang-switch] [data-stage] * {
+  transition: none !important;
+}
+
+@keyframes lang-hold {
+  to {
+    visibility: visible;
+  }
+}
+
 /* With reduced motion, a 200 ms fade replaces the dive (main spec §5.6): the router's own CSS turns every view
    transition off then, which would leave a cut. */
 @media (prefers-reduced-motion: reduce) {

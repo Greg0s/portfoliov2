@@ -15,6 +15,7 @@ import { createCartels, type WallPicture } from './wall';
 import { quadMatrix } from '../../lib/quad';
 import { draw } from '../../lib/wall';
 import { blackout } from '../../motion/blackout';
+import { reachedBySwitch } from '../../motion/language';
 import { rng } from './common';
 import type { Moment } from '../time';
 
@@ -120,6 +121,21 @@ const SEAS = [
   [28, 54, 26, 22, 0.48],
   [62, 46, 20, 22, 0.5],
 ] as const;
+
+/** The wall's last draw, within the page's document: the page in the other language shows the same pictures. */
+let shown: ReadonlyMap<string, WallPicture> = new Map();
+
+/** A new draw, or, in the other language, the pictures the wall showed (the same files, their labels translated). */
+function firstDraw(pools: ReadonlyMap<string, readonly WallPicture[]>): Map<string, WallPicture> {
+  const picks = draw(pools);
+  if (!reachedBySwitch()) return picks;
+  for (const [frame, pool] of pools) {
+    const src = shown.get(frame)?.src;
+    const same = pool.find((picture) => picture.src === src);
+    if (same) picks.set(frame, same);
+  }
+  return picks;
+}
 
 export function createOfficeView(section: HTMLElement, live: OfficeScene, options: ViewOptions): OfficeView {
   const { framing, moment } = options;
@@ -244,6 +260,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
   const empty = (): void => {
     void blackout(async () => {
       picks = draw(options.pools, picks);
+      shown = picks;
       cartels.set(picks);
       const wallpaper = desktop?.drawWallpaper();
       // The new pictures, ready before the view comes back (or after a second at most).
@@ -410,7 +427,8 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
   let repaint = false;
   const sourcesOf = (pictures: ReadonlyMap<string, WallPicture>): Map<string, PictureSource> =>
     new Map([...pictures].map(([id, picture]) => [id, { src: picture.src, focus: picture.focus }]));
-  let picks = draw(options.pools);
+  let picks = firstDraw(options.pools);
+  shown = picks;
   cartels.set(picks);
   live.setPictures(sourcesOf(picks), () => {
     sized += 1;
