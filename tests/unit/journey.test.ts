@@ -335,9 +335,10 @@ describe('the magnet between the anchors', () => {
 });
 
 describe('how a finger drives the journey (?doigt=)', () => {
-  it('keeps the current way unless the URL asks for another', () => {
-    expect(fingerOf('')).toEqual({ tight: false, drives: false });
-    expect(fingerOf('?doigt=7')).toEqual({ tight: false, drives: false });
+  it('drives the page by default, unless the URL asks for another way', () => {
+    expect(fingerOf('')).toEqual({ tight: true, drives: true });
+    expect(fingerOf('?doigt=7')).toEqual({ tight: true, drives: true });
+    expect(fingerOf('?doigt=0')).toEqual({ tight: false, drives: false });
     expect(fingerOf('?doigt=1')).toEqual({ tight: true, drives: false });
     expect(fingerOf('?doigt=2')).toEqual({ tight: true, drives: true });
   });
