@@ -1,6 +1,6 @@
 ---
 title: What we play?
-kind: Hub de jeux web
+kind: Hub de jeux en ligne
 role: Conception, design et développement
 summary: Trouver un jeu en ligne à plusieurs, dans une interface colorée et dynamique.
 coverAlt: L'accueil de What we play? dans un navigateur, « À quoi on joue à 6 ? » et ses filtres de jeux, et le même écran sur un téléphone.

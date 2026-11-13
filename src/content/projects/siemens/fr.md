@@ -1,7 +1,7 @@
 ---
 title: Siemens
 kind: Outils pour l’industrie
-role: Conception et développement web
+role: Conception et développement front-end
 summary: Faciliter la configuration et le monitoring en direct de processus industriels d’impression 3D.
 coverAlt: "Le tableau de bord de Siemens dans un navigateur : courbes de capteurs de deux salles, carte de chaleur d'un compteur et simulation des couches d'une pièce."
 outcomes:

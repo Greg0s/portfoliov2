@@ -1,7 +1,7 @@
 ---
 title: Littérature & Combinatoire
-kind: Website & video
-role: Mockup, back end, real-time front end and video
+kind: Interactive exhibition
+role: Full-stack development, mockup and video
 summary: A multimedia exhibition, from the interactive site to installations, on combinatorial literature.
 coverAlt: The Combimac home in a browser, “Bienvenue dans le projet littérature & combinatoire”, and the creations page on a phone.
 outcomes:

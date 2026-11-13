@@ -1,6 +1,6 @@
 ---
 title: What we play?
-kind: Web game hub
+kind: Online game hub
 role: Concept, design and development
 summary: Find an online game to play together, in a colourful, lively interface.
 coverAlt: The What we play? home in a browser, “À quoi on joue à 6 ?” and its game filters, and the same screen on a phone.

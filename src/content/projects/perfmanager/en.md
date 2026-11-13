@@ -1,7 +1,7 @@
 ---
 title: Perfmanager
 kind: B2B SaaS
-role: Full-stack web development and support
+role: Full-stack development and support
 period: Since February 2026
 summary: Building and maintaining a complex QHSE management platform used across France.
 coverAlt: 'Perfmanager in a browser, the 2019 management review: the map of production, management and support processes, in green, orange and red.'
