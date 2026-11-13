@@ -267,7 +267,7 @@ test('a swipe goes anchor by anchor to the contact, and a short touch stays', as
   await expectAnchor(page, RING);
 });
 
-for (const way of ['1', '2']) {
+for (const way of ['0', '1']) {
   test(`with ?doigt=${way}, a swipe still goes anchor by anchor, there and back, and a short touch stays`, async ({
     page,
     isMobile,
@@ -288,12 +288,12 @@ for (const way of ['1', '2']) {
   });
 }
 
-test('with ?doigt=2, the journey moves the page itself: a slow finger reaches further, then comes back', async ({
+test('the journey moves the page itself under the finger: a slow finger reaches further, then comes back', async ({
   page,
   isMobile,
 }) => {
   test.skip(!isMobile, 'the swipe is a phone gesture');
-  await openJourney(page, './?doigt=2#projets');
+  await openJourney(page, './#projets');
   await expectAnchor(page, RING);
   const from = await page.evaluate(() => window.scrollY);
   // 60 px of finger: more than 60 px of page, short of the magnet's share of the way.
@@ -303,12 +303,12 @@ test('with ?doigt=2, the journey moves the page itself: a slow finger reaches fu
   expect(await page.evaluate(() => window.scrollY)).toBe(from);
 });
 
-test('the page follows a slow finger, and the magnet takes it back short of a fifth of the way', async ({
+test('with ?doigt=0, the page follows a slow finger, and the magnet takes it back short of a fifth of the way', async ({
   page,
   isMobile,
 }) => {
   test.skip(!isMobile, 'the swipe is a phone gesture');
-  await openJourney(page, './#projets');
+  await openJourney(page, './?doigt=0#projets');
   await expectAnchor(page, RING);
   const from = await page.evaluate(() => window.scrollY);
   // The view went along with the finger, then came back to the ring.
@@ -353,9 +353,24 @@ test('a swipe across the ring that drifts up or down turns it, the page holding 
   await expectAnchor(page, RING);
 });
 
-test('a flick lands one anchor further, its fling held while the page glides there', async ({ page, isMobile }) => {
+test('a flick lands one anchor further, the page never scrolled by the browser', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the swipe is a phone gesture');
   await openJourney(page, './#perfmanager');
+  await expectAnchor(page, RING);
+  // A short, quick flick: the magnet carries it on, however short, with no fling of the browser's to hold.
+  await swipe(page, 120, false, 0, true);
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('html')).not.toHaveCSS('overflow-y', 'hidden');
+  await page.waitForTimeout(1500);
+  await expectAnchor(page, CONTACT);
+});
+
+test('with ?doigt=1, a flick lands one anchor further, its fling held while the page glides there', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'the swipe is a phone gesture');
+  await openJourney(page, './?doigt=1#perfmanager');
   await expectAnchor(page, RING);
   // A short, quick flick: the magnet carries it on, however short.
   await swipe(page, 300, false, 0, true);

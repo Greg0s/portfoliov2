@@ -208,11 +208,12 @@ export function easeRamp(ramp: number): (t: number) => number {
 
 /**
  * How a finger drives the journey on a touch screen, to compare (Grégoire's feedback of 13 November 2026: a slight
- * floating on his phone, from the ring to the contact above all). `?doigt=0`, the default for now: the page scrolls
- * natively under the finger and the view eases after it. `?doigt=1` (tight): the view keeps to the scroll, under the
- * finger and through the magnet's glide, which carries on at the finger's speed and, through the arrival at the
- * office, moves at the arrival's own even pace. `?doigt=2` (driven): the same, and the journey moves the page itself
- * rather than the browser, about half a screen of finger for any transition, like the wheel.
+ * floating on his phone, from the ring to the contact above all). `?doigt=2` (driven), the default (Grégoire's choice
+ * of 13 November 2026): the view keeps to the scroll, under the finger and through the magnet's glide, which carries
+ * on at the finger's speed and, through the arrival at the office, moves at the arrival's own even pace; the journey
+ * moves the page itself rather than the browser, about half a screen of finger for any transition, like the wheel.
+ * `?doigt=1` (tight): the same, the browser scrolling the page. `?doigt=0`: the former way, the page scrolled natively
+ * and the view easing after it.
  */
 export interface Finger {
   /** Whether the view keeps to the scroll while a finger or a glide moves it. */
@@ -221,19 +222,22 @@ export interface Finger {
   drives: boolean;
 }
 
+/** The default way, the driven one (Grégoire's choice of 13 November 2026). */
+export const FINGER: Finger = { tight: true, drives: true };
+
 export const FINGERS: Readonly<Record<string, Finger>> = {
   '0': { tight: false, drives: false },
   '1': { tight: true, drives: false },
-  '2': { tight: true, drives: true },
+  '2': FINGER,
 };
 
 /** The way the URL asks for (`?doigt=0` to `2`), the default one otherwise. */
 export function fingerOf(search: string): Finger {
   const asked = new URLSearchParams(search).get('doigt') ?? '';
-  return FINGERS[asked] ?? FINGERS['0'] ?? { tight: false, drives: false };
+  return FINGERS[asked] ?? FINGER;
 }
 
-/** With `?doigt=2`, the share of the screen a finger moves over for a whole transition, however long its stretch. */
+/** Driven (the default), the share of the screen a finger moves over for a whole transition, however long its stretch. */
 export const FINGER_SCREEN = 0.6;
 
 /**
