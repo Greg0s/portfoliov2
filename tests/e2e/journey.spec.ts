@@ -855,3 +855,38 @@ test("on a phone, the front card's text keeps its width, so its lines, as the sc
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   expect(widths.size).toBe(1);
 });
+
+test('a tap that slides a px or two on the card in front still opens its case study, once', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'a finger');
+  await openJourney(page, './#projets');
+  await expectAnchor(page, RING);
+  const card = page.locator('[data-project].lit a.card');
+  await expect(card).toBeVisible();
+  const href = (await card.getAttribute('href')) ?? '';
+  const box = await card.boundingBox();
+  if (!box) throw new Error('no card in front');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  // Counts the clicks the card gets: the journey's own, for a tap whose slide it held back, and never the browser's too.
+  await page.evaluate(() => {
+    const clicks = { count: 0 };
+    (window as unknown as { clicks: typeof clicks }).clicks = clicks;
+    document.addEventListener(
+      'click',
+      (event) => {
+        if (event.target instanceof Element && event.target.closest('a.card')) clicks.count += 1;
+      },
+      true,
+    );
+  });
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 1, y: y + 2 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as unknown as { clicks: { count: number } }).clicks.count)).toBe(1);
+  await expect(page).toHaveURL(new RegExp(`${href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), { timeout: 10_000 });
+});

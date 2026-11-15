@@ -138,6 +138,8 @@ const SHOWCASE_GLIDE_MS = 1150;
 /** How far a finger moves, in px, before it is told whether it turns the ring or scrolls the page: under the
  * browsers' own threshold for scrolling, so that the page has not moved yet. */
 const SIDEWAYS_SLOP = 8;
+/** The longest a finger may stay down for a tap the journey clicks itself, in ms: longer, it is a long press. */
+const TAP_MS = 500;
 /**
  * Through the end (the arrival at the office), the camera's top speed on the end's clock, per ms: the whole arrival in
  * 3.2 s, plus 0.3 s to speed up and to slow down, the pace the magnet glides at too. A hand driving the scroll there
@@ -989,6 +991,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   let sideways = false;
   /** Whether the finger has gone far enough for that to be told, once for the whole touch. */
   let decided = false;
+  /**
+   * Whether the journey has held back one of this touch's moves. Firefox for Android then drops the whole touch's
+   * click (it takes a prevented first move for a gesture the page handles), however short the move: a real finger
+   * always slides a px or two, so a tap on a card lit it without opening it. Such a tap is clicked by the journey.
+   */
+  let heldMove = false;
+  let touchStartAt = 0;
   let touchY = 0;
   let touchFrom = 0;
   /** Where the page was when the finger came down. */
@@ -1044,6 +1053,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     touchX = touchStartX;
     sideways = false;
     decided = false;
+    heldMove = false;
+    touchStartAt = event.timeStamp;
     touchTime = event.timeStamp;
     touchSpeed = 0;
     fingerDrive = null;
@@ -1066,7 +1077,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     } else if (drivesFinger() && !pinching && event.touches.length === 1 && !isMenuOpen()) {
       // `?doigt=2`: the browser never scrolls the page itself (nor pulls it to refresh, nor hides its bar); once the
       // finger is told to go up or down, the journey moves the page.
-      if (event.cancelable) event.preventDefault();
+      if (event.cancelable) {
+        event.preventDefault();
+        heldMove = true;
+      }
       if (decided) driveFinger(y);
     }
     if (y !== touchY) direction = Math.sign(touchY - y);
@@ -1082,6 +1096,35 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     if (pinching) {
       setSnap(true);
       return;
+    }
+    // A tap whose few px of sliding the journey held back: its own click, in every browser (the browser's, which
+    // Chrome would still send, is held back too, so that it never clicks twice).
+    const lifted = event.changedTouches[0];
+    if (
+      heldMove &&
+      !decided &&
+      lifted &&
+      event.cancelable &&
+      event.timeStamp - touchStartAt < TAP_MS &&
+      !isMenuOpen()
+    ) {
+      event.preventDefault();
+      const { clientX, clientY, screenX, screenY } = lifted;
+      setTimeout(() => {
+        document.elementFromPoint(clientX, clientY)?.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            view: window,
+            detail: 1,
+            clientX,
+            clientY,
+            screenX,
+            screenY,
+          }),
+        );
+      });
     }
     const moved = touchStartY - touchY;
     if (sideways) {
@@ -1654,7 +1697,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   window.addEventListener('touchstart', onTouchStart, { passive: true });
   // Not passive: on the ring, a sideways finger holds the page still.
   window.addEventListener('touchmove', onTouchMove, { passive: false });
-  window.addEventListener('touchend', onTouchEnd, { passive: true });
+  // Not passive either: a tap the journey clicks itself holds the browser's own click back.
+  window.addEventListener('touchend', onTouchEnd, { passive: false });
   window.addEventListener('touchcancel', onTouchCancel, { passive: true });
   // ---------- The live office ----------
 
