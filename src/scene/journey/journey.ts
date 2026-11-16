@@ -601,9 +601,20 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     delete html.dataset.planet;
   }
 
+  /**
+   * Tells the arrival (`src/motion/arrival.ts`), which waits in the dark for it, once whether the planet shows live or
+   * keeps its image: so that it lights up already moving (Grégoire, 16 November 2026).
+   */
+  function settlePlanet(state: 'live' | 'image'): void {
+    html.dataset.planetSettled ??= state;
+  }
+
   /** Draws the live planet when it shows, loads it near the opening and lets it go past the middle. */
   function drawPlanet(now: number, u: number, blur: number): void {
-    if (!options.webgl || planetSlow) return;
+    if (!options.webgl || planetSlow || planetFailed) {
+      settlePlanet('image');
+      return;
+    }
     if (u > PLANET_FREE) {
       if (planetLoading) freePlanet();
       return;
@@ -618,6 +629,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     lastPlanetDraw = now;
     const draws = handoff.update(blur < PLANET_SHARP, now);
     html.dataset.planet = handoff.state();
+    if (draws) settlePlanet('live');
     if (!draws || probing('planete')) return;
     // The planet moves from its first frame on screen, and the weightless motions around it with it.
     if (!options.still) ambient.start();

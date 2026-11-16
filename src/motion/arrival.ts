@@ -44,6 +44,11 @@ export function playArrival(): void {
   const HURRY = 6;
   /** The longest wait for the planet's image and the fonts, after which the arrival plays anyway. */
   const WAIT = 1500;
+  /**
+   * The longest wait, from now, for the live planet (or the word that it keeps its image), so that it lights up
+   * already moving: past it, the arrival plays on its image, and the live planet takes over when ready.
+   */
+  const PLANET_WAIT = 4000;
 
   const animations: Animation[] = [];
   const restores: (() => void)[] = [];
@@ -151,12 +156,32 @@ export function playArrival(): void {
     });
   };
 
+  // The journey says once whether the planet shows live or keeps its image (`data-planet-settled`).
+  let stopWaiting = (): void => undefined;
+  const planetSettled = new Promise<void>((resolve) => {
+    const observer = new MutationObserver(() => {
+      if (html.dataset.planetSettled) stopWaiting();
+    });
+    const timer = setTimeout(() => {
+      stopWaiting();
+    }, PLANET_WAIT);
+    stopWaiting = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve();
+    };
+    if (html.dataset.planetSettled) stopWaiting();
+    else observer.observe(html, { attributes: true, attributeFilter: ['data-planet-settled'] });
+  });
+
   const gestures = ['wheel', 'touchstart', 'keydown', 'pointerdown', 'scroll'] as const;
   const startY = window.scrollY;
   const hurry = (event: Event): void => {
     // A scroll the arrival didn't ask for (the browser putting the page back where it was) hurries it too.
     if (event.type === 'scroll' && Math.abs(window.scrollY - startY) < 40) return;
     speed = HURRY;
+    // A visitor in a hurry no longer waits for the live planet.
+    stopWaiting();
     animations.forEach((animation) => {
       animation.updatePlaybackRate(HURRY);
     });
@@ -237,10 +262,13 @@ export function playArrival(): void {
     image.src = source;
     ready.push(image.decode());
   }
-  void Promise.race([
-    Promise.allSettled(ready),
-    new Promise((resolve) => {
-      setTimeout(resolve, WAIT);
-    }),
+  void Promise.all([
+    Promise.race([
+      Promise.allSettled(ready),
+      new Promise((resolve) => {
+        setTimeout(resolve, WAIT);
+      }),
+    ]),
+    planetSettled,
   ]).then(start);
 }
