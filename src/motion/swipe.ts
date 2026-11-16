@@ -334,10 +334,9 @@ export function initSwipe(): void {
   if (ready) return;
   ready = true;
 
-  // Touch events, not pointer events: once the browser starts scrolling, it cancels the pointer, but its touch events
-  // go on. Firefox for Android scrolls the page (touch-action: pan-y) as soon as a finger goes more than 30° off the
-  // horizontal, where Chrome waits for 45°: a swipe drawn with a thumb, its arc rising a little, was cancelled before
-  // the page had moved. Followed by its touch events, it moves the page sideways all the same.
+  // Touch events, not pointer events: on a real finger, Firefox for Android cancels the pointer at its first move on a
+  // page that can scroll, and Chrome once it starts scrolling; their touch events go on. The page keeps the browser's
+  // own touch-action (CaseStudy.astro): what the browser starts scrolling of a slanted swipe, `holdScroll` stops.
   document.addEventListener(
     'touchstart',
     (event) => {

@@ -427,11 +427,11 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
       pointer-events: none;
     }
 
-    .case-header,
-    .case-page,
-    .case-footer {
-      touch-action: pan-y pinch-zoom;
-    }
+    /*
+     * No touch-action here: on Firefox for Android, a page under `touch-action: pan-y` left most scrolls of a real
+     * finger without effect (the page stuck, moving only after a few tries). The swipe reads its gesture from the touch
+     * events, which go on whatever the browser does (src/motion/swipe.ts).
+     */
   }
 
   .peek {
