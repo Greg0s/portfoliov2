@@ -13,12 +13,17 @@ import { handOver, isSliding } from './slide';
 import type { Side } from '../lib/ring';
 
 /** How far a finger moves before the gesture is read as sideways or not. */
-const SLOP = 10;
+const SLOP = 14;
+/**
+ * How much more across than up or down a finger must go to swipe: within about 35° of the horizontal. A thumb scrolling
+ * often sets off a little sideways; read as a swipe, it changed the case study (seen on a Pixel 9, 16 November 2026).
+ */
+const ACROSS = 1.4;
 /** Let go beyond this share of the screen's width, the swipe leads to the neighbour. */
 const COMMIT = 0.25;
 /** Or quicker than this, in pixels per millisecond, once past `FLICK_MIN`. */
 const FLICK = 0.4;
-const FLICK_MIN = 32;
+const FLICK_MIN = 48;
 const SPRING_MS = 360;
 const SPRING_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 /** How long the swipe waits for the neighbour's cover, so that its page slides in with it. */
@@ -362,7 +367,7 @@ export function initSwipe(): void {
       if (!gesture.dragging) {
         if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return;
         // Up or down: the browser scrolls, the gesture is not a swipe.
-        if (Math.abs(dx) <= Math.abs(dy)) {
+        if (Math.abs(dx) <= ACROSS * Math.abs(dy)) {
           gesture = null;
           return;
         }
