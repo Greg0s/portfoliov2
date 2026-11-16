@@ -68,6 +68,8 @@ test('a visit starts in the dark, then the planet, the name, the job, the header
   // Once played, the opening is back to its own text and styles.
   await expect(html).not.toHaveAttribute('data-arrival', /.*/, { timeout: 10_000 });
   await expect(page.locator('.night')).toBeHidden();
+  // Drawn in software, the planet keeps its image: the journey says so, and the arrival no longer waits for it.
+  await expect(html).toHaveAttribute('data-planet-settled', 'image');
   const name = page.getByRole('heading', { level: 1, name: 'Grégoire Tinnes' });
   await expect(name).toBeVisible();
   expect(await name.evaluate((element) => element.innerHTML)).toBe('Grégoire Tinnes');
@@ -119,6 +121,7 @@ test('the live planet takes over its image without a gesture, stays in the ring,
   await openJourney(page, './?planete=live');
   // No gesture: it loads as the journey starts, and lights up live with the arrival.
   await expect(page.locator('html')).toHaveAttribute('data-planet', 'live', { timeout: 60_000 });
+  await expect(page.locator('html')).toHaveAttribute('data-planet-settled', 'live');
   await expect(page.locator('.planet-canvas')).toHaveCount(1);
   // The ring keeps it sharp in its middle; the contact leaves it behind, and its canvas goes.
   await page.keyboard.press('ArrowDown');

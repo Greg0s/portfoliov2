@@ -366,14 +366,14 @@ const images = [`--planet-desktop: ${image('planet-desktop')}`, `--planet-mobile
     pointer-events: none;
   }
 
-  /* Until it plays, all is dark. Should it never play (its script stopped), the opening shows after 5 s. */
+  /* Until it plays, all is dark. Should it never play (its script stopped), the opening shows after 7 s, past the longest wait for the live planet. */
   :global(html[data-journey='on'][data-arrival='waiting']) :is(.planet-image, .titles, .cta-text, .cta-line),
   :global(html[data-journey='on'][data-arrival='waiting'] .header) {
-    animation: arrival-show 600ms ease 5s both;
+    animation: arrival-show 600ms ease 7s both;
   }
 
   :global(html[data-journey='on'][data-arrival='waiting']) .night {
-    animation: arrival-lift 600ms ease 5s both;
+    animation: arrival-lift 600ms ease 7s both;
   }
 
   @keyframes arrival-show {
