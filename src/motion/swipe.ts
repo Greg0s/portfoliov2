@@ -44,6 +44,8 @@ let gesture: Gesture | null = null;
 let offset = 0;
 let leaving = false;
 let nudgeTimer = 0;
+/** Whether the swipe holds the page's scrolling (`holdScroll`). */
+let holding = false;
 
 const onCaseStudy = (): boolean => document.querySelector('[data-case-slug]') !== null;
 const touchScreen = (): boolean => matchMedia('(pointer: coarse)').matches;
@@ -83,8 +85,20 @@ function place(x: number): void {
   }
 }
 
+/**
+ * While the page moves sideways, it does not scroll: Firefox, which may have started scrolling a swipe drawn a little
+ * slanted, stops there.
+ */
+function holdScroll(on: boolean): void {
+  if (on === holding) return;
+  holding = on;
+  if (on) document.documentElement.style.overflow = 'hidden';
+  else document.documentElement.style.removeProperty('overflow');
+}
+
 /** Brings the page back into place. */
 function springBack(): void {
+  holdScroll(false);
   const from = offset;
   place(0);
   settleDots(SPRING_MS);
@@ -237,6 +251,7 @@ async function leave(side: Side): Promise<void> {
     await navigate(href);
     // Still here (the navigation was dropped): the page comes back into place.
     if (moving().some((element) => element.style.transform)) springBack();
+    else holdScroll(false);
   } finally {
     leaving = false;
   }
@@ -250,16 +265,29 @@ function speed(samples: Gesture['samples']): number {
   return (last.x - first.x) / (last.t - first.t);
 }
 
-function release(event: PointerEvent): void {
+function release(touch: Touch): void {
   const current = gesture;
   gesture = null;
   if (!current?.dragging) return;
-  const dx = event.clientX - current.x;
+  const dx = touch.clientX - current.x;
   const velocity = speed(current.samples);
   const far = Math.abs(dx) >= width() * COMMIT;
   const flung = Math.abs(dx) >= FLICK_MIN && Math.abs(velocity) >= FLICK && Math.sign(velocity) === Math.sign(dx);
   if (far || flung) void leave(dx < 0 ? 'next' : 'previous');
   else springBack();
+}
+
+/** The gesture's finger among `touches`, if it is there. */
+function fingerIn(touches: TouchList): Touch | null {
+  if (!gesture) return null;
+  for (const touch of Array.from(touches)) if (touch.identifier === gesture.id) return touch;
+  return null;
+}
+
+/** A second finger (a pinch), or the gesture taken away: the page goes back into place. */
+function drop(): void {
+  if (gesture?.dragging) springBack();
+  gesture = null;
 }
 
 /** The hint: once the page has settled, it leans toward the next case study and comes back. */
@@ -306,22 +334,32 @@ export function initSwipe(): void {
   if (ready) return;
   ready = true;
 
+  // Touch events, not pointer events: once the browser starts scrolling, it cancels the pointer, but its touch events
+  // go on. Firefox for Android scrolls the page (touch-action: pan-y) as soon as a finger goes more than 30° off the
+  // horizontal, where Chrome waits for 45°: a swipe drawn with a thumb, its arc rising a little, was cancelled before
+  // the page had moved. Followed by its touch events, it moves the page sideways all the same.
   document.addEventListener(
-    'pointerdown',
+    'touchstart',
     (event) => {
-      if (event.pointerType !== 'touch' || !event.isPrimary || isSliding() || leaving || !onCaseStudy()) return;
+      if (event.touches.length > 1) {
+        drop();
+        return;
+      }
+      const touch = event.changedTouches[0];
+      if (!touch || isSliding() || leaving || !onCaseStudy()) return;
       stopNudge();
-      gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, dragging: false, samples: [] };
+      gesture = { id: touch.identifier, x: touch.clientX, y: touch.clientY, dragging: false, samples: [] };
     },
     { passive: true },
   );
 
   document.addEventListener(
-    'pointermove',
+    'touchmove',
     (event) => {
-      if (gesture?.id !== event.pointerId) return;
-      const dx = event.clientX - gesture.x;
-      const dy = event.clientY - gesture.y;
+      const touch = fingerIn(event.changedTouches);
+      if (!gesture || !touch) return;
+      const dx = touch.clientX - gesture.x;
+      const dy = touch.clientY - gesture.y;
       if (!gesture.dragging) {
         if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return;
         // Up or down: the browser scrolls, the gesture is not a swipe.
@@ -330,11 +368,12 @@ export function initSwipe(): void {
           return;
         }
         gesture.dragging = true;
+        holdScroll(true);
         // Both ways: the finger may still turn back.
         void warm('next');
         void warm('previous');
       }
-      gesture.samples.push({ x: event.clientX, t: event.timeStamp });
+      gesture.samples.push({ x: touch.clientX, t: event.timeStamp });
       if (gesture.samples.length > 12) gesture.samples.shift();
       if (prefersReducedMotion()) return;
       const x = Math.max(-width(), Math.min(width(), dx));
@@ -345,19 +384,27 @@ export function initSwipe(): void {
     { passive: true },
   );
 
-  document.addEventListener('pointerup', release, { passive: true });
   document.addEventListener(
-    'pointercancel',
-    () => {
-      // The browser took the finger over (a scroll, a pinch): the page goes back into place.
-      if (gesture?.dragging) springBack();
-      gesture = null;
+    'touchend',
+    (event) => {
+      const touch = fingerIn(event.changedTouches);
+      if (touch) release(touch);
+    },
+    { passive: true },
+  );
+  document.addEventListener(
+    'touchcancel',
+    (event) => {
+      // The system took the finger away (a gesture from the screen's edge, a call): the page goes back into place.
+      if (fingerIn(event.changedTouches)) drop();
     },
     { passive: true },
   );
 
   document.addEventListener('astro:page-load', () => {
     gesture = null;
+    // The router gave the root element the new page's attributes: the hold went with them.
+    holding = false;
     offset = 0;
     dropDots();
     nudge();
