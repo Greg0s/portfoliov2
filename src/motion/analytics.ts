@@ -57,6 +57,11 @@ export function eventFor(target: Element, origin: string): (VisitEvent & { mailt
   return null;
 }
 
+/** Counts an event that is not a link's click (the Recycle Bin on the office's screen). */
+export function track(name: string, data?: Record<string, string>): void {
+  send(data ? { name, data } : { name });
+}
+
 function send({ name, data }: VisitEvent): void {
   const umami = (window as Window & { umami?: Umami }).umami;
   try {

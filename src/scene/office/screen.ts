@@ -10,6 +10,7 @@
  * hover would, the next one shrinks Firefox back, the third opens GitHub, and so on through the CV and Instagram, then
  * LinkedIn again; the email is left out. The taskbar's clock shows the visitor's time.
  */
+import { track } from '../../motion/analytics';
 import { reachedBySwitch } from '../../motion/language';
 
 /** The links' pages; the email opens the mail app. */
@@ -198,11 +199,13 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     if (!target) return;
     if (target.closest('[data-bin]') && element.hasAttribute('data-bin-live')) {
       setDialog('ask');
+      track('bin-open');
       return;
     }
     const answer = target.closest<HTMLElement>('[data-answer]')?.dataset.answer;
     if (answer === 'yes') {
       setDialog('');
+      track('bin-empty');
       options.onEmpty();
     } else if (answer === 'no' || answer === 'ok') {
       setDialog('');
