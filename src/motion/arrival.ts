@@ -159,8 +159,10 @@ export function playArrival(): void {
   // The journey says once whether the planet shows live or keeps its image (`data-planet-settled`).
   let stopWaiting = (): void => undefined;
   const planetSettled = new Promise<void>((resolve) => {
+    // The journey says so from one of its frames: the arrival starts in a task of its own, so that its layout reads
+    // (the letters it splits) never hold that frame.
     const observer = new MutationObserver(() => {
-      if (html.dataset.planetSettled) stopWaiting();
+      if (html.dataset.planetSettled) setTimeout(stopWaiting);
     });
     const timer = setTimeout(() => {
       stopWaiting();
