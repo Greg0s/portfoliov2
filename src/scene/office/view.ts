@@ -124,6 +124,13 @@ const SEAS = [
 
 /** The wall's last draw, within the page's document: the page in the other language shows the same pictures. */
 let shown: ReadonlyMap<string, WallPicture> = new Map();
+/** Where the head last leaned, within the page's document: the page in the other language starts there. */
+const lastHead = { x: 0, y: 0, tx: 0, ty: 0 };
+/**
+ * Where the sky's quiet life was when the view was let go (the clouds, the stars' twinkle): the page in the other
+ * language takes it up there, rather than from its start.
+ */
+let lifeTimes: (CSSNumberish | null)[] = [];
 
 /** A new draw, or, in the other language, the pictures the wall showed (the same files, their labels translated). */
 function firstDraw(pools: ReadonlyMap<string, readonly WallPicture[]>): Map<string, WallPicture> {
@@ -368,6 +375,11 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       ),
     );
   }
+  if (reachedBySwitch() && lifeTimes.length === anims.length) {
+    anims.forEach((a, i) => {
+      a.currentTime = lifeTimes[i] ?? 0;
+    });
+  }
   let playing = true;
   const play = (on: boolean): void => {
     if (on === playing) return;
@@ -384,7 +396,8 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
   };
 
   // ---- The head follows the mouse, damped over about half a second.
-  const head: Head & { tx: number; ty: number } = { x: 0, y: 0, tx: 0, ty: 0 };
+  const head: Head & { tx: number; ty: number } =
+    reachedBySwitch() && headOn ? { ...lastHead } : { x: 0, y: 0, tx: 0, ty: 0 };
   const onMove = (event: PointerEvent): void => {
     if (event.pointerType !== 'mouse') return;
     const box = section.getBoundingClientRect();
@@ -456,6 +469,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       head.y += (head.ty - head.y) * k;
       if (Math.abs(head.tx - head.x) < 0.0005) head.x = head.tx;
       if (Math.abs(head.ty - head.y) < 0.0005) head.y = head.ty;
+      Object.assign(lastHead, head);
       const shift = (par: readonly [number, number]): string =>
         `translate3d(${(-head.x * par[0]).toFixed(2)}px, ${(-head.y * par[1]).toFixed(2)}px, 0)`;
       setStyle(far, 'transform', shift(frame.par.far));
@@ -545,6 +559,7 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       head.y = head.ty = y;
     },
     release() {
+      lifeTimes = anims.map((a) => a.currentTime);
       anims.forEach((a) => {
         a.cancel();
       });
