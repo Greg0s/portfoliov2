@@ -8,6 +8,7 @@ import { LoaderUtils, Mesh, PropertyBinding, Vector3, type Object3D } from 'thre
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Calm } from '../workers/relief';
+import { modelData } from './prepare';
 
 // Nodes left over from modelling: untransformed copies of the rose and the fox (one stem reaches y = 61).
 const LEFTOVERS = [
@@ -81,16 +82,10 @@ export function meshIn(node: Object3D | undefined): Mesh | null {
  */
 export async function loadPlanetModel(url: string, beforeParse?: () => Promise<void>): Promise<PlanetModel> {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  let gltf;
-  if (beforeParse) {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`The planet model answered ${String(response.status)}.`);
-    const data = await response.arrayBuffer();
-    await beforeParse();
-    gltf = await loader.parseAsync(data, LoaderUtils.extractUrlBase(url));
-  } else {
-    gltf = await loader.loadAsync(url);
-  }
+  // The bytes the journey may have asked for already, before Three.js had loaded (`prepare.ts`).
+  const data = await modelData(url);
+  await beforeParse?.();
+  const gltf = await loader.parseAsync(data, LoaderUtils.extractUrlBase(url));
   const root = gltf.scene;
   root.updateMatrixWorld(true);
   const byName = (name: string): Object3D | undefined => root.getObjectByName(PropertyBinding.sanitizeNodeName(name));

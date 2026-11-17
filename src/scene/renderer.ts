@@ -6,7 +6,7 @@
 import { PerspectiveCamera, Scene, ShaderChunk, WebGLRenderer } from 'three';
 import { cameraPosition, projectionMatrix } from './journey/camera3d';
 import type { View } from './journey/layout';
-import { noteContext } from './quality';
+import { noteContext, RENDERER_CONTEXT } from './quality';
 import { cappedPixelRatio } from './resolution';
 
 // A first visit, again and again (`?froid=1`, and the fast and full-visit measurement runs): the browser keeps the programs it linked
@@ -28,13 +28,18 @@ export interface Renderer {
   dispose(): void;
 }
 
-export function createRenderer(container: HTMLElement, view: View): Renderer {
-  const canvas = document.createElement('canvas');
+/** `canvas`, when given, holds the context made ahead with the same attributes (`contextAhead()`). */
+export function createRenderer(
+  container: HTMLElement,
+  view: View,
+  canvas: HTMLCanvasElement = document.createElement('canvas'),
+): Renderer {
   canvas.className = 'scene-canvas';
   canvas.setAttribute('aria-hidden', 'true');
   container.prepend(canvas);
 
-  const gl = new WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'high-performance' });
+  const { antialias, powerPreference } = RENDERER_CONTEXT;
+  const gl = new WebGLRenderer({ canvas, alpha: true, antialias, powerPreference });
   gl.setClearColor(0x000000, 0);
   noteContext(gl.getContext() as WebGL2RenderingContext);
   const scene = new Scene();

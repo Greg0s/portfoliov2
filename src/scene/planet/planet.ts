@@ -27,8 +27,8 @@ import { createWind, type WindState } from './wind';
 import { scenePixelRatio } from '../resolution';
 import { drawsInSoftware } from '../quality';
 import type { Arrays } from '../workers/relief';
-import type { GeometryRequest } from '../workers/geometry.worker';
-import { runGeometry, type ReplyTo } from '../workers/client';
+import type { ReplyTo } from '../workers/client';
+import { cancelRelief, reliefFor, startRelief } from './prepare';
 import { atRest, watchMoves } from '../rest';
 
 export interface PlanetOptions {
@@ -65,20 +65,6 @@ export class SlowRenderer extends Error {}
 
 /** How long the wind takes to rise when the planet first moves, so that it leaves its fallback's pose smoothly. */
 const WIND_RISE = 1500;
-
-/** The relief, built once per visit and kept for a planet built again after the office. */
-const reliefs = new Map<string, Promise<ReplyTo<'planet'>>>();
-
-function buildRelief(request: Extract<GeometryRequest, { kind: 'planet' }>): Promise<ReplyTo<'planet'>> {
-  const key = `${String(request.detail)}/${String(request.hairDetail)}`;
-  let relief = reliefs.get(key);
-  if (!relief) {
-    relief = runGeometry(request);
-    reliefs.set(key, relief);
-    relief.catch(() => reliefs.delete(key));
-  }
-  return relief;
-}
 
 function geometryOf(arrays: Arrays): BufferGeometry {
   const geometry = new BufferGeometry();
@@ -237,15 +223,18 @@ export async function createPlanet(container: HTMLElement, options: PlanetOption
   // Without a GPU, the live planet would hold the page: the image stays, before anything is downloaded.
   if (!options.forced && drawsInSoftware()) throw new SlowRenderer();
   const steps = pauses(1500);
+  // The relief's surface builds while the model downloads (the journey may have started both already).
+  startRelief(mobile);
   try {
-    const model = await loadPlanetModel(options.modelUrl, () => steps.pause(null));
+    let model: PlanetModel;
+    try {
+      model = await loadPlanetModel(options.modelUrl, () => steps.pause(null));
+    } catch (error) {
+      cancelRelief();
+      throw error;
+    }
     await steps.pause('model');
-    const geometry = await buildRelief({
-      kind: 'planet',
-      detail: mobile ? 72 : 110,
-      hairDetail: 64,
-      calm: model.calm,
-    });
+    const geometry = await reliefFor(mobile, model.calm);
     return await assemble(container, options, model, geometry, steps.pause);
   } finally {
     steps.stop();

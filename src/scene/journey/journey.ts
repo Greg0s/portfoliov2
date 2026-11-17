@@ -55,8 +55,17 @@ import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
 import type { OfficeScene } from '../office/live';
 import { withBase } from '../../lib/url';
-import { drawsInSoftware, frameSampler, isSlow, JOURNEY_MIN_FPS, markSlow, type FrameSampler } from '../quality';
+import {
+  contextAhead,
+  drawsInSoftware,
+  frameSampler,
+  isSlow,
+  JOURNEY_MIN_FPS,
+  markSlow,
+  type FrameSampler,
+} from '../quality';
 import { lowerResolution } from '../resolution';
+import { cancelRelief, modelData, startRelief } from '../planet/prepare';
 import { blurFilter } from './blur';
 import { coverTop } from '../../lib/cover';
 import { createShowcase } from '../showcase/showcase';
@@ -446,6 +455,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
    * context of its own, whether the device draws in software (see `drawsInSoftware()`).
    */
   let starsSettled = !options.webgl;
+  /**
+   * The stars' context, made before Three.js has loaded (none when a former visit's renderer comes back): it says at
+   * once whether the device has a GPU, and the live planet loads alongside Three.js rather than after it.
+   */
+  let canvasAhead = options.webgl && !hasKept().renderer ? contextAhead() : null;
+  if (canvasAhead) starsSettled = true;
   if (options.webgl) {
     void Promise.all([import('../renderer'), import('../stars/stars'), import('./camera3d')]).then(
       ([{ createRenderer }, { createStars }, { swayMatrix }]) => {
@@ -454,13 +469,16 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         redraw = true;
         // The renderer of a former visit of the home, if any: its canvas comes back into this page.
         const kept = takeRenderer();
+        const ahead = canvasAhead;
+        canvasAhead = null;
         if (kept) {
           renderer = kept;
           stage.prepend(kept.canvas);
           kept.resize(scene.view);
+          ahead?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
         } else {
           try {
-            renderer = createRenderer(stage, scene.view);
+            renderer = createRenderer(stage, scene.view, ahead ?? undefined);
           } catch {
             // Without WebGL, the journey goes on without its stars.
             return;
@@ -512,6 +530,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   const planetForced = new URLSearchParams(location.search).get('planete') === 'live';
   let planetSlow = !planetForced && isSlow('planet');
 
+  const PLANET_MODEL = withBase('/models/petit-prince.glb');
+
   function loadPlanet(): void {
     if (planetLoading || planetFailed || !planet) return;
     const container = planet;
@@ -525,6 +545,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       markSlow('planet');
       return;
     }
+    // Its model downloads and its relief builds while Three.js and its code still load.
+    if (!kept) {
+      void modelData(PLANET_MODEL).catch(() => undefined);
+      startRelief(scene.view.mobile);
+    }
     void Promise.all([import('../planet/planet'), import('../planet/handoff')])
       .then(async ([{ createPlanet, SlowRenderer }, { planetHandoff }]) => {
         if (kept) {
@@ -534,7 +559,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         const created =
           kept ??
           (await createPlanet(container, {
-            modelUrl: withBase('/models/petit-prince.glb'),
+            modelUrl: PLANET_MODEL,
             forced: planetForced,
             mobile: scene.view.mobile,
             size: planetSize,
@@ -570,7 +595,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         redraw = true;
       })
       .catch(() => {
-        // Without WebGL or the model, the fallback image stays.
+        // Without WebGL or the model, the fallback image stays (and a relief started ahead is let go).
+        cancelRelief();
         if (!stopped && planetLoading) planetFailed = true;
       });
   }
@@ -2249,6 +2275,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   return (keep = false) => {
     stopped = true;
     keeping = keep;
+    canvasAhead?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    canvasAhead = null;
     stopTick();
     stopGlideTick();
     holdWhileTurning(false);
