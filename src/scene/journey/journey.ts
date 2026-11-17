@@ -1743,6 +1743,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   let officeAbort: AbortController | null = null;
   /** When the live office started getting ready, in ms. */
   let officeStartedAt = 0;
+  /**
+   * Whether the office getting ready is the one kept from the page before (`src/scene/keep.ts`): it comes back at once,
+   * so its layers are not prepared meanwhile. Laid in the section, they would show their warm-up draws, the arrival's
+   * steps, in front of the visitor already at the contact (the language switch there).
+   */
+  let officeFromKept = false;
   /** How long the live office gets to be ready before its layers get ready too, in ms. */
   const STAND_IN_DELAY = 2500;
   /** Whether the live planet is still to be put together here: the ring shows it, so it comes before the office. */
@@ -1754,6 +1760,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const host = office;
     officeLoading = true;
     officeStartedAt = performance.now();
+    officeFromKept = hasKept().office !== null;
     officeFraming = scene.view.mobile ? 'mobile' : 'desktop';
     const layers = officeSlow;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
@@ -1767,6 +1774,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         // The scene of a former visit of the home, if it fits: only its HTML is laid again.
         let kind: 'live' | 'layers' = layers ? 'layers' : 'live';
         const kept = takeOffice(framing, moment, kind);
+        // Let go for not fitting, or lost: the office is made afresh, and its layers may then be needed.
+        officeFromKept = kept !== null;
         const made: OfficeScene =
           kept ??
           (await (layers
@@ -1842,7 +1851,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
 
   /** Gets the layers ready to play the arrival in place of the live office, if it comes first. */
   function loadStandIn(): void {
-    if (standIn || standInLoading || !office) return;
+    if (standIn || standInLoading || !office || (officeLoading && officeFromKept)) return;
     const host = office;
     standInLoading = true;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
