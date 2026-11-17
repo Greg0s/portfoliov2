@@ -80,6 +80,12 @@ test.describe('on desktop', () => {
   });
 
   test('emptying the Recycle Bin goes dark, draws again, then owns up that nothing happened', async ({ page }) => {
+    // Umami's stand-in: the bin's opening and its emptying are counted (src/motion/analytics.ts).
+    await page.addInitScript(() => {
+      const events: string[] = [];
+      Object.assign(window, { events, umami: { track: (name: string) => events.push(name) } });
+    });
+    const events = (): Promise<string[]> => page.evaluate(() => (window as unknown as { events: string[] }).events);
     await openOffice(page);
     // Clicks dispatched rather than made with the mouse: the head follows the mouse and drifts toward each click by a
     // fraction of a pixel per frame, which Playwright's wait for a still target takes for motion.
@@ -113,6 +119,7 @@ test.describe('on desktop', () => {
     await expect(desktop).not.toHaveAttribute('data-bin-live');
     await desktop.locator('[data-dialog="done"] .button[data-answer="ok"]').dispatchEvent('click');
     await expect(desktop).toHaveAttribute('data-bin-live', '');
+    expect((await events()).filter((name) => name.startsWith('bin-'))).toEqual(['bin-open', 'bin-open', 'bin-empty']);
   });
 
   test('hovering a picture shows its cartel', async ({ page }) => {

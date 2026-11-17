@@ -9,4 +9,9 @@ export const config = {
   },
   /** The CV, in English only and without a phone number (main spec §8.2); added to `public/cv/` at step 10. */
   cv: '/cv/gregoire-tinnes-cv.pdf',
+  /** Umami, self-hosted on Vercel, counts the visits (main spec §7.6). */
+  analytics: {
+    script: 'https://umami-y1mc.vercel.app/script.js',
+    websiteId: 'c60d985e-7dbd-42f7-8b33-9035b01f2184',
+  },
 } as const;
