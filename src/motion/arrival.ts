@@ -159,8 +159,10 @@ export function playArrival(): void {
   // The journey says once whether the planet shows live or keeps its image (`data-planet-settled`).
   let stopWaiting = (): void => undefined;
   const planetSettled = new Promise<void>((resolve) => {
+    // The journey says so from one of its frames: the arrival starts in a task of its own, so that its layout reads
+    // (the letters it splits) never hold that frame.
     const observer = new MutationObserver(() => {
-      if (html.dataset.planetSettled) stopWaiting();
+      if (html.dataset.planetSettled) setTimeout(stopWaiting);
     });
     const timer = setTimeout(() => {
       stopWaiting();
@@ -215,8 +217,8 @@ export function playArrival(): void {
   const start = (): void => {
     if (done || html.dataset.arrival !== 'waiting') return;
     const planet = opening.querySelector('.planet-image');
-    // In the dark, the planet lights up, a little past its light before it settles.
-    play(planet, [{ opacity: 0, offset: 0 }], { delay: 300, duration: 1700, easing: EASE_FLOAT });
+    // In the dark, the planet lights up at once (it was waited for already), a little past its light before it settles.
+    play(planet, [{ opacity: 0, offset: 0 }], { duration: 1200, easing: EASE_FLOAT });
     play(
       planet,
       [
@@ -224,30 +226,30 @@ export function playArrival(): void {
         { filter: 'brightness(1.1)', offset: 0.55, easing: EASE_SETTLE },
         { filter: 'brightness(1)' },
       ],
-      { delay: 300, duration: 3000 },
+      { duration: 3000 },
     );
     // The night lifts on the stars, the sky and the decor.
     play(opening.querySelector('.night'), [{ opacity: 1 }, { opacity: 0 }], {
-      delay: 1400,
+      delay: 1100,
       duration: 2400,
       easing: EASE_FLOAT,
     });
     // The name, then the job, land letter by letter, as the text rises a little into place.
     const titles = opening.querySelector('.titles');
     play(titles, [{ transform: 'translateY(12px)' }, { transform: 'none' }], {
-      delay: 1800,
+      delay: 1500,
       duration: 2400,
       easing: EASE_UI,
     });
-    land(split(opening.querySelector<HTMLElement>('.intro h1')), 1800, 600, 0);
-    land(split(opening.querySelector<HTMLElement>('.intro .job')), 2350, 520, 101);
+    land(split(opening.querySelector<HTMLElement>('.intro h1')), 1500, 600, 0);
+    land(split(opening.querySelector<HTMLElement>('.intro .job')), 2050, 520, 101);
     // Then the header and the call.
     const appear = (element: Element | null, delay: number): void => {
       play(element, [{ opacity: 0, offset: 0 }], { delay, duration: 900, easing: 'ease' });
     };
-    appear(document.querySelector('.header'), 3400);
-    appear(opening.querySelector('.cta-text'), 3550);
-    appear(opening.querySelector('.cta-line'), 3670);
+    appear(document.querySelector('.header'), 3100);
+    appear(opening.querySelector('.cta-text'), 3250);
+    appear(opening.querySelector('.cta-line'), 3370);
     html.dataset.arrival = 'playing';
     void Promise.allSettled(animations.map((animation) => animation.finished)).then(finish);
   };

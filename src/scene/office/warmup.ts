@@ -8,7 +8,7 @@
 import { loadPlanetModel } from '../planet/load';
 import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
-import { runGeometry } from '../workers/client';
+import { runTown } from '../workers/client';
 import { arrivalState, FADE_PLANES, layerFade } from './arrival';
 import { breathe, endStep, startStep } from './common';
 import { FRAMES, framingOf } from './frame';
@@ -59,7 +59,7 @@ export async function prepareOffice(
 export async function prepareOfficeScene(section: HTMLElement, options: OfficeOptions): Promise<OfficeScene> {
   if (!options.forced && drawsInSoftware()) throw new SlowOffice();
   const framing = framingOf(section.clientWidth);
-  const [reply, model] = await Promise.all([runGeometry({ kind: 'town' }), loadPlanetModel(options.modelUrl)]);
+  const [reply, model] = await Promise.all([runTown(), loadPlanetModel(options.modelUrl)]);
   startStep();
   const live = await createLiveOffice({
     moment: options.moment,

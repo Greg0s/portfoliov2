@@ -111,6 +111,34 @@ export function noteContext(gl: WebGL2RenderingContext): void {
   software ??= isSoftwareRenderer(gl);
 }
 
+/**
+ * The attributes Three.js asks a context for in `createRenderer()` (`src/scene/renderer.ts`): a context made ahead with
+ * them is the one Three.js then takes, unchanged.
+ */
+export const RENDERER_CONTEXT: WebGLContextAttributes = {
+  alpha: true,
+  depth: true,
+  stencil: false,
+  antialias: false,
+  premultipliedAlpha: true,
+  preserveDrawingBuffer: false,
+  powerPreference: 'high-performance',
+  failIfMajorPerformanceCaveat: false,
+};
+
+/**
+ * Makes the journey's WebGL context before Three.js has loaded, on the canvas its renderer will take, and notes what
+ * draws it: whether the device has a GPU is known at once, and the live planet starts loading alongside Three.js
+ * rather than after it. `null` without WebGL 2 (the renderer then finds out on its own).
+ */
+export function contextAhead(): HTMLCanvasElement | null {
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl2', RENDERER_CONTEXT);
+  if (!gl) return null;
+  noteContext(gl);
+  return canvas;
+}
+
 /** Whether this device draws WebGL 2 in software, or not at all: a live scene would hold the page. */
 export function drawsInSoftware(): boolean {
   if (software !== null) return software;
