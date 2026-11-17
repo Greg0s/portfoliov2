@@ -2,7 +2,7 @@ order: 3
 year: 2025
 stack: [React, TypeScript, Vite, Sass, Playwright]
 links:
-  live: https://whatweplay.gregoiretinn.es/
+  live: https://whatweplay.mintymoon.app/
   code: https://github.com/Greg0s/what-we-play
 cover: ./cover.jpg
 colors: ['#ffd84a', '#ffc452']
