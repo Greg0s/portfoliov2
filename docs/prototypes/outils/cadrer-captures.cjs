@@ -17,7 +17,7 @@ const img = (f) => 'data:image/png;base64,' + fs.readFileSync(path.join(sources,
 
 const jobs = [
   { out: 'lyrix', desktop: 'lyrix-desktop.png', phone: 'lyrix-phone.png', url: 'lyrix.mintymoon.app', glow: '242 106 46', glow2: '236 106 46' },
-  { out: 'what-we-play', desktop: 'wwp-desktop.png', phone: 'wwp-phone.png', url: 'whatweplay.gregoiretinn.es', glow: '236 72 153', glow2: '91 200 232' },
+  { out: 'what-we-play', desktop: 'wwp-desktop.png', phone: 'wwp-phone.png', url: 'whatweplay.mintymoon.app', glow: '236 72 153', glow2: '91 200 232' },
   { out: 'sncf-wrapped', desktop: 'sncf-desktop.png', phone: 'sncf-phone.png', url: 'greg0s.github.io/sncf-wrapped', glow: '140 228 250', glow2: '225 150 250' },
   { out: 'siemens', desktop: 'siemens-desktop.png', url: '', glow: '0 160 170', glow2: '60 90 220' },
   { out: 'perfmanager', desktop: 'perf-desktop.png', url: 'perfmanager.com', glow: '26 160 140', glow2: '24 145 170' },
