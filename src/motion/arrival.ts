@@ -29,6 +29,9 @@ export function applyArrival(fragment: string): void {
     (hash === '' || hash === fragment);
   if (plays) html.dataset.arrival = 'waiting';
   else delete html.dataset.arrival;
+  // A proposal (17 November 2026): a far light twinkles where the planet will be, while it is waited for.
+  if (new URLSearchParams(location.search).get('attente') === 'etoile') html.dataset.attente = 'etoile';
+  else delete html.dataset.attente;
 }
 
 /** After the opening's content: plays the arrival, once the planet's image (and the fonts) are ready. */
@@ -217,6 +220,20 @@ export function playArrival(): void {
   const start = (): void => {
     if (done || html.dataset.arrival !== 'waiting') return;
     const planet = opening.querySelector('.planet-image');
+    // The far light (`?attente=etoile`), if it shows, swells into the planet as it lights up.
+    const far = opening.querySelector('.far-light');
+    const farOpacity = far ? Number(getComputedStyle(far).opacity) : 0;
+    if (far && getComputedStyle(far).display !== 'none' && farOpacity > 0) {
+      play(
+        far,
+        [
+          { opacity: farOpacity, scale: '1' },
+          { opacity: farOpacity, scale: '3', offset: 0.35 },
+          { opacity: 0, scale: '9' },
+        ],
+        { duration: 1100, easing: EASE_UI },
+      );
+    }
     // In the dark, the planet lights up at once (it was waited for already), a little past its light before it settles.
     play(planet, [{ opacity: 0, offset: 0 }], { duration: 1200, easing: EASE_FLOAT });
     play(

@@ -48,6 +48,7 @@ const images = [`--planet-desktop: ${image('planet-desktop')}`, `--planet-mobile
   <div class="night" aria-hidden="true"></div>
   <div class="planet-frame">
     <div class="planet-image" role="img" aria-label={label('opening.planet')}></div>
+    <div class="far-light" aria-hidden="true"></div>
   </div>
   <div class="planet-glow" aria-hidden="true"></div>
 
@@ -374,6 +375,54 @@ const images = [`--planet-desktop: ${image('planet-desktop')}`, `--planet-mobile
 
   :global(html[data-journey='on'][data-arrival='waiting']) .night {
     animation: arrival-lift 600ms ease 7s both;
+  }
+
+  /*
+   * `?attente=etoile` (a proposal, 17 November 2026): while the arrival waits for the live planet, B 612 seen from
+   * very far, a point of light that twinkles where the planet will be; it swells into the planet as it lights up.
+   */
+  .far-light {
+    display: none;
+  }
+
+  :global(html[data-journey='on'][data-arrival][data-attente='etoile']) .far-light {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    translate: -50% -50%;
+    background: #fff6dc;
+    box-shadow:
+      0 0 8px 3px rgb(255 236 190 / 70%),
+      0 0 28px 8px rgb(113 196 187 / 30%);
+    pointer-events: none;
+  }
+
+  :global(html[data-journey='on'][data-arrival='waiting'][data-attente='etoile']) .far-light {
+    animation:
+      far-light-in 900ms ease 400ms both,
+      far-light-twinkle 1600ms ease-in-out 1300ms infinite;
+  }
+
+  :global(html[data-journey='on'][data-arrival='playing'][data-attente='etoile']) .far-light {
+    opacity: 0;
+  }
+
+  @keyframes far-light-in {
+    from {
+      opacity: 0;
+      scale: 0.4;
+    }
+  }
+
+  @keyframes far-light-twinkle {
+    50% {
+      opacity: 0.55;
+      scale: 0.8;
+    }
   }
 
   @keyframes arrival-show {
