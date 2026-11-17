@@ -35,7 +35,7 @@ On repart d'un repo vide : `Greg0s/portfoliov2`.
 
 **Dans la V1** : l'accueil en parcours (la planète, les 7 projets, le bureau du contact), les 7 études de cas et la page 404, en français et en anglais ; la scène 3D du Petit Prince et celle du bureau, avec la lumière qui suit l'heure du visiteur ; la version allégée pour les téléphones qui peinent ; le déploiement automatique et la mise en service sur `gregoiretinn.es`.
 
-**Hors V1** : page À propos, lab d'expérimentations, blog, formulaire de contact, mode clair, statistiques de visite, archive des autres projets. Idées écartées pour l'instant, à garder en réserve : la lumière qui suit la souris, le renard qui tourne la tête vers le curseur, une planète différente à chaque visite, les astéroïdes du livre parmi les petits mondes (essayés puis écartés le 23 octobre 2026), une ville en plans séparés dans des couches pré-rendues.
+**Hors V1** : page À propos, lab d'expérimentations, blog, formulaire de contact, mode clair, archive des autres projets. Idées écartées pour l'instant, à garder en réserve : la lumière qui suit la souris, le renard qui tourne la tête vers le curseur, une planète différente à chaque visite, les astéroïdes du livre parmi les petits mondes (essayés puis écartés le 23 octobre 2026), une ville en plans séparés dans des couches pré-rendues.
 
 ## 4. Pages et navigation
 
@@ -277,6 +277,15 @@ La position, la largeur nette et la rotation des cartes dans le parcours sont d�
 - Les états cachés des animations ne s'appliquent que si JavaScript est actif. Sans JavaScript, rien n'est masqué.
 - Navigation au clavier : les cartes reçoivent le focus et affichent leur cartel ; focus visible ; lien d'évitement vers le contenu.
 - Un lecteur d'écran lit l'ouverture, les projets dans l'ordre, puis le contact. La 3D, le flou, l'écran de l'ordinateur et les images du mur sont décoratifs ; le bouton de copie de l'email s'appelle « Copier l'adresse » et annonce « Adresse copiée ».
+
+### 7.6 Statistiques de visite
+
+Ajoutées le 17 novembre 2026, à la demande de Grégoire (`src/motion/analytics.ts`, réglages dans `src/config.ts`) :
+
+- **Umami**, hébergé par Grégoire sur Vercel, sans cookie. Son script compte les pages, y compris les changements de page du routeur d'Astro, sans leurs ancres (`#projets` reste l'accueil).
+- **Chargé après l'événement `load`**, jamais dans le `<head>` : même en `async`, il retenait l'arrivée sur l'accueil le temps de venir de Vercel (mesuré : 800 ms de retard pour un script lent de 800 ms ; plus aucun retard une fois chargé après `load`, même lent de 3 s).
+- **Seulement sur le domaine du site** : les tests, Lighthouse et les aperçus ne le chargent pas.
+- **Événements**, comptés par un seul écouteur de clics qui ne modifie aucun clic (les attributs `data-umami-event` d'Umami transformeraient un lien interne en rechargement complet et casseraient la plongée et le changement de langue) : `case-study` (projet ; depuis l'anneau ou « Projet suivant »), `language` (langue choisie), `email` (ouvrir le mail ou copier l'adresse), `linkedin`, `github`, `cv`, `instagram`, et `outbound` (adresse) pour les autres liens sortants (sites des projets, photos du mur, lettre de recommandation).
 
 ## 8. Contenu
 
