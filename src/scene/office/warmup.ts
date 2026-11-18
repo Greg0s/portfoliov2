@@ -1,6 +1,6 @@
 /**
  * Preparing the live office (plan step 7), from the middle of the journey on, or at once on `#contact`: the town is
- * built in the geometry worker while the rose comes from the planet's model, then the scene is assembled, its shaders
+ * built in the town's worker while the rose comes from the planet's model, then the scene is assembled, its shaders
  * compiled without blocking the page, its textures and shadow maps uploaded by one draw, out of sight. What the HTML
  * needs (the screen's picture and the pictures) comes from the contact section's data attributes. Its layers, the
  * fallback, are prepared the same way: their pictures loaded and decoded before they show.

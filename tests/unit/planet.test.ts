@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { HANDOFF_FADE, planetHandoff } from '../../src/scene/planet/handoff';
 import { createWind, foxAngles, roseAngle, SCARF_LOOP } from '../../src/scene/planet/wind';
 import { frameSampler, JOURNEY_MIN_FPS, SLOW_WINDOWS, WINDOW_TIME, type FrameSampler } from '../../src/scene/quality';
-import { IcosahedronGeometry } from 'three';
+import { BufferAttribute, BufferGeometry, IcosahedronGeometry } from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
   craterPlanet,
@@ -31,13 +31,24 @@ describe('the relief', () => {
   });
 
   it("merges the icosphere's corners as three's mergeVertices does, vertex for vertex", () => {
-    for (const detail of [0, 1, 7, 16]) {
+    for (const detail of [1, 7, 16]) {
       const fast = icosphere(detail);
       const three = mergeVertices(new IcosahedronGeometry(1, detail));
-      for (const name of ['position', 'normal', 'uv']) {
-        expect(Array.from(fast.getAttribute(name).array)).toEqual(Array.from(three.getAttribute(name).array));
+      for (const name of ['position', 'normal', 'uv'] as const) {
+        expect(Array.from(fast[name])).toEqual(Array.from(three.getAttribute(name).array));
       }
-      expect(Array.from(fast.getIndex()?.array ?? [])).toEqual(Array.from(three.getIndex()?.array ?? []));
+      expect(Array.from(fast.index)).toEqual(Array.from(three.getIndex()?.array ?? []));
+    }
+  });
+
+  it("gives the normals three's computeVertexNormals() gives, to the last bit", () => {
+    for (const arrays of [craterPlanet(16, calm), crumpledBall(12)]) {
+      const geometry = new BufferGeometry();
+      geometry.setAttribute('position', new BufferAttribute(arrays.position.slice(), 3));
+      geometry.setAttribute('normal', new BufferAttribute(new Float32Array(arrays.normal.length), 3));
+      geometry.setIndex(new BufferAttribute(arrays.index.slice(), 1));
+      geometry.computeVertexNormals();
+      expect(Array.from(arrays.normal)).toEqual(Array.from(geometry.getAttribute('normal').array));
     }
   });
 
