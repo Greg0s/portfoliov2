@@ -455,6 +455,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
    * context of its own, whether the device draws in software (see `drawsInSoftware()`).
    */
   let starsSettled = !options.webgl;
+  /** Whether the stars showed in the frame drawn last on their canvas: faded out, they are drawn once more, then not. */
+  let starsDrawnShown = true;
   /**
    * The stars' context, made before Three.js has loaded (none when a former visit's renderer comes back): it says at
    * once whether the device has a GPU, and the live planet loads alongside Three.js rather than after it.
@@ -1706,8 +1708,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       );
     }
 
-    // The stars.
-    if (renderer && stars && swayMatrixOf && !probing('etoiles')) {
+    // The stars. Faded out, once the camera has come to rest (at the contact, where the visitor stays), their canvas
+    // would be cleared and drawn transparent at each frame, and composited over the whole screen: drawn once so, it
+    // is hidden until they show again. While the camera moves (the arrival) they are drawn as before: drawn in
+    // software (CI's machines), the arrival's frames, each 250 ms of it at most, come quicker so.
+    const starsShown = starsK * others > 0 || current !== target;
+    if (renderer) set(renderer.canvas, 'visibility', starsShown || starsDrawnShown ? '' : 'hidden');
+    if (renderer && stars && swayMatrixOf && !probing('etoiles') && (starsShown || starsDrawnShown)) {
+      starsDrawnShown = starsShown;
       stars.update({
         time,
         depth,

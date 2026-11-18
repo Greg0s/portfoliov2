@@ -1,7 +1,7 @@
 /**
  * What every part of the office shares (office spec §3, ported from `docs/prototypes/bureau/scene.js`, the final
  * scene): its units (metres, the floor at y = 0, the camera looking toward −z), its render layers, the room's
- * dimensions and small builders. The geometry worker imports the pure parts, so nothing here touches the DOM at load.
+ * dimensions and small builders. The town's worker imports the pure parts, so nothing here touches the DOM at load.
  */
 import {
   BoxGeometry,

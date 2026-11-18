@@ -1,5 +1,5 @@
 /**
- * The town seen through the window (office spec §3), as pure geometry: the geometry worker builds it off the main
+ * The town seen through the window (office spec §3), as pure geometry: the town's worker builds it off the main
  * thread and sends it back as arrays. The flat is near the top of a hill, 80 m above the town. A river crosses the view
  * diagonally, from the bottom of the window toward the right; beyond it the town, gently rolling, recedes to hills on
  * several planes (Lyon, loosely). Every random draw comes from one rng(2024) sequence, in the prototype's order, so the

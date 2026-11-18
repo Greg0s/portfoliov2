@@ -35,8 +35,9 @@ it.
 3. **One camera for CSS and WebGL.** The journey camera is a pure function of the scroll progress. It produces both
    the CSS `perspective` and transforms of the cards and small worlds, and the matching Three.js `PerspectiveCamera`
    (field of view derived from the CSS perspective), so that the stars, the planet and the cards share one space.
-4. **Geometry in a worker.** The planet relief, the prince's hair and the office town are generated in one module
-   worker (`src/scene/workers/geometry.worker.ts`) and sent back as transferable typed arrays, merged per material.
+4. **Geometry in a worker.** The planet relief, the prince's hair and the office town are generated in module
+   workers (`src/scene/workers/planet.worker.ts`, without Three.js so it downloads quickly beside the model, and
+   `town.worker.ts`) and sent back as transferable typed arrays, merged per material.
    The planet relief is measured at 1 to 1.9 s on the Pixel 9: on the main thread it would cost the Lighthouse score.
 5. **The site's office scene is the only source.** `docs/prototypes/bureau/scene.js` is ported to TypeScript modules
    in `src/scene/office/`. The fallback layers and `placement.json` are rendered from those modules
@@ -350,7 +351,7 @@ office layers and light version.
 | File                                                                                       | Content                                                                                                                                                                                     |
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `public/models/petit-prince.glb`                                                           | the optimized model (≤ 600 kB), from `docs/prototypes/petit-prince/`                                                                                                                        |
-| `src/scene/workers/geometry.worker.ts`                                                     | planet relief and hair, office town; seeded, merged per material, transferable                                                                                                              |
+| `src/scene/workers/planet.worker.ts`, `town.worker.ts`                                     | planet relief and hair (without Three.js), office town; seeded, merged per material, transferable                                                                                           |
 | `src/scene/planet/load.ts`, `planet.ts`, `lights.ts`, `wind.ts`                            | loading (Meshopt, unnamed child meshes), spot per moment, scarf wave and rose sway with gusts, bloom on the decor only                                                                      |
 | `src/scene/planet/handoff.ts`                                                              | once a blurred light: stop the scene, cross-fade to the image, free the GPU memory before the office                                                                                        |
 | `src/scene/office/room.ts`, `objects.ts`, `town.ts`, `sky.ts`, `moments.ts`, `framings.ts` | the port of `docs/prototypes/bureau/scene.js`                                                                                                                                               |

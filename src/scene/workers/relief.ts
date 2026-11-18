@@ -1,9 +1,12 @@
 /**
  * The planet's relief and the prince's hair (main spec §6.2), generated in code because the Blender material that
  * makes them cannot be exported. Ported from `docs/prototypes/petit-prince/render.html` with the same seeds, so the
- * live planet is the one of the fallback images. Pure: the geometry worker runs it, and the unit tests hash it.
+ * live planet is the one of the fallback images. Pure: the planet's worker runs it, and the unit tests hash it.
+ *
+ * Without Three.js: the worker downloads alongside the model before the live planet can show, and three's core made
+ * it 40 KB (gzipped) of the 44. The vector work is three's own (`Vector3`, `computeVertexNormals()`), written out on
+ * plain numbers in the same order, so the planet is the same to the last bit (the unit tests compare it to three's).
  */
-import { BufferAttribute, BufferGeometry, IcosahedronGeometry, MathUtils, Vector3 } from 'three';
 import { SimplexNoise } from 'three/examples/jsm/math/SimplexNoise.js';
 
 /** A place where the relief stays calm: where the prince, the fox and the rose stand. */
@@ -31,20 +34,90 @@ export function rng(seed: number): () => number {
   };
 }
 
-function randomDir(random: () => number): Vector3 {
+type Vec = [number, number, number];
+
+function randomDir(random: () => number): Vec {
   const u = random() * 2 - 1;
   const a = random() * Math.PI * 2;
   const s = Math.sqrt(1 - u * u);
-  return new Vector3(s * Math.cos(a), u, s * Math.sin(a));
+  return [s * Math.cos(a), u, s * Math.sin(a)];
 }
 
-function toArrays(geometry: BufferGeometry): Arrays {
-  const index = geometry.getIndex();
-  return {
-    position: geometry.getAttribute('position').array as Float32Array,
-    normal: geometry.getAttribute('normal').array as Float32Array,
-    index: Uint32Array.from(index ? index.array : []),
-  };
+/** three's `MathUtils.clamp`. */
+const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+
+/** Vertex `i` of `position`, on the unit sphere: three's `fromBufferAttribute(position, i).normalize()`. */
+function unitAt(position: Float32Array, i: number, out: Vec): Vec {
+  const x = position[i * 3] ?? 0;
+  const y = position[i * 3 + 1] ?? 0;
+  const z = position[i * 3 + 2] ?? 0;
+  // `divideScalar(length() || 1)`, that is `multiplyScalar(1 / (length() || 1))`.
+  const scale = 1 / (Math.sqrt(x * x + y * y + z * z) || 1);
+  out[0] = x * scale;
+  out[1] = y * scale;
+  out[2] = z * scale;
+  return out;
+}
+
+/** An icosphere: positions, smooth normals and UVs per vertex, and its triangles. */
+export interface Icosphere {
+  position: Float32Array;
+  normal: Float32Array;
+  uv: Float32Array;
+  index: Uint32Array;
+}
+
+/**
+ * three's `computeVertexNormals()` on an indexed geometry whose normals exist: zeroed, each triangle's cross product
+ * added to its three corners (stored in single precision at each step, as three does), then normalized once.
+ */
+function computeVertexNormals(position: Float32Array, normal: Float32Array, index: Uint32Array): void {
+  normal.fill(0);
+  for (let i = 0; i < index.length; i += 3) {
+    const a = (index[i] ?? 0) * 3;
+    const b = (index[i + 1] ?? 0) * 3;
+    const c = (index[i + 2] ?? 0) * 3;
+    const bx = position[b] ?? 0;
+    const by = position[b + 1] ?? 0;
+    const bz = position[b + 2] ?? 0;
+    // `cb.subVectors(pC, pB)`, `ab.subVectors(pA, pB)`, `cb.cross(ab)`.
+    const cbx = (position[c] ?? 0) - bx;
+    const cby = (position[c + 1] ?? 0) - by;
+    const cbz = (position[c + 2] ?? 0) - bz;
+    const abx = (position[a] ?? 0) - bx;
+    const aby = (position[a + 1] ?? 0) - by;
+    const abz = (position[a + 2] ?? 0) - bz;
+    const nx = cby * abz - cbz * aby;
+    const ny = cbz * abx - cbx * abz;
+    const nz = cbx * aby - cby * abx;
+    // The three corners read first (`nA`, `nB`, `nC`), then written back: a corner met twice keeps one sum, as in three.
+    const ax = (normal[a] ?? 0) + nx;
+    const ay = (normal[a + 1] ?? 0) + ny;
+    const az = (normal[a + 2] ?? 0) + nz;
+    const sx = (normal[b] ?? 0) + nx;
+    const sy = (normal[b + 1] ?? 0) + ny;
+    const sz = (normal[b + 2] ?? 0) + nz;
+    const cx = (normal[c] ?? 0) + nx;
+    const cy = (normal[c + 1] ?? 0) + ny;
+    const cz = (normal[c + 2] ?? 0) + nz;
+    normal[a] = ax;
+    normal[a + 1] = ay;
+    normal[a + 2] = az;
+    normal[b] = sx;
+    normal[b + 1] = sy;
+    normal[b + 2] = sz;
+    normal[c] = cx;
+    normal[c + 1] = cy;
+    normal[c + 2] = cz;
+  }
+  // `normalizeNormals()`.
+  const unit: Vec = [0, 0, 0];
+  for (let i = 0; i < normal.length / 3; i += 1) {
+    unitAt(normal, i, unit);
+    normal[i * 3] = unit[0];
+    normal[i * 3 + 1] = unit[1];
+    normal[i * 3 + 2] = unit[2];
+  }
 }
 
 /** A non-indexed geometry's attribute, as plain numbers. */
@@ -201,18 +274,10 @@ function icosahedronCorners(detail: number): Corners[] {
  * As three's, two corners are one vertex when their position, normal and UV (the icosahedron's attributes, in that
  * order) round to the same keys at a tolerance of 1e-4; a vertex keeps the values of its first corner.
  */
-export function icosphere(detail: number): BufferGeometry {
-  let attributes: Corners[];
-  if (detail >= 1) {
-    attributes = icosahedronCorners(detail);
-  } else {
-    // Flat normals, which the planet never uses: three's own.
-    const source = new IcosahedronGeometry(1, detail);
-    attributes = Object.keys(source.attributes).map((name) => {
-      const attribute = source.getAttribute(name);
-      return { name, array: attribute.array as Float32Array, itemSize: attribute.itemSize };
-    });
-  }
+export function icosphere(detail: number): Icosphere {
+  // Detail 0 has flat normals, which the planet never uses.
+  if (detail < 1) throw new Error('The icosphere needs a detail of 1 or more.');
+  const attributes = icosahedronCorners(detail);
   const count = (attributes[0]?.array.length ?? 0) / 3;
   const width = attributes.reduce((sum, { itemSize }) => sum + itemSize, 0);
   // three's rounding, to the same digits.
@@ -271,22 +336,21 @@ export function icosphere(detail: number): BufferGeometry {
     index[i] = found;
   }
 
-  const geometry = new BufferGeometry();
-  attributes.forEach(({ name, array, itemSize }) => {
+  const [position, normal, uv] = attributes.map(({ array, itemSize }) => {
     const values = new Float32Array(merged * itemSize);
     for (let v = 0; v < merged; v += 1) {
       const from = (firsts[v] ?? 0) * itemSize;
       for (let c = 0; c < itemSize; c += 1) values[v * itemSize + c] = array[from + c] ?? 0;
     }
-    geometry.setAttribute(name, new BufferAttribute(values, itemSize));
+    return values;
   });
-  geometry.setIndex(new BufferAttribute(index, 1));
-  return geometry;
+  if (!position || !normal || !uv) throw new Error('The icosahedron has no position, normal or UV.');
+  return { position, normal, uv, index };
 }
 
 /** The planet's surface before the calm places: its icosphere, and the height of each vertex (noise and craters). */
 export interface PlanetHeights {
-  geometry: BufferGeometry;
+  geometry: Icosphere;
   heights: Float64Array;
 }
 
@@ -298,7 +362,7 @@ export function planetHeights(detail: number, seed = 5): PlanetHeights {
   const random = rng(seed);
   const noise = new SimplexNoise({ random });
   const geometry = icosphere(detail);
-  const craters: { c: Vector3; size: number; depth: number; reach: number }[] = [];
+  const craters: { c: Vec; size: number; depth: number; reach: number }[] = [];
   const count = seed === 5 ? 46 : 34 + Math.floor(random() * 26);
   for (let i = 0; i < count; i += 1) {
     const size = 0.05 + Math.pow(random(), 2.6) * 0.26;
@@ -306,23 +370,23 @@ export function planetHeights(detail: number, seed = 5): PlanetHeights {
     const reach = 1.7 * size >= Math.PI ? -2 : Math.cos(1.7 * size) - 1e-6;
     craters.push({ c: randomDir(random), size, depth: 0.16 + random() * 0.14, reach });
   }
-  const position = geometry.getAttribute('position');
-  const heights = new Float64Array(position.count);
-  const v = new Vector3();
-  for (let i = 0; i < position.count; i += 1) {
-    v.fromBufferAttribute(position, i).normalize();
+  const { position } = geometry;
+  const heights = new Float64Array(position.length / 3);
+  const v: Vec = [0, 0, 0];
+  for (let i = 0; i < heights.length; i += 1) {
+    const [x, y, z] = unitAt(position, i, v);
     let h = 0;
     let amp = 0.03;
     let freq = 1.4;
     for (let o = 0; o < 5; o += 1) {
-      h += amp * noise.noise3d(v.x * freq + 11, v.y * freq, v.z * freq);
+      h += amp * noise.noise3d(x * freq + 11, y * freq, z * freq);
       amp *= 0.5;
       freq *= 2.15;
     }
     for (const k of craters) {
-      const dot = v.dot(k.c);
+      const dot = x * k.c[0] + y * k.c[1] + z * k.c[2];
       if (dot < k.reach) continue;
-      const d = Math.acos(MathUtils.clamp(dot, -1, 1)) / k.size;
+      const d = Math.acos(clamp(dot, -1, 1)) / k.size;
       if (d < 1.7) {
         const bowl = d < 1 ? d * d - 1 : 0;
         const rim = 0.32 * Math.exp(-Math.pow((d - 1.02) / 0.26, 2));
@@ -336,22 +400,24 @@ export function planetHeights(detail: number, seed = 5): PlanetHeights {
 
 /** Raises the planet's surface to its heights, calm where the characters stand (from the model). */
 export function shapePlanet({ geometry, heights }: PlanetHeights, calm: readonly Calm[]): Arrays {
-  const calmDirs = calm.map((c) => ({ ...c, v: new Vector3(...c.dir) }));
-  const position = geometry.getAttribute('position');
-  const v = new Vector3();
-  for (let i = 0; i < position.count; i += 1) {
-    v.fromBufferAttribute(position, i).normalize();
+  const { position, normal, index } = geometry;
+  const v: Vec = [0, 0, 0];
+  for (let i = 0; i < heights.length; i += 1) {
+    const [x, y, z] = unitAt(position, i, v);
     const h = heights[i] ?? 0;
     let keep = 1;
-    for (const c of calmDirs) {
-      const angle = Math.acos(MathUtils.clamp(v.dot(c.v), -1, 1));
+    for (const c of calm) {
+      const angle = Math.acos(clamp(x * c.dir[0] + y * c.dir[1] + z * c.dir[2], -1, 1));
       keep *= 1 - (1 - c.floor) * Math.exp(-Math.pow(angle / c.radius, 2));
     }
-    v.multiplyScalar(1 + h * keep);
-    position.setXYZ(i, v.x, v.y, v.z);
+    // `multiplyScalar(1 + h * keep)`, then `setXYZ`.
+    const scale = 1 + h * keep;
+    position[i * 3] = x * scale;
+    position[i * 3 + 1] = y * scale;
+    position[i * 3 + 2] = z * scale;
   }
-  geometry.computeVertexNormals();
-  return toArrays(geometry);
+  computeVertexNormals(position, normal, index);
+  return { position, normal, index: index.slice() };
 }
 
 /** The planet: a lumpy surface (simplex noise, 5 octaves) and 46 craters, calm where the characters stand. */
@@ -362,24 +428,25 @@ export function craterPlanet(detail: number, calm: readonly Calm[], seed = 5): A
 /** The hair: crumpled curls, an icosphere creased by softened ridged noise over 2 octaves. */
 export function crumpledBall(detail: number, seed = 21): Arrays {
   const noise = new SimplexNoise({ random: rng(seed) });
-  const geometry = icosphere(detail);
-  const position = geometry.getAttribute('position');
-  const v = new Vector3();
-  for (let i = 0; i < position.count; i += 1) {
-    v.fromBufferAttribute(position, i).normalize();
+  const { position, normal, index } = icosphere(detail);
+  const v: Vec = [0, 0, 0];
+  for (let i = 0; i < position.length / 3; i += 1) {
+    const [x, y, z] = unitAt(position, i, v);
     let h = 0;
     let amp = 1;
     let f = 1.4;
     for (let o = 0; o < 2; o += 1) {
       // Softened ridges (|n| rounded off near 0): folds without sharp, aliasing creases.
-      const n = noise.noise3d(v.x * f + o * 7.1, v.y * f, v.z * f);
+      const n = noise.noise3d(x * f + o * 7.1, y * f, z * f);
       h += amp * Math.pow(1 - Math.sqrt(n * n + 0.03), 1.4);
       amp *= 0.4;
       f *= 2.1;
     }
-    v.multiplyScalar(0.84 + 0.36 * h);
-    position.setXYZ(i, v.x, v.y, v.z);
+    const scale = 0.84 + 0.36 * h;
+    position[i * 3] = x * scale;
+    position[i * 3 + 1] = y * scale;
+    position[i * 3 + 2] = z * scale;
   }
-  geometry.computeVertexNormals();
-  return toArrays(geometry);
+  computeVertexNormals(position, normal, index);
+  return { position, normal, index };
 }
