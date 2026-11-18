@@ -19,7 +19,7 @@ async function fetched(page: Page): Promise<{ load: number; files: { url: string
 }
 
 const caseStudy = /\/projets\/[^/]+\/$/;
-const layer = /\/images\/office\/layers\/.+\.webp$/;
+const layer = /\/images\/office\/layers\/.+\.(?:avif|webp)$/;
 const capture = /\/images\/screen\/(linkedin|github|instagram|cv)/;
 
 test('after the page has loaded, the case studies come first, then the office, its wall and its screen', async ({
@@ -38,6 +38,11 @@ test('after the page has loaded, the case studies come first, then the office, i
   expect(Math.min(...cases)).toBeGreaterThan(load + 1500);
   expect(Math.max(...cases)).toBeLessThan(Math.min(...at(layer)));
   expect(Math.max(...at(layer))).toBeLessThan(Math.min(...at(capture)));
+  // Chromium shows AVIF: the layers and the wall's pictures come in it, lighter (src/lib/avif.ts).
+  const layers = [...new Set(files.filter(({ url }) => layer.test(url)).map(({ url }) => url))];
+  expect(layers).toHaveLength(3);
+  expect(layers.every((url) => url.endsWith('.avif'))).toBe(true);
+  expect(files.filter(({ url }) => /\/_astro\/.+\.avif$/.test(url)).length).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
 
