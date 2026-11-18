@@ -16,6 +16,7 @@ import { createLayersOffice } from './layers';
 import { createLiveOffice, SlowOffice, type OfficeScene } from './live';
 import { createOfficeView, type OfficeView } from './view';
 import type { Cartel, WallPicture } from './wall';
+import { avifShown } from '../../lib/avif';
 
 // Thrown when the device draws WebGL in software, or links its programs too slowly: the layers stand in.
 export { SlowOffice };
@@ -34,6 +35,8 @@ export interface OfficeOptions {
 
 interface PictureData {
   src: string;
+  /** The same picture in AVIF, lighter (`src/lib/avif.ts`). */
+  avif?: string;
   focus?: string;
   cartel?: Cartel;
   link?: string;
@@ -134,6 +137,7 @@ export async function viewOffice(
     kept?: boolean;
   },
 ): Promise<OfficeView> {
+  const avif = await avifShown();
   // In a task of its own: a promise (a picture's decoding, a shader's compiling) can settle during a frame, and laying
   // the view in the page reads its size, which would force a layout in the middle of that frame.
   await new Promise((resolve) => setTimeout(resolve));
@@ -143,7 +147,7 @@ export async function viewOffice(
     Object.entries(JSON.parse(host.dataset.pictures ?? '{}') as Record<string, PictureData[]>).map(([frame, pool]) => [
       frame,
       pool.map((picture) => ({
-        src: picture.src,
+        src: avif && picture.avif ? picture.avif : picture.src,
         focus: focusOf(picture.focus),
         cartel: picture.cartel ?? null,
         link: picture.link ?? null,

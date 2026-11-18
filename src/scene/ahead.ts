@@ -17,6 +17,7 @@
  * Once per document: the client router keeps it going from page to page.
  */
 import { atRest, watchMoves } from './rest';
+import { avifShown } from '../lib/avif';
 
 /** How long after the page's load the queue starts, in ms. */
 const START_AFTER = 2000;
@@ -52,9 +53,9 @@ export function pagesFrom(home: ParentNode): string[] {
 
 /**
  * The case studies' pages, from the project in front on round the ring, then the office's files, the wall's and the
- * screen's, for a screen `width` px wide at `moment`.
+ * screen's, for a screen `width` px wide at `moment`; the layers and the wall's pictures in AVIF if `avif`.
  */
-export function planFrom(home: ParentNode, width: number, moment: string): Plan {
+export function planFrom(home: ParentNode, width: number, moment: string, avif = false): Plan {
   const pages = pagesFrom(home);
 
   const files: string[] = [];
@@ -69,9 +70,11 @@ export function planFrom(home: ParentNode, width: number, moment: string): Plan 
     if (still) files.push(still);
     const base = office.dataset.layers ?? '';
     files.push(`${base}/placement.json`);
-    for (const layer of ['city', 'room', 'desk']) files.push(`${base}/${moment}-${framing}-${layer}.webp`);
-    const pools = JSON.parse(office.dataset.pictures ?? '{}') as Record<string, { src: string }[]>;
-    for (const pool of Object.values(pools)) for (const { src } of pool) files.push(src);
+    const kind = avif ? 'avif' : 'webp';
+    for (const layer of ['city', 'room', 'desk']) files.push(`${base}/${moment}-${framing}-${layer}.${kind}`);
+    const pools = JSON.parse(office.dataset.pictures ?? '{}') as Record<string, { src: string; avif?: string }[]>;
+    for (const pool of Object.values(pools))
+      for (const picture of pool) files.push(avif && picture.avif ? picture.avif : picture.src);
     const screen = office.querySelector<HTMLTemplateElement>('template[data-screen-template]')?.content;
     const wallpapers = screen?.querySelector<HTMLElement>('[data-wallpapers]')?.dataset.wallpapers;
     if (wallpapers) files.push(...(JSON.parse(wallpapers) as string[]));
@@ -114,7 +117,7 @@ export function loadAhead(home: ParentNode): void {
 
 async function run(home: ParentNode): Promise<void> {
   const spare = sparing((navigator as Navigator & { connection?: Connection }).connection);
-  const plan = planFrom(home, innerWidth, document.documentElement.dataset.moment ?? 'crepuscule');
+  const plan = planFrom(home, innerWidth, document.documentElement.dataset.moment ?? 'crepuscule', await avifShown());
   const moves = watchMoves();
   try {
     for (;;) {

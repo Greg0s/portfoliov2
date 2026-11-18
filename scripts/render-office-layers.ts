@@ -1,7 +1,7 @@
 /**
  * Renders the office's fallback layers from the site's own modules (plan §2.5, step 7): for each moment and framing,
- * the town, the room, the desk and every town window lit, with `placement.json`, where things land in them. The live
- * office and its fallback come from the same `src/scene/office/`, so they cannot drift apart.
+ * the town, the room, the desk and every town window lit, in WebP and in AVIF, with `placement.json`, where things land
+ * in them. The live office and its fallback come from the same `src/scene/office/`, so they cannot drift apart.
  *
  * Usage: `pnpm render-office-layers` (all), `-- --layers=city,room` (some layers), `-- --preview` (the three passes
  * together over a transparent sky, to compare with the mockup), `-- --out=<dir>` (somewhere else).
@@ -70,10 +70,22 @@ try {
         const png = Buffer.from(result.image.split(',')[1] ?? '', 'base64');
         const file = join(OUT, `${name}.${PREVIEW ? 'png' : 'webp'}`);
         if (PREVIEW) writeFileSync(file, png);
-        else await sharp(png).webp({ quality: 86, alphaQuality: 90, effort: 6 }).toFile(file);
+        else {
+          await sharp(png).webp({ quality: 86, alphaQuality: 90, effort: 6 }).toFile(file);
+          // And in AVIF, for the browsers that show it (`src/lib/avif.ts`): at quality 60, as faithful to the render
+          // as the WebP and about 40 % lighter.
+          await sharp(png)
+            .avif({ quality: 60, effort: 6 })
+            .toFile(file.replace(/\.webp$/, '.avif'));
+        }
         placement[`${moment}-${framing}`] ??= result.meta;
         const seconds = ((Date.now() - started) / 1000).toFixed(1);
-        console.log(`${file}: ${String(Math.round(statSync(file).size / 1024))} kB, ${seconds} s`);
+        const kB = (path: string): string => String(Math.round(statSync(path).size / 1024));
+        console.log(
+          PREVIEW
+            ? `${file}: ${kB(file)} kB, ${seconds} s`
+            : `${file}: ${kB(file)} kB, AVIF ${kB(file.replace(/\.webp$/, '.avif'))} kB, ${seconds} s`,
+        );
       }
     }
   }

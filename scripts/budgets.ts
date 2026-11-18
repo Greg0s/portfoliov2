@@ -140,8 +140,12 @@ const screen = ['images/taskbar/logos.webp', 'images/taskbar/recycle-bin.webp']
   .filter((path) => existsSync(path));
 const layerSets = new Map<string, string[]>();
 for (const file of listFiles(layers)) {
-  const match = /([a-z]+-(?:desktop|mobile))-[a-z]+\.webp$/.exec(file);
-  if (match?.[1]) layerSets.set(match[1], [...(layerSets.get(match[1]) ?? []), file]);
+  // In WebP and in AVIF (`src/lib/avif.ts`): a visitor loads one or the other.
+  const match = /([a-z]+-(?:desktop|mobile))-[a-z]+\.(webp|avif)$/.exec(file);
+  if (match?.[1] && match[2]) {
+    const name = `${match[1]}, ${match[2]}`;
+    layerSets.set(name, [...(layerSets.get(name) ?? []), file]);
+  }
 }
 for (const [name, files] of layerSets) {
   const all = [...files, ...screen];

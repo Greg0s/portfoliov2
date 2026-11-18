@@ -11,6 +11,7 @@ import type { Fit, FrameSpec } from './frame';
 import type { Framing } from './framings';
 import type { Drawn, Head, OfficeScene, PictureSource } from './live';
 import type { Moment } from '../time';
+import { avifShown } from '../../lib/avif';
 import { quadMatrix } from '../../lib/quad';
 
 /** What `placement.json` holds for a moment and a framing: where things land in the layers' pictures. */
@@ -65,7 +66,7 @@ async function picture(src: string, parent: HTMLElement): Promise<HTMLImageEleme
 
 export async function createLayersOffice(options: LayersOptions): Promise<OfficeScene> {
   const { frame, framing, moment, base } = options;
-  const response = await fetch(`${base}/placement.json`);
+  const [response, avif] = await Promise.all([fetch(`${base}/placement.json`), avifShown()]);
   if (!response.ok) throw new Error(`office layers: placement ${String(response.status)}`);
   const all = (await response.json()) as Record<string, LayerMeta>;
   const meta = all[`${moment}-${framing}`];
@@ -97,7 +98,7 @@ export async function createLayersOffice(options: LayersOptions): Promise<Office
   const city = layer('city');
   const room = layer('room');
   const desk = layer('desk');
-  const src = (name: string): string => `${base}/${moment}-${framing}-${name}.webp`;
+  const src = (name: string): string => `${base}/${moment}-${framing}-${name}.${avif ? 'avif' : 'webp'}`;
   const images = await Promise.all([
     picture(src('city'), city),
     picture(src('room'), room),
