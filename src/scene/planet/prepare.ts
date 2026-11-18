@@ -10,12 +10,43 @@ import type { Calm } from '../workers/relief';
 /** The model's bytes, downloaded once per page: the planet put together again after the office reads them again. */
 let model: { url: string; data: Promise<ArrayBuffer> } | null = null;
 
+async function download(url: string): Promise<ArrayBuffer> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`The planet model answered ${String(response.status)}.`);
+  return response.arrayBuffer();
+}
+
+/** Whether `bytes` start with `magic`: a gzip stream's or a binary glTF's. */
+const startsWith = (bytes: ArrayBuffer, magic: readonly number[]): boolean => {
+  const head = new Uint8Array(bytes, 0, Math.min(magic.length, bytes.byteLength));
+  return magic.every((byte, i) => head[i] === byte);
+};
+const GZIP = [0x1f, 0x8b];
+const GLTF = [0x67, 0x6c, 0x54, 0x46];
+
+/**
+ * The model, from its gzipped copy made at build (`src/integrations/compressed-model.ts`), about half its weight:
+ * GitHub Pages sends a `.glb` uncompressed. A server that unpacks the copy itself gives the model straight away; without
+ * `DecompressionStream`, or without the copy (the dev server), the `.glb` itself.
+ */
+async function downloadModel(url: string): Promise<ArrayBuffer> {
+  if (typeof DecompressionStream === 'function') {
+    try {
+      const bytes = await download(`${url}.gz`);
+      if (startsWith(bytes, GLTF)) return bytes;
+      if (!startsWith(bytes, GZIP)) throw new Error('The gzipped model is not one.');
+      const unpacked = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return await new Response(unpacked).arrayBuffer();
+    } catch {
+      // The `.glb` below.
+    }
+  }
+  return download(url);
+}
+
 export function modelData(url: string): Promise<ArrayBuffer> {
   if (model?.url !== url) {
-    const data = fetch(url).then((response) => {
-      if (!response.ok) throw new Error(`The planet model answered ${String(response.status)}.`);
-      return response.arrayBuffer();
-    });
+    const data = downloadModel(url);
     const asked = { url, data };
     model = asked;
     // A failed download is tried again by the next planet.

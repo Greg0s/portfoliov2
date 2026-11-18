@@ -352,7 +352,7 @@ Déjà fournis, gardés dans les fichiers du canevas : le CV (en anglais seuleme
 ### 9.4 Budgets de performance
 
 - JavaScript initial de 60 Ko compressés au plus, scènes 3D chargées en différé non comprises ;
-- modèle de la planète de 600 Ko au plus ; images de repli de la planète de 50 Ko au plus chacune ;
+- modèle de la planète de 600 Ko au plus, et 350 Ko au plus pour ce que la page télécharge : sa copie compressée en gzip au build (GitHub Pages n'envoie jamais un `.glb` compressé), que la page décompresse avec `DecompressionStream` ; images de repli de la planète de 50 Ko au plus chacune ;
 - LCP de 2,5 s au plus (Lighthouse, mobile), l'image de repli de la planète servant d'élément LCP ;
 - deux fichiers de police préchargés au plus ;
 - **le bureau** : 500 Ko au plus pour ce que charge un visiteur (un moment, un cadrage), qu'il s'agisse de la scène en temps réel (code et géométrie compressés) ou des couches (trois couches et celle des fenêtres) ; rien n'est chargé avant le premier projet ;
