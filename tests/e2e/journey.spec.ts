@@ -695,6 +695,51 @@ test('back from a case study, the live office comes back at once, without being 
   await expect(page.locator('html')).toHaveAttribute('data-office-scene', 'live');
 });
 
+test('back from a case study, the ring sky and the stars come back without a new WebGL context or program', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'one run is enough: the scenes are kept the same way on phones');
+  test.slow();
+  // Every WebGL 2 context made and every program linked, whoever makes them.
+  await page.addInitScript(() => {
+    const counts = { contexts: 0, links: 0 };
+    Object.assign(window, { glCounts: counts });
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- called back on its own canvas
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
+      if (args[0] === 'webgl2') counts.contexts += 1;
+      return (getContext as (...a: unknown[]) => unknown).apply(this, args);
+    } as typeof getContext;
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- called back on its own context
+    const link = WebGL2RenderingContext.prototype.linkProgram;
+    WebGL2RenderingContext.prototype.linkProgram = function (this: WebGL2RenderingContext, program: WebGLProgram) {
+      counts.links += 1;
+      link.call(this, program);
+    };
+  });
+  const counts = (): Promise<{ contexts: number; links: number }> =>
+    page.evaluate(() => (window as unknown as { glCounts: { contexts: number; links: number } }).glCounts);
+  // The office over its layers and the planet as its image: the sky and the stars alone draw in WebGL.
+  await page.goto('./?office=layers&lite=0#lyrix');
+  await expectAnchor(page, RING);
+  await expect(page.locator('html')).toHaveAttribute('data-sky', 'webgl');
+  await expect(page.locator('html')).toHaveAttribute('data-stars', 'webgl', { timeout: 30_000 });
+  // The first frame with the stars has linked their program.
+  await page.waitForTimeout(1500);
+  const before = await counts();
+  expect(before.links).toBeGreaterThan(0);
+
+  await throughCaseStudy(page);
+  await expect.poll(() => marks(page, 'keep:take-sky'), { timeout: 30_000 }).toBe(1);
+  await expect.poll(() => marks(page, 'keep:take-renderer'), { timeout: 30_000 }).toBe(1);
+  await expect(page.locator('html')).toHaveAttribute('data-stars', 'webgl');
+  await page.waitForTimeout(1500);
+  // No context made, no program linked, on the case study or on the way back.
+  expect(await counts()).toEqual(before);
+  await expect(page.locator('html')).toHaveAttribute('data-sky', 'webgl');
+});
+
 test('nothing of the office loads while the opening plays its arrival', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
