@@ -15,6 +15,7 @@ import {
   PerspectiveCamera,
   Scene,
   Texture,
+  Vector2,
   Vector3,
   WebGLRenderer,
   type MeshStandardMaterial,
@@ -334,8 +335,14 @@ async function assemble(
   let windState: WindState = { scarfPhase: 0, roseDeg: 0, tailDeg: 0, earsDeg: [0, 0] };
   let moving = 0;
 
+  const sizeOf = new Vector2();
   const resize = (size: number, mobile: boolean): void => {
-    renderer.setPixelRatio(scenePixelRatio(window.devicePixelRatio || 1, mobile));
+    const ratio = scenePixelRatio(window.devicePixelRatio || 1, mobile);
+    // Sized again only when its size changes (a planet kept from a former visit of the home comes back at its size):
+    // sizing a canvas throws its drawing buffer away, even at the same size.
+    const current = renderer.getSize(sizeOf);
+    if (ratio === renderer.getPixelRatio() && current.x === size && current.y === size) return;
+    renderer.setPixelRatio(ratio);
     renderer.setSize(size, size, false);
   };
   resize(options.size, options.mobile);

@@ -344,7 +344,16 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
     backdrop.style.removeProperty('opacity');
     // Made where the case study's media was, a little scrolled maybe: it settles on the opening media's place.
     const from = boxOf(picture);
-    picture.animate([keyframe(from), keyframe(openingMedia())], { duration: 250, easing: EASE_OUT, fill: 'forwards' });
+    const to = openingMedia();
+    if (Math.abs(from.width - to.width) < 0.5 && Math.abs(from.height - to.height) < 0.5) {
+      // Only moved (the page was scrolled a little): it slides on the compositor, so that the home's first frames,
+      // laid out and started under it, do not hold it.
+      Object.assign(picture.style, keyframe(to));
+      picture.animate(
+        [{ translate: `${String(from.left - to.left)}px ${String(from.top - to.top)}px` }, { translate: '0 0' }],
+        { duration: 250, easing: EASE_OUT },
+      );
+    } else picture.animate([keyframe(from), keyframe(to)], { duration: 250, easing: EASE_OUT, fill: 'forwards' });
   }
   // The router's view transition hands the case study's opening media over to it. Left scrolled, the page fades away
   // instead, and the picture only comes in with the flight, sliding down into the screen.
@@ -382,6 +391,10 @@ async function flyBack(slug: string, faded: boolean): Promise<void> {
     if (journey?.isAt(slug)) {
       // The card's own picture, on a home just come, decoded before it takes over: else the card shows empty for a few
       // frames, a blink between the picture and the card.
+      // The other cards' pictures too, without waiting for them: they come back in the last third of the flight, and
+      // decoded then, all at once, they would hold that frame.
+      for (const other of document.querySelectorAll<HTMLImageElement>('[data-project] .card img'))
+        if (other !== image) void other.decode().catch(() => undefined);
       await Promise.race([image.decode().catch(() => undefined), wait(300)]);
       await frame();
       picture.style.viewTransitionName = '';

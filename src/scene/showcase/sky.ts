@@ -31,6 +31,13 @@ export interface SkyBox {
 export interface SkyPainter {
   /** Whether the canvas draws in WebGL. */
   readonly webgl: boolean;
+  /** Whether its WebGL context is lost (never, on a 2D context). */
+  readonly lost: boolean;
+  /**
+   * Who hears of its WebGL context lost from now on: a painter kept from one visit of the home to the next
+   * (`src/scene/keep.ts`) answers to the ring that takes it back.
+   */
+  whenLost(callback: (() => void) | null): void;
   /** Clears the canvas, and nothing more. */
   clear(): void;
   /** Starts a frame: the canvas cleared, a point `p` of the sky drawn at `p * scale + offset` device px. */
@@ -164,6 +171,10 @@ export function canvasPainter(canvas: HTMLCanvasElement): SkyPainter | null {
     dispose() {
       canvas.width = 0;
       canvas.height = 0;
+    },
+    lost: false,
+    whenLost() {
+      // A 2D context is not lost.
     },
   };
 }
@@ -363,6 +374,7 @@ export function webglPainter(canvas: HTMLCanvasElement, onLost?: () => void): Sk
 
   let lost = false;
   let disposed = false;
+  let lostCallback = onLost ?? null;
   let grainProgram: Program;
   let lineProgram: Program;
   let bodyProgram: Program;
@@ -451,7 +463,7 @@ export function webglPainter(canvas: HTMLCanvasElement, onLost?: () => void): Sk
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
     lost = true;
-    if (!disposed) onLost?.();
+    if (!disposed) lostCallback?.();
   });
   canvas.addEventListener('webglcontextrestored', () => {
     if (disposed) return;
@@ -481,6 +493,12 @@ export function webglPainter(canvas: HTMLCanvasElement, onLost?: () => void): Sk
 
   return {
     webgl: true,
+    get lost() {
+      return lost;
+    },
+    whenLost(callback) {
+      lostCallback = callback;
+    },
     clear() {
       if (lost) return;
       gl.viewport(0, 0, canvas.width, canvas.height);

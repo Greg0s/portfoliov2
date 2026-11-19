@@ -3,7 +3,7 @@
  * draws the journey's stars now and the planet and the office from step 7. Its pixel ratio is capped (2, and 1.5 on
  * phones); it stops drawing while the tab is hidden or the context is lost, and says when it is back.
  */
-import { PerspectiveCamera, Scene, ShaderChunk, WebGLRenderer } from 'three';
+import { PerspectiveCamera, Scene, ShaderChunk, Vector2, WebGLRenderer } from 'three';
 import { cameraPosition, projectionMatrix } from './journey/camera3d';
 import type { View } from './journey/layout';
 import { noteContext, RENDERER_CONTEXT } from './quality';
@@ -47,6 +47,7 @@ export function createRenderer(
   const camera = new PerspectiveCamera();
   let lost = false;
   let pixelRatio = 1;
+  const sizeOf = new Vector2();
 
   const onLost = (event: Event): void => {
     event.preventDefault();
@@ -69,9 +70,15 @@ export function createRenderer(
       return lost;
     },
     resize(next) {
-      pixelRatio = cappedPixelRatio(window.devicePixelRatio || 1, next.mobile);
-      gl.setPixelRatio(pixelRatio);
-      gl.setSize(next.width, next.height, false);
+      const ratio = cappedPixelRatio(window.devicePixelRatio || 1, next.mobile);
+      // Sized again only when its size changes: sizing a canvas throws its drawing buffer away, even at the same size
+      // (the renderer kept from a former visit of the home comes back at the size it had).
+      const size = gl.getSize(sizeOf);
+      if (ratio !== gl.getPixelRatio() || size.x !== next.width || size.y !== next.height) {
+        pixelRatio = ratio;
+        gl.setPixelRatio(pixelRatio);
+        gl.setSize(next.width, next.height, false);
+      }
       camera.projectionMatrix.copy(projectionMatrix(next));
       camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
       camera.position.copy(cameraPosition(next));

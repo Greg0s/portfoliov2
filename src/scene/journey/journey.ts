@@ -78,6 +78,7 @@ import {
   takeOffice,
   takePlanet,
   takeRenderer,
+  takeStars,
   type KeptOffice,
 } from '../keep';
 import { CARTEL_GAP, fitRing, type Pose, type RingRoom } from '../showcase/ring';
@@ -446,6 +447,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
 
   let renderer: Renderer | null = null;
   let stars: StarField | null = null;
+  /** The stars' field of a former visit, let go once the new one is drawn (`src/scene/keep.ts`). */
+  let retiring: StarField | null = null;
   let stopped = false;
   /** Whether the scenes are kept as the journey stops (the home is left for another page), rather than let go. */
   let keeping = false;
@@ -475,6 +478,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         canvasAhead = null;
         if (kept) {
           renderer = kept;
+          // The former visit's stars' field leaves the scene, but is let go only once the new one has been drawn: its
+          // program, the same, is then taken over rather than linked again in the middle of the way back.
+          retiring = takeStars();
+          if (retiring) kept.scene.remove(retiring.points);
           stage.prepend(kept.canvas);
           kept.resize(scene.view);
           ahead?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
@@ -1729,6 +1736,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       stars.points.matrix.copy(swayMatrixOf(sway));
       stars.points.matrixWorldNeedsUpdate = true;
       renderer.render();
+      retiring?.dispose();
+      retiring = null;
     }
 
     // Where the camera rests, for the navigation and the tests.
@@ -2318,10 +2327,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     root.removeEventListener('click', onClick, true);
     root.removeEventListener('pointerover', onOver);
     setJourney(null);
-    showcase.stop();
-    stars?.dispose();
-    if (keep && renderer) keepRenderer(renderer);
-    else renderer?.dispose();
+    showcase.stop(keep);
+    retiring?.dispose();
+    retiring = null;
+    if (keep && renderer) keepRenderer(renderer, stars);
+    else {
+      stars?.dispose();
+      renderer?.dispose();
+    }
     freePlanet(keep);
     freeOffice(keep);
     markers.forEach((marker) => {

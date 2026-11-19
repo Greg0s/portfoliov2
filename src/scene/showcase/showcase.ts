@@ -9,6 +9,7 @@ import { projectCss, type Sway } from '../journey/camera';
 import type { View } from '../journey/layout';
 import { offset, ringFor, ringPoint, ringPose, type Pose, type Ring } from './ring';
 import { canvasPainter, webglPainter, type BodyKind, type SkyBox, type SkyPainter } from './sky';
+import { keepSky, takeSky } from '../keep';
 
 /**
  * The ring turns on a critically damped spring: it sets off gently, glides and settles without a bump, about a second
@@ -61,7 +62,8 @@ export interface Showcase {
   ring(view: View): Ring;
   draw(frame: Frame): void;
   resize(view: View): void;
-  stop(): void;
+  /** Stops the ring; with `keep`, its sky in WebGL is kept for the next visit of the home (`src/scene/keep.ts`). */
+  stop(keep?: boolean): void;
 }
 
 interface Body {
@@ -164,8 +166,29 @@ export function createShowcase(
     blank = false;
     onMove();
   }
-  [painter, canvas] = painterOf(canvas, webgl ? 'webgl' : '2d');
-  if (planet) [farPainter, farCanvas] = painterOf(farCanvas, painter?.webgl ? 'webgl' : '2d');
+  // The sky of a former visit of the home, if any: its WebGL contexts and programs come back as they were, rather than
+  // made and linked again under the way back from a case study.
+  const kept = webgl ? takeSky() : null;
+  if (kept) {
+    canvas.replaceWith(kept.near.canvas);
+    canvas = kept.near.canvas;
+    painter = kept.near.painter;
+    painter.whenLost(onLost);
+    if (planet && kept.far) {
+      farCanvas.replaceWith(kept.far.canvas);
+      farCanvas = kept.far.canvas;
+      // Placed afresh at its first frame.
+      farCanvas.style.removeProperty('transform');
+      farPainter = kept.far.painter;
+      farPainter.whenLost(onLost);
+    } else {
+      kept.far?.painter.dispose();
+      if (planet) [farPainter, farCanvas] = painterOf(farCanvas, 'webgl');
+    }
+  } else {
+    [painter, canvas] = painterOf(canvas, webgl ? 'webgl' : '2d');
+    if (planet) [farPainter, farCanvas] = painterOf(farCanvas, painter?.webgl ? 'webgl' : '2d');
+  }
   html.dataset.sky = painter?.webgl ? 'webgl' : '2d';
 
   // The arrows and the counter, over the cards.
@@ -257,8 +280,11 @@ export function createShowcase(
         break;
       }
     }
-    canvas.width = Math.round(view.width * ratio);
-    canvas.height = Math.round(view.height * ratio);
+    // Sized again only when its size changes: sizing a canvas throws its memory away, even at the same size.
+    const width = Math.round(view.width * ratio);
+    const height = Math.round(view.height * ratio);
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
     canvas.style.width = `${String(view.width)}px`;
     canvas.style.height = `${String(view.height)}px`;
     farSide = 0;
@@ -279,8 +305,9 @@ export function createShowcase(
     const side = 2 * half * zoom.k + farStep;
     if (farSide === 0 || Math.abs(side - farSide) > 6) {
       farSide = Math.ceil(side * ratio) / ratio;
-      farCanvas.width = Math.round(farSide * ratio);
-      farCanvas.height = farCanvas.width;
+      const pixels = Math.round(farSide * ratio);
+      if (farCanvas.width !== pixels) farCanvas.width = pixels;
+      if (farCanvas.height !== pixels) farCanvas.height = pixels;
       farCanvas.style.width = `${String(farSide)}px`;
       farCanvas.style.height = farCanvas.style.width;
     }
@@ -579,10 +606,20 @@ export function createShowcase(
       drawRing(painter, farPainter, box, frame);
     },
     resize,
-    stop() {
+    stop(keep = false) {
       ui.removeEventListener('click', onButton);
-      painter?.dispose();
-      farPainter?.dispose();
+      if (keep && painter?.webgl && !painter.lost && (!farPainter || (farPainter.webgl && !farPainter.lost))) {
+        // Cleared, so that the next ring does not show this one's last frame before it draws.
+        painter.clear();
+        farPainter?.clear();
+        keepSky({
+          near: { canvas, painter },
+          far: farPainter ? { canvas: farCanvas, painter: farPainter } : null,
+        });
+      } else {
+        painter?.dispose();
+        farPainter?.dispose();
+      }
       painter = farPainter = null;
       canvas.remove();
       farCanvas.remove();
