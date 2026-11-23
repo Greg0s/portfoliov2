@@ -30,6 +30,8 @@ import {
 } from 'three';
 import { box, canvasTexture, DEG, LAYERS, onLayer, rng, std } from './common';
 import type { OfficeMoment } from './moments';
+import { landscapeProposal } from './proposals';
+import { river } from './river';
 import {
   ACROSS,
   ALONG,
@@ -95,6 +97,71 @@ function facadeTextures(
     map: canvasTexture(cols * cell, rows * cell, draw(false)),
     emissive: canvasTexture(cols * cell, rows * cell, draw(true)),
   };
+}
+
+/**
+ * A tileable ripple pattern as a normal map (a proposal, `?paysage=1`): a few crossing waves of whole periods, so that
+ * the tile repeats without a seam.
+ */
+function rippleTexture(): CanvasTexture {
+  const size = 256;
+  // Many short waves of whole periods, in every direction and of similar heights: no stripe stands out.
+  const r = rng(11);
+  const waves: [number, number, number, number][] = [];
+  for (let i = 0; i < 24; i += 1) {
+    const k = 3 + Math.floor(r() * 9);
+    const angle = r() * Math.PI * 2;
+    waves.push([Math.round(Math.cos(angle) * k), Math.round(Math.sin(angle) * k), 0.6 + r() * 0.4, r() * 6.3]);
+  }
+  const texture = canvasTexture(size, size, (ctx, w, h) => {
+    const image = ctx.createImageData(w, h);
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        let dx = 0;
+        let dy = 0;
+        for (const [kx, ky, a, phase] of waves) {
+          const c = Math.cos(((kx * x) / w + (ky * y) / h) * Math.PI * 2 + phase) * a;
+          dx += c * kx;
+          dy += c * ky;
+        }
+        const n = new Vector3(-dx * 0.02, -dy * 0.02, 1).normalize();
+        const i = (y * w + x) * 4;
+        image.data[i] = (n.x * 0.5 + 0.5) * 255;
+        image.data[i + 1] = (n.y * 0.5 + 0.5) * 255;
+        image.data[i + 2] = (n.z * 0.5 + 0.5) * 255;
+        image.data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+  });
+  // A normal map holds directions, not colours.
+  texture.colorSpace = '';
+  return texture;
+}
+
+/**
+ * Trees in several greens, each crown lit from above and darker underneath (a proposal, `?paysage=2`): a colour per
+ * patch of a few metres (a tree, near enough), and a gradient with the height above the ground.
+ */
+const GREEN = new Color(0x3a4a31);
+
+function shadeTrees(geometry: BufferGeometry): void {
+  const position = geometry.getAttribute('position');
+  const colors = new Float32Array(position.count * 3);
+  const greens = [GREEN, new Color(0x46532f), new Color(0x334535), new Color(0x4d4a2e)];
+  const color = new Color();
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i);
+    const y = position.getY(i);
+    const z = position.getZ(i);
+    const cell = Math.floor(x / 7) * 73856093 + Math.floor(z / 7) * 19349663;
+    const hash = Math.abs(Math.sin(cell) * 43758.5453) % 1;
+    color.copy(greens[Math.floor(hash * greens.length)] ?? GREEN);
+    const height = Math.min(1, Math.max(0, (y - CITY.land - 2) / 9));
+    color.multiplyScalar(0.6 + height * 1.1);
+    colors.set([color.r, color.g, color.b], i * 3);
+  }
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
 }
 
 export function unpack(packed: PackedGeometry): BufferGeometry {
@@ -384,10 +451,23 @@ export function buildCity(town: TownGeometry, moment: OfficeMoment): City {
     metalness: 0,
     envMapIntensity: 1.8,
   });
-  const water = new Mesh(new PlaneGeometry(3750, HALF * 2).rotateX(-Math.PI / 2), waterMaterial);
-  water.rotation.y = RIVER_TURN;
-  water.position.set(mid.x, CITY.water, mid.y);
-  g.add(water);
+  const proposal = landscapeProposal();
+  if (proposal >= 1) {
+    // A proposal (`?paysage=1`): the river reflects the town, drawn once.
+    const ripples = rippleTexture();
+    // Ripples a few metres across: `repeat` carries their size.
+    ripples.repeat.set(9, 6);
+    const mirror = river(3750, HALF * 2, new Color(0x262d3d), ripples);
+    mirror.rotation.order = 'YXZ';
+    mirror.rotation.set(-Math.PI / 2, RIVER_TURN, 0);
+    mirror.position.set(mid.x, CITY.water, mid.y);
+    g.add(mirror);
+  } else {
+    const water = new Mesh(new PlaneGeometry(3750, HALF * 2).rotateX(-Math.PI / 2), waterMaterial);
+    water.rotation.y = RIVER_TURN;
+    water.position.set(mid.x, CITY.water, mid.y);
+    g.add(water);
+  }
   const quayStone = std(0xc3b39b, 0.9);
   for (const side of [1, -1]) {
     const wallH = CITY.land - CITY.water;
@@ -413,7 +493,16 @@ export function buildCity(town: TownGeometry, moment: OfficeMoment): City {
   );
   lawn.position.y = CITY.land + 0.6;
   g.add(pond, lawn);
-  g.add(new Mesh(unpack(town.parts.trees), std(0x3a4a31, 0.95, 0, { flatShading: true })));
+  const treeGeometry = unpack(town.parts.trees);
+  if (proposal >= 2) shadeTrees(treeGeometry);
+  g.add(
+    new Mesh(
+      treeGeometry,
+      proposal >= 2
+        ? new MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true })
+        : std(0x3a4a31, 0.95, 0, { flatShading: true }),
+    ),
+  );
   g.add(
     new Mesh(unpack(town.parts.lamps), new MeshBasicMaterial({ color: new Color(0xffc472).multiplyScalar(M.lamps) })),
   );
