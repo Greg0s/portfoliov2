@@ -12,6 +12,7 @@ import {
   BufferGeometry,
   Color,
   DoubleSide,
+  LessEqualDepth,
   Mesh,
   MeshBasicMaterial,
   MultiplyBlending,
@@ -46,6 +47,8 @@ interface ReliefMeta {
   w: number;
   h: number;
   overscan: number;
+  /** The near layers' margin around the frame. */
+  nearOverscan: number;
   anchors: {
     screen: Xyz[];
     window: Xyz[];
@@ -66,6 +69,19 @@ export interface ReliefOptions {
 }
 
 const v3 = (p: Xyz): Vector3 => new Vector3(p[0], p[1], p[2]);
+/**
+ * The near layers of the room, by how far in front of the seat they were seen from, and from where to where, in the
+ * arrival's `camZ`, each one fades out as the camera backs past it: the farther one is drawn over the nearer one.
+ */
+const NEARS = [
+  { cm: 45, until: [-0.11, -0.02] },
+  { cm: 80, until: [-0.4, -0.3] },
+  { cm: 105, until: [-0.72, -0.58], covers: true },
+] as const;
+const smooth = (a: number, b: number, x: number): number => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 /** A picture's pixels as they are in the file: no colour conversion, alpha not premultiplied. */
 async function pixels(src: string): Promise<ImageData> {
@@ -135,33 +151,49 @@ function reliefGeometry(depth: ImageData, camera: PerspectiveCamera, cut: number
     }
     known.set(next);
   }
+  // Only the rows and columns that hold something: a near layer fills a strip of its picture.
+  let x0 = w;
+  let x1 = -1;
+  let y0 = h;
+  let y1 = -1;
+  for (let i = 0; i < w * h; i += 1) {
+    if (!known[i]) continue;
+    const x = i % w;
+    const y = (i - x) / w;
+    x0 = Math.min(x0, x);
+    x1 = Math.max(x1, x);
+    y0 = Math.min(y0, y);
+    y1 = Math.max(y1, y);
+  }
+  const bw = Math.max(0, x1 - x0 + 1);
+  const bh = Math.max(0, y1 - y0 + 1);
   const tanY = Math.tan((camera.fov * DEG) / 2);
   const tanX = tanY * camera.aspect;
-  const positions = new Float32Array(w * h * 3);
-  const uvs = new Float32Array(w * h * 2);
+  const positions = new Float32Array(bw * bh * 3);
+  const uvs = new Float32Array(bw * bh * 2);
   const p = new Vector3();
-  for (let y = 0; y < h; y += 1) {
-    for (let x = 0; x < w; x += 1) {
-      const i = y * w + x;
-      const u = (x + 0.5) / w;
-      const v = (y + 0.5) / h;
+  for (let y = 0; y < bh; y += 1) {
+    for (let x = 0; x < bw; x += 1) {
+      const i = (y + y0) * w + x + x0;
+      const u = (x + x0 + 0.5) / w;
+      const v = (y + y0 + 0.5) / h;
       const d = known[i] ? (z[i] ?? 1) : 1;
       p.set((u * 2 - 1) * tanX * d, (1 - v * 2) * tanY * d, -d).applyMatrix4(camera.matrixWorld);
-      positions.set([p.x, p.y, p.z], i * 3);
-      uvs.set([u, 1 - v], i * 2);
+      positions.set([p.x, p.y, p.z], (y * bw + x) * 3);
+      uvs.set([u, 1 - v], (y * bw + x) * 2);
     }
   }
   const index: number[] = [];
-  for (let y = 0; y < h - 1; y += 1) {
-    for (let x = 0; x < w - 1; x += 1) {
-      const a = y * w + x;
-      const quad = [a, a + 1, a + w, a + w + 1];
-      if (!quad.every((i) => known[i])) continue;
+  for (let y = 0; y < bh - 1; y += 1) {
+    for (let x = 0; x < bw - 1; x += 1) {
+      const i = (y + y0) * w + x + x0;
+      if (![i, i + 1, i + w, i + w + 1].every((j) => known[j])) continue;
       if (cut > 0) {
-        const zs = quad.map((i) => z[i] ?? 1);
+        const zs = [i, i + 1, i + w, i + w + 1].map((j) => z[j] ?? 1);
         if (Math.max(...zs) > cut * Math.min(...zs)) continue;
       }
-      index.push(a, a + w, a + 1, a + 1, a + w, a + w + 1);
+      const a = y * bw + x;
+      index.push(a, a + bw, a + 1, a + 1, a + bw, a + bw + 1);
     }
   }
   const geometry = new BufferGeometry();
@@ -201,12 +233,16 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
       texture.anisotropy = 4;
       return texture;
     });
-  const [cityMap, roomMap, deskMap, roomDepth, deskDepth] = await Promise.all([
+  const [cityMap, roomMap, deskMap, roomDepth, deskDepth, ...nearLayers] = await Promise.all([
     colour('city'),
     colour('room'),
     colour('desk'),
     pixels(name('room-depth', 'webp')),
     pixels(name('desk-depth', 'webp')),
+    ...NEARS.flatMap((near) => [
+      colour(`room-near${String(near.cm)}`),
+      pixels(name(`room-near${String(near.cm)}-depth`, 'webp')),
+    ]),
   ]);
 
   const canvas = document.createElement('canvas');
@@ -245,12 +281,37 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
   cityPlane.quaternion.copy(seated.quaternion);
   cityScene.add(cityPlane);
 
+  const axisRay = new Vector3((frame.axis[0] / frame.w) * 2 - 1, 1 - (frame.axis[1] / frame.h) * 2, 0.5)
+    .unproject(rest)
+    .sub(rest.position)
+    .normalize();
+
   const roomScene = new Scene();
   const deskScene = new Scene();
   const roomMaterial = layerMaterial(roomMap);
   const deskMaterial = layerMaterial(deskMap);
-  roomScene.add(new Mesh(reliefGeometry(roomDepth, seated, cut), roomMaterial));
+  const seatedRoom = new Mesh(reliefGeometry(roomDepth, seated, cut), roomMaterial);
+  seatedRoom.visible = query.get('relief-debug') !== 'near';
+  roomScene.add(seatedRoom);
   deskScene.add(new Mesh(reliefGeometry(deskDepth, seated, cut), deskMaterial));
+  // The room as seen on the way in: a face the seat sees edge on (the lintel from below) has few pixels in the seated
+  // layer, and drawn large as the camera passes it, their steps showed as a saw. Each near layer is drawn over the
+  // seated one while the camera is around where it was seen from.
+  const depthOnly = new MeshBasicMaterial({ colorWrite: false, side: DoubleSide });
+  const nears = NEARS.map((near, i) => {
+    const camera = makeCamera(framing, meta.nearOverscan);
+    camera.position.addScaledVector(axisRay, near.cm / 100);
+    camera.updateMatrixWorld();
+    // In a scene of its own, drawn over the seated room, and its depth first: while it fades, only its nearest faces
+    // show, not those behind them (the lintel's underside through its front).
+    const geometry = reliefGeometry(nearLayers[2 * i + 1] as ImageData, camera, cut);
+    const texture = nearLayers[2 * i] as Texture;
+    const material = layerMaterial(texture);
+    material.depthFunc = LessEqualDepth;
+    const scene = new Scene();
+    scene.add(new Mesh(geometry, depthOnly), new Mesh(geometry, material));
+    return { ...near, texture, material, scene, shown: false };
+  });
 
   // The halos, as the live office draws them: the setting sun's in the town, the lamp's over the desk.
   if (anchors.sun) {
@@ -314,7 +375,7 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
     (picture.id === 'desk' ? deskScene : roomScene).add(mesh);
     faces.set(picture.id, { mesh, ratio: picture.ratio });
   }
-  const textures: Texture[] = [cityMap, roomMap, deskMap];
+  const textures: Texture[] = [cityMap, roomMap, deskMap, ...nears.map((near) => near.texture)];
 
   // Everything on the GPU now, and the one program linked, rather than in the first frame of the arrival.
   const warm = new PerspectiveCamera();
@@ -327,10 +388,6 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
   const cityCamera = rest.clone();
   const roomCamera = rest.clone();
   const roomFull = rest.clone();
-  const axisRay = new Vector3((frame.axis[0] / frame.w) * 2 - 1, 1 - (frame.axis[1] / frame.h) * 2, 0.5)
-    .unproject(rest)
-    .sub(rest.position)
-    .normalize();
   const right = new Vector3(1, 0, 0).applyQuaternion(rest.quaternion);
   const up = new Vector3(0, 1, 0).applyQuaternion(rest.quaternion);
 
@@ -387,8 +444,28 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
       ] as const) {
         if (k <= 0.002) continue;
         material.opacity = k;
+        if (scene === roomScene) {
+          let seatedWeight = 1;
+          for (const near of nears) {
+            const w = 1 - smooth(near.until[0], near.until[1], state.camZ);
+            near.material.opacity = k * w;
+            near.shown = w > 0.002 && query.get('relief-debug') !== 'seated';
+            // While the first near layer shows the whole view, the seated one under it would only show through as the
+            // room fades in.
+            if ('covers' in near) seatedWeight = 1 - w;
+          }
+          material.opacity = k * seatedWeight;
+          seatedRoom.visible = seatedWeight > 0.002 && query.get('relief-debug') !== 'near';
+        }
         renderer.clearDepth();
         renderer.render(scene, roomCamera);
+        if (scene !== roomScene) continue;
+        // The near layers over it, the farthest on top.
+        for (const near of nears) {
+          if (!near.shown) continue;
+          renderer.clearDepth();
+          renderer.render(near.scene, roomCamera);
+        }
       }
       const screenShown = anchors.screen.every(
         (corner) => corner.clone().applyMatrix4(roomFull.matrixWorldInverse).z < -roomFull.near,
@@ -449,7 +526,7 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
     dispose() {
       disposed = true;
       onLost = null;
-      for (const scene of [cityScene, roomScene, deskScene]) {
+      for (const scene of [cityScene, roomScene, deskScene, ...nears.map((near) => near.scene)]) {
         scene.traverse((node) => {
           if (!(node instanceof Mesh)) return;
           (node.geometry as BufferGeometry).dispose();

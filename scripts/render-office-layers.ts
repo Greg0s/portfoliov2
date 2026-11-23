@@ -6,8 +6,8 @@
  *
  * Usage: `pnpm render-office-layers` (all), `-- --layers=city,room` (some layers), `-- --preview` (the three passes
  * together over a transparent sky, to compare with the mockup), `-- --out=<dir>` (somewhere else),
- * `-- --layers=room-depth,desk-depth` (the depth of the room and the desk, coarser and lossless, and `relief.json`, for
- * the office in relief, `?bureau=relief`).
+ * `-- --layers=room-near45,room-near80,room-near105,room-depth,desk-depth,room-near45-depth,room-near80-depth,room-near105-depth` (for the office in
+ * relief, `?bureau=relief`: the room seen from 45, 80 and 105 cm in front of the seat, the depth of the room and the desk, coarser and lossless, and `relief.json`).
  * Playwright's Chromium is used; CHROMIUM_PATH points to another one.
  */
 import { mkdirSync, statSync, writeFileSync } from 'node:fs';
@@ -33,6 +33,9 @@ const SCALES: Record<string, number> = { desktop: 1.5, mobile: 2 };
 const OVERSCAN = 0.04;
 /** The depth layers' pixel ratio: one vertex of the relief every 3 px of the frame on a computer, every 2 on a phone. */
 const DEPTH_SCALES: Record<string, number> = { desktop: 1 / 3, mobile: 0.5 };
+/** The near layers' margin and depth pixel ratio: wider, so that the camera backing from them still sees them whole. */
+const NEAR_OVERSCAN = 0.3;
+const NEAR_DEPTH_SCALES: Record<string, number> = { desktop: 0.75, mobile: 1 };
 
 const server = await createServer({
   root: resolve('.'),
@@ -73,8 +76,10 @@ try {
         page.on('console', (message) => logs.push(message.text()));
         page.on('pageerror', (error) => logs.push(`page error: ${error.message}`));
         const depth = layer.endsWith('-depth');
-        const scale = (depth ? DEPTH_SCALES : SCALES)[framing] ?? 1;
-        const query = new URLSearchParams({ moment, framing, layer, scale: String(scale), overscan: String(OVERSCAN) });
+        const near = /-near\d/.test(layer);
+        const scale = (depth ? (near ? NEAR_DEPTH_SCALES : DEPTH_SCALES) : SCALES)[framing] ?? 1;
+        const overscan = near ? NEAR_OVERSCAN : OVERSCAN;
+        const query = new URLSearchParams({ moment, framing, layer, scale: String(scale), overscan: String(overscan) });
         const started = Date.now();
         await page.goto(`http://127.0.0.1:8767/scripts/office/render.html?${query.toString()}`);
         await page.waitForFunction(() => window.__done === true, null, { timeout: 600_000 });
@@ -96,9 +101,9 @@ try {
           // Lossless: each pixel's two bytes are one number.
           await sharp(png).webp({ lossless: true, effort: 6 }).toFile(file);
           const { anchors, w, h } = result.meta as { anchors: unknown; w: number; h: number };
-          relief[`${moment}-${framing}`] = { w, h, overscan: OVERSCAN, anchors };
+          relief[`${moment}-${framing}`] = { w, h, overscan: OVERSCAN, nearOverscan: NEAR_OVERSCAN, anchors };
         } else {
-          colour = true;
+          if (!near) colour = true;
           await sharp(png).webp({ quality: 86, alphaQuality: 90, effort: 6 }).toFile(file);
           // And in AVIF, for the browsers that show it (`src/lib/avif.ts`): at quality 60, as faithful to the render
           // as the WebP and about 40 % lighter.
@@ -106,7 +111,7 @@ try {
             .avif({ quality: 60, effort: 6 })
             .toFile(file.replace(/\.webp$/, '.avif'));
         }
-        if (!depth) {
+        if (!depth && !near) {
           const meta = { ...(result.meta as Record<string, unknown>) };
           delete meta.anchors;
           placement[`${moment}-${framing}`] ??= meta;

@@ -2,7 +2,7 @@
  * Renders the office from the site's modules (plan §2.5), for `scripts/render-office-layers.ts`: one layer (city,
  * room, desk, every town window lit on black, or the desk's contact shadows) or a preview of the three over the sky,
  * with where things land in the picture. Query: moment, framing, layer (city | room | desk | windows | contact | preview
- * | room-depth | desk-depth), scale, overscan. A depth layer holds each pixel's distance to the camera, in metres over
+ * | room-depth | desk-depth | room-near<cm> | room-near<cm>-depth), scale, overscan. A depth layer holds each pixel's distance to the camera, in metres over
  * 16, on 16 bits (red then green), opaque where something is drawn: the office in relief (`src/scene/office/relief.ts`)
  * lifts its layers by it.
  */
@@ -13,6 +13,7 @@ import {
   PCFShadowMap,
   DoubleSide,
   ShaderMaterial,
+  Vector3,
   SRGBColorSpace,
   WebGLRenderer,
   type Mesh,
@@ -21,6 +22,7 @@ import { createOffice } from '../../src/scene/office/office';
 import { bakeContactShadows, CONTACT } from '../../src/scene/office/contact';
 import { LAYERS, isMesh } from '../../src/scene/office/common';
 import { FRAMINGS, makeCamera, type Framing } from '../../src/scene/office/framings';
+import { FRAMES } from '../../src/scene/office/frame';
 import { allLitMaterials } from '../../src/scene/office/city';
 import { anchorsOf, placement } from '../../src/scene/office/corners';
 import { buildTownGeometry } from '../../src/scene/office/town';
@@ -86,6 +88,21 @@ async function main(): Promise<void> {
   const camera = makeCamera(framing, overscan);
   const meta = { moment, framing, w: W, h: H, overscan, scale, ...placement(office, camera, W, H) };
   const anchors = anchorsOf(office);
+  // The room seen from near the window, as the arrival shows it on its way (`room-near<cm>`, `room-near<cm>-depth`): the
+  // camera moved along the arrival's axis by that many centimetres. Faces the seat sees edge on (the lintel from below)
+  // have their pixels there.
+  const near = Number(/^room-near(\d+)/.exec(layer)?.[1] ?? 0) / 100;
+  if (near) {
+    const frame = FRAMES[framing];
+    const rest = makeCamera(framing);
+    const axis = new Vector3((frame.axis[0] / frame.w) * 2 - 1, 1 - (frame.axis[1] / frame.h) * 2, 0.5)
+      .unproject(rest)
+      .sub(rest.position)
+      .normalize();
+    camera.position.addScaledVector(axis, near);
+    camera.updateMatrixWorld();
+  }
+  const pass = layer.replace(/-near\d+/, '').replace('-depth', '') as keyof typeof LAYERS;
 
   if (layer === 'contact') {
     // The desk's contact shadows, as the render target holds them (rows from the bottom): the same for every moment.
@@ -129,12 +146,12 @@ async function main(): Promise<void> {
       if (node.userData.noDepth || seeThrough) node.visible = false;
     });
     office.scene.overrideMaterial = depthMaterial;
-    office.renderLayer(renderer, camera, layer.replace('-depth', '') as keyof typeof LAYERS);
+    office.renderLayer(renderer, camera, pass);
     office.scene.overrideMaterial = null;
   } else if (layer === 'preview') {
     office.render(renderer, { city: camera, room: camera });
   } else {
-    office.renderLayer(renderer, camera, layer as keyof typeof LAYERS);
+    office.renderLayer(renderer, camera, pass);
   }
   window.__image = renderer.domElement.toDataURL('image/png');
   // The anchors in the scene's metres, for the office in relief, which projects them with its own camera.

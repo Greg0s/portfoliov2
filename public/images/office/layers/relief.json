@@ -1,8 +1,9 @@
 {
   "aube-desktop": {
-    "w": 1555,
-    "h": 972,
+    "w": 2304,
+    "h": 1440,
     "overscan": 0.04,
+    "nearOverscan": 0.3,
     "anchors": {
       "screen": [
         [0.2719, 1.4345, -1.019],
@@ -101,9 +102,10 @@
     }
   },
   "aube-mobile": {
-    "w": 421,
-    "h": 912,
+    "w": 624,
+    "h": 1350,
     "overscan": 0.04,
+    "nearOverscan": 0.3,
     "anchors": {
       "screen": [
         [0.2719, 1.4345, -1.019],
@@ -202,9 +204,10 @@
     }
   },
   "crepuscule-desktop": {
-    "w": 1555,
-    "h": 972,
+    "w": 2304,
+    "h": 1440,
     "overscan": 0.04,
+    "nearOverscan": 0.3,
     "anchors": {
       "screen": [
         [0.2719, 1.4345, -1.019],
@@ -306,9 +309,10 @@
     }
   },
   "crepuscule-mobile": {
-    "w": 421,
-    "h": 912,
+    "w": 624,
+    "h": 1350,
     "overscan": 0.04,
+    "nearOverscan": 0.3,
     "anchors": {
       "screen": [
         [0.2719, 1.4345, -1.019],
