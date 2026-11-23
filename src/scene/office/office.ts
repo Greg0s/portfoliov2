@@ -28,6 +28,8 @@ import {
 import { LightPMREMGenerator } from '../pmrem';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { buildCity, type City } from './city';
+import { contactShadows } from './contact';
+import { renderProposal } from './proposals';
 import { isMesh, LAYERS, noPause, type Pause } from './common';
 import { buildLights, type OfficeLights } from './lighting';
 import { MOMENTS, type OfficeMoment } from './moments';
@@ -160,6 +162,11 @@ export async function createOffice(
   const deskLights = buildLights(moment, desk);
   scene.add(roomLights.exterior, roomLights.interior, deskLights.interior);
   scene.fog = new Fog(moment.city.fog, 150, 2700);
+  const proposal = renderProposal();
+  if (proposal >= 1) {
+    desk.group.add(contactShadows(renderer, desk.group, { darkness: 0.8, reach: 0.16, blur: 4 }));
+    await pause('contact shadows');
+  }
 
   const pmrem = new LightPMREMGenerator(renderer);
   const sky = skyTexture(moment);
