@@ -1,6 +1,6 @@
 /**
  * Renders the office from the site's modules (plan §2.5), for `scripts/render-office-layers.ts`: one layer (city,
- * room, desk, or every town window lit on black) or a preview of the three over the sky, with where things land in
+ * room, desk, every town window lit on black, or the desk's contact shadows) or a preview of the three over the sky, with where things land in
  * the picture. Query: moment, framing, layer (city | room | desk | windows | preview), scale, overscan.
  */
 import {
@@ -13,6 +13,7 @@ import {
   type Mesh,
 } from 'three';
 import { createOffice } from '../../src/scene/office/office';
+import { bakeContactShadows, CONTACT } from '../../src/scene/office/contact';
 import { LAYERS, isMesh } from '../../src/scene/office/common';
 import { FRAMINGS, makeCamera, type Framing } from '../../src/scene/office/framings';
 import { allLitMaterials } from '../../src/scene/office/city';
@@ -56,6 +57,20 @@ async function main(): Promise<void> {
   const camera = makeCamera(framing, overscan);
   const meta = { moment, framing, w: W, h: H, overscan, scale, ...placement(office, camera, W, H) };
 
+  if (layer === 'contact') {
+    // The desk's contact shadows, as the render target holds them (rows from the bottom): the same for every moment.
+    const target = bakeContactShadows(renderer, office.desk.group);
+    const pixels = new Uint8Array(CONTACT.width * CONTACT.height * 4);
+    renderer.readRenderTargetPixels(target, 0, 0, CONTACT.width, CONTACT.height, pixels);
+    const canvas = document.createElement('canvas');
+    canvas.width = CONTACT.width;
+    canvas.height = CONTACT.height;
+    canvas.getContext('2d')?.putImageData(new ImageData(new Uint8ClampedArray(pixels), CONTACT.width), 0, 0);
+    window.__image = canvas.toDataURL('image/png');
+    window.__meta = meta;
+    window.__done = true;
+    return;
+  }
   if (layer === 'windows') {
     // Every window of the town lit and nothing else, on black, fading with distance: the source of the windows that
     // light up now and then over the town.
