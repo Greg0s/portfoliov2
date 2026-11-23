@@ -1,19 +1,18 @@
 /**
- * Preparing the live office (plan step 7), from the middle of the journey on, or at once on `#contact`: the town is
- * built in the town's worker while the rose comes from the planet's model, then the scene is assembled, its shaders
- * compiled without blocking the page, its textures and shadow maps uploaded by one draw, out of sight. What the HTML
- * needs (the screen's picture and the pictures) comes from the contact section's data attributes. Its layers, the
- * fallback, are prepared the same way: their pictures loaded and decoded before they show.
+ * Preparing the office (plan step 7), from the middle of the journey on, or at once on `#contact`: its layers, rendered
+ * at build time from the office's scene, are loaded with their depth and lifted in relief (`relief.ts`), uploaded by
+ * one draw, out of sight. What the HTML needs (the screen's picture and the pictures) comes from the contact section's
+ * data attributes. Its CSS layers, the fallback without WebGL, are prepared the same way: their pictures loaded and
+ * decoded before they show.
  */
-import { loadPlanetModel } from '../planet/load';
 import { drawsInSoftware } from '../quality';
 import type { Moment } from '../time';
-import { runTown } from '../workers/client';
 import { arrivalState, FADE_PLANES, layerFade } from './arrival';
 import { breathe, endStep, startStep } from './common';
 import { FRAMES, framingOf } from './frame';
 import { createLayersOffice } from './layers';
-import { createLiveOffice, SlowOffice, type OfficeScene } from './live';
+import { createReliefOffice } from './relief';
+import { SlowOffice, type OfficeScene } from './scene';
 import { createOfficeView, type OfficeView } from './view';
 import type { Cartel, WallPicture } from './wall';
 import { avifShown } from '../../lib/avif';
@@ -24,7 +23,6 @@ export { SlowOffice };
 export { framingOf };
 
 export interface OfficeOptions {
-  modelUrl: string;
   moment: Moment;
   still: boolean;
   /** Prepare it even on a software renderer (`?office=live`). */
@@ -56,37 +54,34 @@ export async function prepareOffice(
 }
 
 /**
- * The live scene alone, without the HTML laid over it: the costly part (the town, the programs linked, the textures on
- * the GPU), which the journey keeps from one visit of the home to the next (`src/scene/keep.ts`).
+ * The scene alone, without the HTML laid over it: the part the journey keeps from one visit of the home to the next
+ * (`src/scene/keep.ts`), its textures and meshes on the GPU.
  */
 export async function prepareOfficeScene(section: HTMLElement, options: OfficeOptions): Promise<OfficeScene> {
-  if (!options.forced && drawsInSoftware()) throw new SlowOffice();
+  // Where AVIF does not show (a browser of before 2023), the CSS layers stand in: the relief's WebP layers and depth
+  // would go past the office's budget (main spec §9.4).
+  if (!options.forced && (drawsInSoftware() || !(await avifShown()))) throw new SlowOffice();
   const framing = framingOf(section.clientWidth);
-  const [reply, model] = await Promise.all([runTown(), loadPlanetModel(options.modelUrl)]);
-  startStep();
-  const live = await createLiveOffice({
+  const made = await createReliefOffice({
     moment: options.moment,
     framing,
     frame: FRAMES[framing],
-    town: reply.town,
-    rose: model.rose,
+    base: section.dataset.layers ?? '',
     size: { width: section.clientWidth, height: section.clientHeight },
-    forced: options.forced,
-    signal: options.signal,
   });
   if (options.signal?.aborted) {
-    live.dispose();
+    made.dispose();
     throw options.signal.reason;
   }
-  return live;
+  return made;
 }
 
-/** The layers instead of the live scene: no WebGL, the same arrival in CSS. */
+/** The layers instead of the scene in relief: no WebGL, the same arrival in CSS. */
 export async function prepareLayers(
   section: HTMLElement,
   host: HTMLElement,
   options: Pick<OfficeOptions, 'moment' | 'still'> & {
-    /** Taking over from the live scene in the middle of the arrival: drawn at that point only, as it shows. */
+    /** Taking over from the scene in relief in the middle of the arrival: drawn at that point only, as it shows. */
     at?: number;
   },
 ): Promise<OfficeView> {
@@ -124,7 +119,7 @@ function fadingArrivals(framing: ReturnType<typeof framingOf>): number[] {
 }
 
 /**
- * Lays the HTML of the office (the screen, the pictures, their cartels) over `scene`, a live scene or its layers, and
+ * Lays the HTML of the office (the screen, the pictures, their cartels) over `scene`, the scene in relief or its layers, and
  * draws it once out of sight.
  */
 export async function viewOffice(

@@ -6,6 +6,7 @@
 import '../../src/styles/office.css';
 import { createLayersOffice } from '../../src/scene/office/layers';
 import { createLiveOffice, type OfficeScene } from '../../src/scene/office/live';
+import { createReliefOffice } from '../../src/scene/office/relief';
 import { FRAMES, framingOf } from '../../src/scene/office/frame';
 import { createOfficeView } from '../../src/scene/office/view';
 import { buildTownGeometry } from '../../src/scene/office/town';
@@ -28,16 +29,24 @@ async function main(): Promise<void> {
   if (!host) return;
   const framing = framingOf(host.clientWidth);
   const live: OfficeScene =
-    q.get('scene') === 'layers'
-      ? await createLayersOffice({ moment, framing, frame: FRAMES[framing], base: '/images/office/layers' })
-      : await createLiveOffice({
+    q.get('scene') === 'relief'
+      ? await createReliefOffice({
           moment,
           framing,
           frame: FRAMES[framing],
-          town: buildTownGeometry(),
-          rose: (await loadPlanetModel('/models/petit-prince.glb')).rose,
+          base: '/images/office/layers',
           size: { width: host.clientWidth, height: host.clientHeight },
-        });
+        })
+      : q.get('scene') === 'layers'
+        ? await createLayersOffice({ moment, framing, frame: FRAMES[framing], base: '/images/office/layers' })
+        : await createLiveOffice({
+            moment,
+            framing,
+            frame: FRAMES[framing],
+            town: buildTownGeometry(),
+            rose: (await loadPlanetModel('/models/petit-prince.glb')).rose,
+            size: { width: host.clientWidth, height: host.clientHeight },
+          });
   const view = createOfficeView(host, live, {
     moment,
     framing,

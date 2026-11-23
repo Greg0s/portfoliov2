@@ -9,7 +9,7 @@ import { FADE_PLANES, layerFade, type ArrivalState } from './arrival';
 import type { Placement, Point, Quad } from './corners';
 import type { Fit, FrameSpec } from './frame';
 import type { Framing } from './framings';
-import type { Drawn, Head, OfficeScene, PictureSource } from './live';
+import type { Drawn, Head, OfficeScene, PictureSource } from './scene';
 import type { Moment } from '../time';
 import { avifShown } from '../../lib/avif';
 import { quadMatrix } from '../../lib/quad';
