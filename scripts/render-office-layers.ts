@@ -70,6 +70,8 @@ try {
   for (const moment of MOMENTS) {
     for (const framing of FRAMINGS) {
       for (const layer of LAYERS.filter((name) => name !== 'contact')) {
+        // The room's near layers are for a phone only (`src/scene/office/relief.ts`).
+        if (/-near\d/.test(layer) && framing !== 'mobile') continue;
         const name = `${moment}-${framing}-${layer}`;
         const page = await browser.newPage();
         const logs: string[] = [];

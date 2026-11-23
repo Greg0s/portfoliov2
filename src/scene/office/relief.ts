@@ -1,7 +1,7 @@
 /**
- * The office in relief (prototype, `?bureau=relief`): the live office's camera moves over its own layers instead of
- * its scene. The town is its layer, shifted and zoomed as the live town is; the room and the desk are their layers
- * lifted by their depth (`pnpm render-office-layers -- --layers=room-depth,desk-depth`), a grid of vertices set back
+ * The office in relief (office spec §3 to §5): its camera moves over its own layers, rendered at build time from its
+ * scene (`pnpm render-office-layers`). The town is its layer, shifted and zoomed as a seated camera sees it; the room
+ * and the desk are their layers lifted by their depth, a grid of vertices set back
  * where the seated camera saw each pixel, so that the camera backing through the window and following the head sees
  * them with their true parallax. Everything the scene computes (lights, shadows, environments, the town) was done
  * once, when the layers were rendered: here one simple program draws three textured meshes, with nothing to compile
@@ -13,6 +13,8 @@ import {
   Color,
   DoubleSide,
   LessEqualDepth,
+  NotEqualStencilFunc,
+  ReplaceStencilOp,
   Mesh,
   MeshBasicMaterial,
   MultiplyBlending,
@@ -28,11 +30,11 @@ import {
   WebGLRenderer,
 } from 'three';
 import { FADE_PLANES, layerFade } from './arrival';
-import { DEG } from './common';
+import { breathe, DEG, endStep, startStep } from './common';
 import { placement, type Anchors } from './corners';
 import type { Fit, FrameSpec } from './frame';
 import { FRAMINGS, makeCamera, type Framing } from './framings';
-import { glowTexture, halo, type Drawn, type OfficeScene } from './live';
+import { glowTexture, halo, type Drawn, type OfficeScene } from './scene';
 import type { Moment } from '../time';
 import { scenePixelRatio } from '../resolution';
 import { avifShown } from '../../lib/avif';
@@ -76,7 +78,7 @@ const v3 = (p: Xyz): Vector3 => new Vector3(p[0], p[1], p[2]);
 const NEARS = [
   { cm: 45, until: [-0.11, -0.02] },
   { cm: 80, until: [-0.4, -0.3] },
-  { cm: 105, until: [-0.72, -0.58], covers: true },
+  { cm: 105, until: [-0.72, -0.58] },
 ] as const;
 const smooth = (a: number, b: number, x: number): number => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -87,8 +89,12 @@ const smooth = (a: number, b: number, x: number): number => {
 async function pixels(src: string): Promise<ImageData> {
   const blob = await (await fetch(src)).blob();
   const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
-  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  // Safari before 16.4 has no OffscreenCanvas.
+  const canvas =
+    typeof OffscreenCanvas === 'undefined'
+      ? Object.assign(document.createElement('canvas'), { width: bitmap.width, height: bitmap.height })
+      : new OffscreenCanvas(bitmap.width, bitmap.height);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D | null;
   if (!ctx) throw new Error('office relief: no 2D context');
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
@@ -99,12 +105,13 @@ async function pixels(src: string): Promise<ImageData> {
  * The layer's mesh: one vertex per pixel of its depth, set back along the seated camera's ray through that pixel.
  * Where nothing was drawn, the depth of the nearest drawn pixel is taken, so that the soft edges of the picture keep
  * their pixels (thin stems drawn in the picture but missed by the coarser depth); quads farther than that from anything
- * drawn are left out. With `cut`, a quad whose far corner is more than
- * `cut` times as far as its near one (an edge between an object and what is behind it) is left out too: the edge
- * then opens instead of stretching.
+ * drawn are left out. With `minY`, only what stands higher than that, in the scene's metres, is kept.
  */
-function reliefGeometry(depth: ImageData, camera: PerspectiveCamera, cut: number): BufferGeometry {
+function reliefGeometry(depth: ImageData, camera: PerspectiveCamera, minY = -Infinity): BufferGeometry {
   const { width: w, height: h, data } = depth;
+  const tanY = Math.tan((camera.fov * DEG) / 2);
+  const tanX = tanY * camera.aspect;
+  const p = new Vector3();
   const z = new Float32Array(w * h);
   const drawn = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i += 1) {
@@ -112,6 +119,14 @@ function reliefGeometry(depth: ImageData, camera: PerspectiveCamera, cut: number
     const d = (((data[i * 4] ?? 0) * 256 + (data[i * 4 + 1] ?? 0)) / 65535) * DEPTH_RANGE;
     // A few pixels of the thin light strip under the ceiling come out at the camera itself: their neighbours stand in.
     if (d < NEAREST) continue;
+    if (minY > -Infinity) {
+      const x = i % w;
+      const y = (i - x) / w;
+      p.set((((x + 0.5) / w) * 2 - 1) * tanX * d, (1 - ((y + 0.5) / h) * 2) * tanY * d, -d).applyMatrix4(
+        camera.matrixWorld,
+      );
+      if (p.y < minY) continue;
+    }
     drawn[i] = 1;
     z[i] = d;
   }
@@ -167,11 +182,8 @@ function reliefGeometry(depth: ImageData, camera: PerspectiveCamera, cut: number
   }
   const bw = Math.max(0, x1 - x0 + 1);
   const bh = Math.max(0, y1 - y0 + 1);
-  const tanY = Math.tan((camera.fov * DEG) / 2);
-  const tanX = tanY * camera.aspect;
   const positions = new Float32Array(bw * bh * 3);
   const uvs = new Float32Array(bw * bh * 2);
-  const p = new Vector3();
   for (let y = 0; y < bh; y += 1) {
     for (let x = 0; x < bw; x += 1) {
       const i = (y + y0) * w + x + x0;
@@ -188,10 +200,6 @@ function reliefGeometry(depth: ImageData, camera: PerspectiveCamera, cut: number
     for (let x = 0; x < bw - 1; x += 1) {
       const i = (y + y0) * w + x + x0;
       if (![i, i + 1, i + w, i + w + 1].every((j) => known[j])) continue;
-      if (cut > 0) {
-        const zs = [i, i + 1, i + w, i + w + 1].map((j) => z[j] ?? 1);
-        if (Math.max(...zs) > cut * Math.min(...zs)) continue;
-      }
       const a = y * bw + x;
       index.push(a, a + bw, a + 1, a + 1, a + bw, a + bw + 1);
     }
@@ -209,8 +217,9 @@ function layerMaterial(map: Texture): MeshBasicMaterial {
 
 export async function createReliefOffice(options: ReliefOptions): Promise<OfficeScene> {
   const { framing, frame, moment, base } = options;
-  const query = new URLSearchParams(location.search);
-  const cut = Number(query.get('relief-cut') ?? 0);
+  // The room's near layers, on a phone only: on a computer, the seat sees the lintel wide enough.
+  const nearSet = framing === 'mobile' ? NEARS : [];
+  startStep();
   const [response, avif] = await Promise.all([fetch(`${base}/relief.json`), avifShown()]);
   if (!response.ok) throw new Error(`office relief: relief.json ${String(response.status)}`);
   const meta = ((await response.json()) as Record<string, ReliefMeta>)[`${moment}-${framing}`];
@@ -239,7 +248,7 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
     colour('desk'),
     pixels(name('room-depth', 'webp')),
     pixels(name('desk-depth', 'webp')),
-    ...NEARS.flatMap((near) => [
+    ...nearSet.flatMap((near) => [
       colour(`room-near${String(near.cm)}`),
       pixels(name(`room-near${String(near.cm)}-depth`, 'webp')),
     ]),
@@ -248,7 +257,13 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
   const canvas = document.createElement('canvas');
   canvas.className = 'office-canvas';
   canvas.setAttribute('aria-hidden', 'true');
-  const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true,
+    stencil: true,
+    powerPreference: 'high-performance',
+  });
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = NoToneMapping;
   renderer.outputColorSpace = SRGBColorSpace;
@@ -290,28 +305,49 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
   const deskScene = new Scene();
   const roomMaterial = layerMaterial(roomMap);
   const deskMaterial = layerMaterial(deskMap);
-  const seatedRoom = new Mesh(reliefGeometry(roomDepth, seated, cut), roomMaterial);
-  seatedRoom.visible = query.get('relief-debug') !== 'near';
+  // Each mesh in a step of its own (`office:relief …`), between two frames: a phone takes tens of ms for each.
+  await breathe('relief load');
+  // Where a near layer covers the view, the seated room under it is left out (the stencil), or its saw would show
+  // through as the room fades in.
+  roomMaterial.stencilWrite = true;
+  roomMaterial.stencilFunc = NotEqualStencilFunc;
+  roomMaterial.stencilRef = 1;
+  const seatedRoom = new Mesh(reliefGeometry(roomDepth, seated), roomMaterial);
   roomScene.add(seatedRoom);
-  deskScene.add(new Mesh(reliefGeometry(deskDepth, seated, cut), deskMaterial));
+  await breathe('relief room');
+  deskScene.add(new Mesh(reliefGeometry(deskDepth, seated), deskMaterial));
   // The room as seen on the way in: a face the seat sees edge on (the lintel from below) has few pixels in the seated
   // layer, and drawn large as the camera passes it, their steps showed as a saw. Each near layer is drawn over the
   // seated one while the camera is around where it was seen from.
-  const depthOnly = new MeshBasicMaterial({ colorWrite: false, side: DoubleSide });
-  const nears = NEARS.map((near, i) => {
+  // Only the lintel and what is above it: lower, the seat sees the room well enough, and a phone would draw the near
+  // layers' whole rooms for nothing.
+  const lintel = Math.max(...a.window.map((corner) => corner[1])) - 0.03;
+  const nears: {
+    until: readonly [number, number];
+    texture: Texture;
+    material: MeshBasicMaterial;
+    mask: MeshBasicMaterial;
+    scene: Scene;
+    weight: number;
+  }[] = [];
+  for (const [i, near] of nearSet.entries()) {
+    await breathe(`relief ${i === 0 ? 'desk' : `near ${String(nearSet[i - 1]?.cm)}`}`);
     const camera = makeCamera(framing, meta.nearOverscan);
     camera.position.addScaledVector(axisRay, near.cm / 100);
     camera.updateMatrixWorld();
     // In a scene of its own, drawn over the seated room, and its depth first: while it fades, only its nearest faces
     // show, not those behind them (the lintel's underside through its front).
-    const geometry = reliefGeometry(nearLayers[2 * i + 1] as ImageData, camera, cut);
+    const geometry = reliefGeometry(nearLayers[2 * i + 1] as ImageData, camera, lintel);
     const texture = nearLayers[2 * i] as Texture;
     const material = layerMaterial(texture);
     material.depthFunc = LessEqualDepth;
     const scene = new Scene();
-    scene.add(new Mesh(geometry, depthOnly), new Mesh(geometry, material));
-    return { ...near, texture, material, scene, shown: false };
-  });
+    // Its depth first, marking where it covers the view in the stencil while it is whole.
+    const mask = new MeshBasicMaterial({ colorWrite: false, side: DoubleSide, stencilZPass: ReplaceStencilOp });
+    mask.stencilRef = 1;
+    scene.add(new Mesh(geometry, mask), new Mesh(geometry, material));
+    nears.push({ until: near.until, texture, material, mask, scene, weight: 0 });
+  }
 
   // The halos, as the live office draws them: the setting sun's in the town, the lamp's over the desk.
   if (anchors.sun) {
@@ -378,12 +414,14 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
   const textures: Texture[] = [cityMap, roomMap, deskMap, ...nears.map((near) => near.texture)];
 
   // Everything on the GPU now, and the one program linked, rather than in the first frame of the arrival.
+  await breathe(nears.length > 0 ? `relief near ${String(nearSet.at(-1)?.cm)}` : 'relief desk');
   const warm = new PerspectiveCamera();
   renderer.compile(roomScene, warm);
   renderer.compile(cityScene, warm);
   textures.forEach((texture) => {
     renderer.initTexture(texture);
   });
+  endStep('compile');
 
   const cityCamera = rest.clone();
   const roomCamera = rest.clone();
@@ -444,27 +482,28 @@ export async function createReliefOffice(options: ReliefOptions): Promise<Office
       ] as const) {
         if (k <= 0.002) continue;
         material.opacity = k;
-        if (scene === roomScene) {
-          let seatedWeight = 1;
-          for (const near of nears) {
-            const w = 1 - smooth(near.until[0], near.until[1], state.camZ);
-            near.material.opacity = k * w;
-            near.shown = w > 0.002 && query.get('relief-debug') !== 'seated';
-            // While the first near layer shows the whole view, the seated one under it would only show through as the
-            // room fades in.
-            if ('covers' in near) seatedWeight = 1 - w;
-          }
-          material.opacity = k * seatedWeight;
-          seatedRoom.visible = seatedWeight > 0.002 && query.get('relief-debug') !== 'near';
-        }
-        renderer.clearDepth();
-        renderer.render(scene, roomCamera);
-        if (scene !== roomScene) continue;
-        // The near layers over it, the farthest on top.
-        for (const near of nears) {
-          if (!near.shown) continue;
+        if (scene !== roomScene) {
           renderer.clearDepth();
-          renderer.render(near.scene, roomCamera);
+          renderer.render(scene, roomCamera);
+          continue;
+        }
+        // The near layers whole first, the farthest on top, marking the stencil; the seated room where they are not;
+        // then those fading out, over it.
+        for (const near of nears) {
+          near.weight = 1 - smooth(near.until[0], near.until[1], state.camZ);
+          near.material.opacity = k * near.weight;
+          near.mask.stencilWrite = near.weight >= 0.999;
+        }
+        renderer.clearStencil();
+        for (const whole of [true, false]) {
+          for (const near of nears) {
+            if (near.weight <= 0.002 || near.mask.stencilWrite !== whole) continue;
+            renderer.clearDepth();
+            renderer.render(near.scene, roomCamera);
+          }
+          if (!whole) break;
+          renderer.clearDepth();
+          renderer.render(roomScene, roomCamera);
         }
       }
       const screenShown = anchors.screen.every(
