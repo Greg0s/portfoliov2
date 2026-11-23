@@ -174,6 +174,9 @@ export function contactPlane(map: Texture): Mesh {
   plane.position.set(DESK.x, ROOM.deskY + 0.0006, DESK.z);
   plane.renderOrder = 2;
   plane.layers.set(LAYERS.desk);
+  // Not a surface of its own: the relief layers' depth leaves it out.
+  plane.name = 'contact-shadows';
+  plane.userData.noDepth = true;
   return plane;
 }
 
