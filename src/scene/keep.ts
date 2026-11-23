@@ -9,7 +9,7 @@
  * longer fits is let go. `dropKept` lets everything go, when the home comes back without its journey.
  */
 import type { LivePlanet } from './planet/planet';
-import type { OfficeScene } from './office/scene';
+import type { OfficeScene } from './office/live';
 import type { Framing } from './office/framings';
 import type { Renderer } from './renderer';
 import type { Moment } from './time';

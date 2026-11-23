@@ -1,11 +1,12 @@
 /**
- * Runs the planet's requests in a fresh worker, ending once it has replied: its relief, without Three.js, small enough
- * to download beside the model. (The office's town is built at build time now, in its layers.)
+ * Runs requests in fresh workers, each ending once it has replied: the planet's (its relief, without Three.js, small
+ * enough to download beside the model) and the town's (with Three.js's geometries, for the office only).
  */
 import type { PlanetReply, PlanetRequest } from './planet.worker';
+import type { TownReply } from './town.worker';
 import type { Calm } from './relief';
 
-type GeometryReply = PlanetReply;
+type GeometryReply = PlanetReply | TownReply;
 export type ReplyTo<K extends GeometryReply['kind']> = Extract<GeometryReply, { kind: K }>;
 
 function listen<R>(worker: Worker): Promise<R> {
@@ -19,6 +20,14 @@ function listen<R>(worker: Worker): Promise<R> {
       worker.terminate();
     };
   });
+}
+
+/** Builds the office's town. */
+export function runTown(): Promise<TownReply> {
+  const worker = new Worker(new URL('./town.worker.ts', import.meta.url), { type: 'module' });
+  const reply = listen<TownReply>(worker);
+  worker.postMessage({ kind: 'town' });
+  return reply;
 }
 
 /** A planet's relief under way: its surface builds at once, its shape once the model's calm places are known. */

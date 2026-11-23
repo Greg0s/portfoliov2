@@ -123,7 +123,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 - **Le calage de l'écran** : les quatre coins de l'écran de l'ordinateur sont relevés dans le rendu ; le bureau de Windows et le navigateur, en HTML, s'y calent par une transformation en perspective.
 - **Le calage des images** : de même, les quatre coins de la face de chaque image sont relevés dans le rendu ; l'image s'y cale en perspective et s'y multiplie (section 3).
 - **Les couches animées** : deux images de plus montrent toutes les fenêtres de la ville allumées, sur noir (une par cadrage, la même pour les deux moments) ; de petites pastilles qui s'en éclairent tour à tour allument et éteignent des fenêtres. Les nuages sont dessinés en direct.
-- **Version finale** : la scène en code est la version définitive, avec le niveau de finition d'une vraie scène (matières, lumière, détails) ; la plante est générée dans le style de la planète ; la rose est celle de la planète, reprise du modèle Blender de Grégoire (non versionné ; sans lui, une rose simplifiée la remplace). Le site final la reprend telle quelle : rendue au build en couches avec leur profondeur, elle est montrée en relief (spec principale, section 6.5, choix de Grégoire du 23 novembre 2026).
+- **Version finale** : la scène en code est la version définitive, avec le niveau de finition d'une vraie scène (matières, lumière, détails) ; la plante est générée dans le style de la planète ; la rose est celle de la planète, reprise du modèle Blender de Grégoire (non versionné ; sans lui, une rose simplifiée la remplace). Le site final la reprendra telle quelle pour le rendu en temps réel.
 
 ## 10. Sur le canevas
 
@@ -134,7 +134,7 @@ Le parcours finit là où le rêve commence : la caméra repasse par la fenêtre
 
 ## 11. Hors périmètre
 
-- Le rendu du site final, qui reprend la scène en code, rendue au build et montrée en relief (spec principale, section 6.5).
+- Le rendu en temps réel du site final, qui reprendra la scène en code (spec principale, section 6.5).
 
 ## 12. Ordre de construction
 

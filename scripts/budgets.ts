@@ -141,16 +141,13 @@ const screen = ['images/taskbar/logos.webp', 'images/taskbar/recycle-bin.webp']
   .concat(wallpaper ?? [])
   .filter((path) => existsSync(path));
 const layerSets = new Map<string, string[]>();
-const add = (name: string, file: string): void => {
-  layerSets.set(name, [...(layerSets.get(name) ?? []), file]);
-};
 for (const file of listFiles(layers)) {
-  // In WebP and in AVIF (`src/lib/avif.ts`): a visitor loads one or the other. The office in relief only shows where
-  // AVIF does (`src/scene/office/warmup.ts`): its depth (lossless WebP) and the room's near layers come with AVIF.
-  const match = /([a-z]+-(?:desktop|mobile))-[a-z0-9-]+\.(webp|avif)$/.exec(file);
-  if (!match?.[1] || !match[2]) continue;
-  if (file.endsWith('-depth.webp')) add(`${match[1]}, avif`, file);
-  else if (!(/-near\d/.test(file) && match[2] === 'webp')) add(`${match[1]}, ${match[2]}`, file);
+  // In WebP and in AVIF (`src/lib/avif.ts`): a visitor loads one or the other.
+  const match = /([a-z]+-(?:desktop|mobile))-[a-z]+\.(webp|avif)$/.exec(file);
+  if (match?.[1] && match[2]) {
+    const name = `${match[1]}, ${match[2]}`;
+    layerSets.set(name, [...(layerSets.get(name) ?? []), file]);
+  }
 }
 for (const [name, files] of layerSets) {
   const all = [...files, ...screen];

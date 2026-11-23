@@ -13,7 +13,7 @@
 import type { Placement, Quad } from './corners';
 import type { FrameSpec } from './frame';
 import type { Framing } from './framings';
-import type { Head } from './scene';
+import type { Head } from './live';
 
 /** What a cartel says, as the contact section gives it (`src/lib/wall.ts` decides what is known). */
 export interface Cartel {
