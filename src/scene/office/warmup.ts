@@ -60,8 +60,19 @@ export async function prepareOffice(
  * the GPU), which the journey keeps from one visit of the home to the next (`src/scene/keep.ts`).
  */
 export async function prepareOfficeScene(section: HTMLElement, options: OfficeOptions): Promise<OfficeScene> {
-  if (!options.forced && drawsInSoftware()) throw new SlowOffice();
   const framing = framingOf(section.clientWidth);
+  // Prototype: the office in relief, its layers lifted by their depth, in place of the live scene.
+  if (new URLSearchParams(location.search).get('bureau') === 'relief') {
+    const { createReliefOffice } = await import('./relief');
+    return createReliefOffice({
+      moment: options.moment,
+      framing,
+      frame: FRAMES[framing],
+      base: section.dataset.layers ?? '',
+      size: { width: section.clientWidth, height: section.clientHeight },
+    });
+  }
+  if (!options.forced && drawsInSoftware()) throw new SlowOffice();
   const [reply, model] = await Promise.all([runTown(), loadPlanetModel(options.modelUrl)]);
   startStep();
   const live = await createLiveOffice({

@@ -85,7 +85,7 @@ export interface OfficeScene {
  * weighed by their alpha in sRGB, as the browser does when it blends a CSS gradient. Weighing them in the shader would
  * do it in linear light and brighten the faint edge of the glow a lot.
  */
-function glowTexture(stops: readonly [number, string][]): CanvasTexture {
+export function glowTexture(stops: readonly [number, string][]): CanvasTexture {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -112,7 +112,7 @@ function glowTexture(stops: readonly [number, string][]): CanvasTexture {
  * the halo must add nothing, or the page would add it to the sky instead of screening it. So it adds `halo × (alpha −
  * colour)` of what is drawn, in two draws: one takes off `halo × colour`, the next adds `halo × alpha`.
  */
-function halo(texture: Texture, layer: number): Group {
+export function halo(texture: Texture, layer: number): Group {
   const geometry = new PlaneGeometry(1, 1);
   const group = new Group();
   for (const [order, equation, factor] of [
