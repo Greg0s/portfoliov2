@@ -32,6 +32,7 @@ import {
   type Texture,
 } from 'three';
 import { FADE_PLANES, layerFade, type ArrivalState } from './arrival';
+import { loadContactShadows } from './contact';
 import { breathe, DEG, endStep, isMesh, LAYERS, startStep } from './common';
 import { anchorsOf, placement, type Anchors, type Placement } from './corners';
 import type { Fit, FrameSpec } from './frame';
@@ -230,6 +231,8 @@ export interface LiveOptions {
 
 export async function createLiveOffice(options: LiveOptions): Promise<OfficeScene> {
   const { framing, frame } = options;
+  // The desk's contact shadows, made ahead: a small picture, loaded while the rest is prepared.
+  const contactShadows = loadContactShadows();
   // Each part in a task of its own, between two frames: the context, then the scene (createOffice pauses too).
   await breathe('town and model');
   const canvas = document.createElement('canvas');
@@ -261,7 +264,14 @@ export async function createLiveOffice(options: LiveOptions): Promise<OfficeScen
   renderer.setSize(options.size.width, options.size.height, false);
   await breathe('canvas');
 
-  const office: Office = await createOffice(renderer, options.moment, options.town, options.rose, breathe);
+  const office: Office = await createOffice(
+    renderer,
+    options.moment,
+    options.town,
+    options.rose,
+    breathe,
+    await contactShadows,
+  );
   const spec = FRAMINGS[framing];
   const rest = makeCamera(framing);
   const anchors: Anchors = anchorsOf(office);

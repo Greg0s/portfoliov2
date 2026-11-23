@@ -28,8 +28,7 @@ import {
 import { LightPMREMGenerator } from '../pmrem';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { buildCity, type City } from './city';
-import { contactShadows } from './contact';
-import { renderProposal } from './proposals';
+import { bakeContactShadows, contactPlane } from './contact';
 import { isMesh, LAYERS, noPause, type Pause } from './common';
 import { buildLights, type OfficeLights } from './lighting';
 import { MOMENTS, type OfficeMoment } from './moments';
@@ -144,6 +143,7 @@ export async function createOffice(
   town: TownGeometry,
   rose: Object3D | null,
   pause: Pause = noPause,
+  contactMap: Texture | null = null,
 ): Promise<Office> {
   if (!rectAreaReady) {
     RectAreaLightUniformsLib.init();
@@ -162,11 +162,8 @@ export async function createOffice(
   const deskLights = buildLights(moment, desk);
   scene.add(roomLights.exterior, roomLights.interior, deskLights.interior);
   scene.fog = new Fog(moment.city.fog, 150, 2700);
-  const proposal = renderProposal();
-  if (proposal >= 1) {
-    desk.group.add(contactShadows(renderer, desk.group, { darkness: 0.8, reach: 0.16, blur: 4 }));
-    await pause('contact shadows');
-  }
+  // The desk's contact shadows: the picture made ahead, or made here when there is none (when it is made).
+  desk.group.add(contactPlane(contactMap ?? bakeContactShadows(renderer, desk.group).texture));
 
   const pmrem = new LightPMREMGenerator(renderer);
   const sky = skyTexture(moment);

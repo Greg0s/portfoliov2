@@ -18,7 +18,6 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   Path,
-  PlaneGeometry,
   Shape,
   ShapeGeometry,
   Sphere,
@@ -30,7 +29,6 @@ import {
 } from 'three';
 import { box, canvasTexture, DEG, LAYERS, onLayer, rng, std } from './common';
 import type { OfficeMoment } from './moments';
-import { landscapeProposal } from './proposals';
 import { river } from './river';
 import {
   ACROSS,
@@ -100,15 +98,15 @@ function facadeTextures(
 }
 
 /**
- * A tileable ripple pattern as a normal map (a proposal, `?paysage=1`): a few crossing waves of whole periods, so that
+ * A tileable ripple pattern as a normal map (for the river's ripples): a few crossing waves of whole periods, so that
  * the tile repeats without a seam.
  */
 function rippleTexture(): CanvasTexture {
-  const size = 256;
+  const size = 128;
   // Many short waves of whole periods, in every direction and of similar heights: no stripe stands out.
   const r = rng(11);
   const waves: [number, number, number, number][] = [];
-  for (let i = 0; i < 24; i += 1) {
+  for (let i = 0; i < 16; i += 1) {
     const k = 3 + Math.floor(r() * 9);
     const angle = r() * Math.PI * 2;
     waves.push([Math.round(Math.cos(angle) * k), Math.round(Math.sin(angle) * k), 0.6 + r() * 0.4, r() * 6.3]);
@@ -140,7 +138,7 @@ function rippleTexture(): CanvasTexture {
 }
 
 /**
- * Trees in several greens, each crown lit from above and darker underneath (a proposal, `?paysage=2`): a colour per
+ * Trees in several greens, each crown lit from above and darker underneath: a colour per
  * patch of a few metres (a tree, near enough), and a gradient with the height above the ground.
  */
 const GREEN = new Color(0x3a4a31);
@@ -451,9 +449,8 @@ export function buildCity(town: TownGeometry, moment: OfficeMoment): City {
     metalness: 0,
     envMapIntensity: 1.8,
   });
-  const proposal = landscapeProposal();
-  if (proposal >= 1) {
-    // A proposal (`?paysage=1`): the river reflects the town, drawn once.
+  {
+    // The river reflects the town, drawn once (`river.ts`).
     const ripples = rippleTexture();
     // Ripples a few metres across: `repeat` carries their size.
     ripples.repeat.set(9, 6);
@@ -462,11 +459,6 @@ export function buildCity(town: TownGeometry, moment: OfficeMoment): City {
     mirror.rotation.set(-Math.PI / 2, RIVER_TURN, 0);
     mirror.position.set(mid.x, CITY.water, mid.y);
     g.add(mirror);
-  } else {
-    const water = new Mesh(new PlaneGeometry(3750, HALF * 2).rotateX(-Math.PI / 2), waterMaterial);
-    water.rotation.y = RIVER_TURN;
-    water.position.set(mid.x, CITY.water, mid.y);
-    g.add(water);
   }
   const quayStone = std(0xc3b39b, 0.9);
   for (const side of [1, -1]) {
@@ -494,15 +486,8 @@ export function buildCity(town: TownGeometry, moment: OfficeMoment): City {
   lawn.position.y = CITY.land + 0.6;
   g.add(pond, lawn);
   const treeGeometry = unpack(town.parts.trees);
-  if (proposal >= 2) shadeTrees(treeGeometry);
-  g.add(
-    new Mesh(
-      treeGeometry,
-      proposal >= 2
-        ? new MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true })
-        : std(0x3a4a31, 0.95, 0, { flatShading: true }),
-    ),
-  );
+  shadeTrees(treeGeometry);
+  g.add(new Mesh(treeGeometry, new MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true })));
   g.add(
     new Mesh(unpack(town.parts.lamps), new MeshBasicMaterial({ color: new Color(0xffc472).multiplyScalar(M.lamps) })),
   );

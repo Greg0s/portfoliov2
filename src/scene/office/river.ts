@@ -1,5 +1,5 @@
 /**
- * The river as a mirror (a landscape proposal, `?paysage=1`): it reflects the town, the quays and the bridges, not only
+ * The river as a mirror (office spec §3): it reflects the town, the quays and the bridges, not only
  * the sky. The town's camera never moves, it only shifts and zooms its picture, so the reflection is the same in every
  * frame: it is drawn once, at the first draw of the town, for the whole frame (and a margin for the head and the
  * arrival), then only looked up. Small ripples blur it as water does.

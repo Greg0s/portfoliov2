@@ -1,7 +1,8 @@
 /**
  * Renders the office's fallback layers from the site's own modules (plan §2.5, step 7): for each moment and framing,
  * the town, the room, the desk and every town window lit, in WebP and in AVIF, with `placement.json`, where things land
- * in them. The live office and its fallback come from the same `src/scene/office/`, so they cannot drift apart.
+ * in them; and once, the desk's contact shadows (`public/images/office/contact-shadows.png`), which the live office
+ * loads rather than making them. The live office and its fallback come from the same `src/scene/office/`, so they cannot drift apart.
  *
  * Usage: `pnpm render-office-layers` (all), `-- --layers=city,room` (some layers), `-- --preview` (the three passes
  * together over a transparent sky, to compare with the mockup), `-- --out=<dir>` (somewhere else).
@@ -21,7 +22,8 @@ const args = Object.fromEntries(
 );
 const OUT = resolve(args.out ?? 'public/images/office/layers');
 const PREVIEW = args.preview === 'true';
-const LAYERS = PREVIEW ? ['preview'] : (args.layers ?? 'city,room,desk,windows').split(',');
+const LAYERS = PREVIEW ? ['preview'] : (args.layers ?? 'contact,city,room,desk,windows').split(',');
+const CONTACT_FILE = resolve('public/images/office/contact-shadows.png');
 const MOMENTS = (args.moments ?? 'aube,crepuscule').split(',');
 const FRAMINGS = (args.framings ?? 'desktop,mobile').split(',');
 /** Pixel ratio of each framing's render, and the margin around the frame the head and the arrival move into. */
@@ -43,9 +45,22 @@ const browser = await chromium.launch({
 mkdirSync(OUT, { recursive: true });
 const placement: Record<string, unknown> = {};
 try {
+  if (LAYERS.includes('contact')) {
+    const page = await browser.newPage();
+    await page.goto('http://127.0.0.1:8767/scripts/office/render.html?layer=contact');
+    await page.waitForFunction(() => window.__done === true, null, { timeout: 600_000 });
+    const result = await page.evaluate(() => ({ image: window.__image, error: window.__error }));
+    await page.close();
+    if (result.error || !result.image) throw new Error(`contact shadows: ${result.error ?? 'no image'}`);
+    // Lossless: the live office lays it as it is.
+    await sharp(Buffer.from(result.image.split(',')[1] ?? '', 'base64'))
+      .png({ compressionLevel: 9 })
+      .toFile(CONTACT_FILE);
+    console.log(`${CONTACT_FILE}: ${String(Math.round(statSync(CONTACT_FILE).size / 1024))} kB`);
+  }
   for (const moment of MOMENTS) {
     for (const framing of FRAMINGS) {
-      for (const layer of LAYERS) {
+      for (const layer of LAYERS.filter((name) => name !== 'contact')) {
         const name = `${moment}-${framing}-${layer}`;
         const page = await browser.newPage();
         const logs: string[] = [];

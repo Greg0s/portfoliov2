@@ -1,12 +1,15 @@
 /**
- * Contact shadows on the desk (a render proposal, `?rendu=1` and up): the soft darkening where each object meets the
- * desk top, that the lamp's and the window's shadow maps are too coarse to draw. Nothing on the desk ever moves, so it
- * is drawn once, as the shadow maps are: the objects are seen from under the desk top, in an orthographic camera, each
- * one darker the closer it is to the desk; that picture is blurred twice and laid over the desk as a transparent plane.
- * Drawing a frame then costs one more textured plane.
+ * Contact shadows on the desk (office spec §4): the soft darkening where each object meets the desk top, that the
+ * lamp's and the window's shadow maps are too coarse to draw. Nothing on the desk ever moves, so the shadow is a
+ * picture made once: the objects seen from under the desk top, in an orthographic camera, each one darker the closer it
+ * is to the desk, blurred twice. `pnpm render-office-layers` makes it ahead (`contact-shadows.png`), so that the site
+ * only loads it; drawing a frame then costs one more textured plane, drawn with the halos' program.
  */
 import {
   AddEquation,
+  LinearFilter,
+  NoColorSpace,
+  TextureLoader,
   CustomBlending,
   Mesh,
   OneFactor,
@@ -27,22 +30,31 @@ import {
 import { HorizontalBlurShader } from 'three/examples/jsm/shaders/HorizontalBlurShader.js';
 import { VerticalBlurShader } from 'three/examples/jsm/shaders/VerticalBlurShader.js';
 import { isMesh, LAYERS, ROOM } from './common';
+import { withBase } from '../../lib/url';
 
-export interface ContactOptions {
+/** The shadow's picture: its size, in texels (each about 3.3 mm of the desk), and where the site finds it. */
+export const CONTACT = {
+  width: 1024,
+  height: 256,
   /** How dark the shadow is right under an object, from 0 to 1. */
-  darkness: number;
+  darkness: 0.8,
   /** How high above the desk an object still darkens it, in metres. */
-  reach: number;
-  /** How far the shadow spreads, in texels of the 1024 × 256 picture (each about 3.3 mm). */
-  blur: number;
-}
+  reach: 0.16,
+  /** How far the shadow spreads, in texels. */
+  blur: 4,
+  path: 'images/office/contact-shadows.png',
+} as const;
 
 /** The desk top, as `buildDesk` lays it: its centre, width and depth, in metres. */
 const DESK = { x: -0.1, w: 3.4, z: (ROOM.wallZ + ROOM.deskFront) / 2, d: ROOM.deskFront - ROOM.wallZ } as const;
 
-export function contactShadows(renderer: WebGLRenderer, desk: Object3D, options: ContactOptions): Mesh {
-  const width = 1024;
-  const height = 256;
+/**
+ * Draws the shadow's picture into a render target, as `contact-shadows.png` holds it (rows from the bottom, as WebGL
+ * reads them back). Three programs are linked for it, then let go: the site loads the picture instead.
+ */
+export function bakeContactShadows(renderer: WebGLRenderer, desk: Object3D): WebGLRenderTarget {
+  const { width, height } = CONTACT;
+  const options = CONTACT;
   const target = new WebGLRenderTarget(width, height, { depthBuffer: true });
   target.texture.generateMipmaps = false;
   const spare = new WebGLRenderTarget(width, height, { depthBuffer: false });
@@ -132,9 +144,14 @@ export function contactShadows(renderer: WebGLRenderer, desk: Object3D, options:
   depth.dispose();
   blurQuad.geometry.dispose();
 
+  return target;
+}
+
+/** The plane that lays the shadow's picture over the desk (`map` stored as the render target is: no flip). */
+export function contactPlane(map: Texture): Mesh {
   // Laid just above the desk top; the objects in front of it hide it, as they would hide their shadow.
   const material = new MeshBasicMaterial({
-    map: target.texture,
+    map,
     // Drawn among the opaque objects, after them, darkening what is under it: RGB × (1 − alpha), alpha unchanged.
     transparent: false,
     blending: CustomBlending,
@@ -158,4 +175,19 @@ export function contactShadows(renderer: WebGLRenderer, desk: Object3D, options:
   plane.renderOrder = 2;
   plane.layers.set(LAYERS.desk);
   return plane;
+}
+
+/** Loads the shadow's picture made ahead; `null` if it cannot be had (the office then makes it). */
+export async function loadContactShadows(): Promise<Texture | null> {
+  try {
+    const texture = await new TextureLoader().loadAsync(withBase(CONTACT.path));
+    // As the render target held it: rows from the bottom, values as they are, no mipmaps.
+    texture.flipY = false;
+    texture.colorSpace = NoColorSpace;
+    texture.generateMipmaps = false;
+    texture.minFilter = LinearFilter;
+    return texture;
+  } catch {
+    return null;
+  }
 }
