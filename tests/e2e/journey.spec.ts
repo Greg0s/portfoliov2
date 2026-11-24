@@ -418,6 +418,24 @@ test('a project or contact link lands on its anchor', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'gregoire.tinnes@gmail.com' })).toBeVisible();
 });
 
+test('on a computer, the planet in the office’s sky shows its name and leads back to the projects', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'a phone keeps the name on a touch, and stays at the contact');
+  // A wide, short screen puts the planet behind the header's bar, which lets the pointer through between its links.
+  await page.setViewportSize({ width: 1536, height: 730 });
+  await openJourney(page, './?office=layers#contact');
+  await expectAnchor(page, CONTACT);
+  const planet = page.locator('.office-planet-button');
+  await expect(planet).toHaveCSS('pointer-events', 'auto', { timeout: 20_000 });
+  await planet.hover();
+  await expect(page.locator('.office-planet-label')).toHaveClass(/\bon\b/);
+  await expect(page.locator('.office-planet-label')).toHaveText('B 612');
+  await planet.click();
+  await expectAnchor(page, RING);
+});
+
 test('the focus goes from card to card, with its cartel, and Enter opens the case study', async ({ page }) => {
   await openJourney(page);
   const first = page.locator('[data-project="0"]');

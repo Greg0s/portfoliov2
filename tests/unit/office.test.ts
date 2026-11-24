@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { arrivalState, layerFade } from '../../src/scene/office/arrival';
-import { FRAMES } from '../../src/scene/office/frame';
+import { coverFit, FRAMES, PLANET_TOP, planetIn } from '../../src/scene/office/frame';
 import { buildTownGeometry, TOWN_PARTS, type TownGeometry } from '../../src/scene/office/town';
 import { squareToQuad, type Quad } from '../../src/lib/quad';
 
@@ -102,5 +102,41 @@ describe('the layers', () => {
         expect(meta.sun === null).toBe(moment === 'aube');
       }
     }
+  });
+});
+
+describe('the planet in the sky', () => {
+  const desktop = FRAMES.desktop;
+  const onScreen = (width: number, height: number): number => {
+    const fit = coverFit(desktop, width, height);
+    return planetIn(desktop, fit)[1] * fit.k + fit.y;
+  };
+
+  it('stays where the frame puts it when the sky is whole', () => {
+    expect(planetIn(desktop, coverFit(desktop, 1440, 900))).toEqual(desktop.planet);
+    expect(planetIn(desktop, coverFit(desktop, 1280, 1024))).toEqual(desktop.planet);
+  });
+
+  it('comes down on wide, short screens just enough to stay whole, and no further', () => {
+    for (const [width, height] of [
+      [1536, 730],
+      [1366, 650],
+    ] as const) {
+      expect(onScreen(width, height)).toBeCloseTo(PLANET_TOP, 5);
+    }
+    // Already low enough: left where the frame puts it.
+    for (const [width, height] of [
+      [1920, 1080],
+      [1280, 720],
+      [2560, 1300],
+    ] as const) {
+      const fit = coverFit(desktop, width, height);
+      expect(planetIn(desktop, fit)).toEqual(desktop.planet);
+      expect(onScreen(width, height)).toBeGreaterThan(PLANET_TOP);
+    }
+  });
+
+  it('never moves on a phone', () => {
+    expect(planetIn(FRAMES.mobile, coverFit(FRAMES.mobile, 412, 640))).toEqual(FRAMES.mobile.planet);
   });
 });
