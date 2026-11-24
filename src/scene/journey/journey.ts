@@ -538,10 +538,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // `?planete=live` keeps it whatever the rate, for tests and captures on machines without a GPU.
   const planetParam = new URLSearchParams(location.search).get('planete');
   const planetForced = planetParam === 'live';
-  // `?planete=images` (`echarpe`: the scarf alone) tries the planet in loops, rendered at build: no model, no Three.js
-  // (`src/scene/planet/loops.ts`). Where they cannot play, the live planet loads as usual.
-  const planetLoops = planetParam === 'images' || planetParam === 'echarpe';
+  // The planet in loops, rendered at build from the live scene (`src/scene/planet/loops.ts`), wherever they play
+  // (Grégoire, 24 November 2026): no model, no Three.js, the same picture. Where they cannot play (Safari), the live
+  // planet loads as before; `?planete=live` forces it. `?planete=images` (`echarpe`: the scarf alone) forces the
+  // loops, even drawn in software.
+  const loopsForced = planetParam === 'images' || planetParam === 'echarpe';
+  const planetLoops = !planetForced;
   let loopsFailed = false;
+  // A former visit found the live planet too slow: the loops still play, the live planet would not.
   let planetSlow = !planetForced && !planetLoops && isSlow('planet');
 
   const PLANET_MODEL = withBase('/models/petit-prince.glb');
@@ -552,7 +556,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     planetLoading = true;
     // The planet of a former visit of the home, if any: ready at once.
     const kept = takePlanet();
-    if (planetLoops && !loopsFailed) {
+    // Drawn in software, the image stays (below), unless the loops are asked for.
+    if (planetLoops && !loopsFailed && (kept || loopsForced || !drawsInSoftware())) {
       loadLoops(container, kept);
       return;
     }
@@ -648,6 +653,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       .catch(() => {
         loopsFailed = true;
         planetLoading = false;
+        if (!planetForced && isSlow('planet')) planetSlow = true;
       });
   }
 
