@@ -5,7 +5,7 @@
  * around it; the contact's text comes last. With reduced motion, the office simply fades in. Every value follows the
  * mockup (`Bureau.dc.html`).
  */
-import { smoothstep as sm } from './common';
+import { smoothstep as sm } from './steps';
 import type { FrameSpec } from './frame';
 
 /** How far the camera starts in front of the seat, in metres: out by the window, beyond the wall. */
