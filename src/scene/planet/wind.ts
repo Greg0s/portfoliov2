@@ -18,6 +18,9 @@ const EAR_SWING = 3;
 /** How far behind the right ear the left one moves, in loops. */
 const EAR_LAG = 0.18;
 
+/** How long each moving part takes to come back to where it was, in ms on the wind's clock. */
+export const LOOPS = { scarf: SCARF_LOOP, rose: 2 * ROSE_SWING, tail: TAIL_LOOP, ears: EAR_LOOP } as const;
+
 export interface WindState {
   /** The scarf's wave, from 0 to 1 over one loop. */
   scarfPhase: number;
