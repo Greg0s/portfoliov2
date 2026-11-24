@@ -1,0 +1,141 @@
+/**
+ * Preparing the office's layers (office spec §6, main spec §6.5): the live office's fallback, and the office of a phone,
+ * where the head follows nothing and the layers show the very picture the live scene would (Grégoire, 24 November
+ * 2026). Their pictures are loaded and decoded before they show, then the HTML of the office (the screen, the
+ * pictures, their cartels) is laid over them and drawn once out of sight. Nothing here imports three.js, so that a
+ * phone never loads the live scene's code.
+ */
+import type { Moment } from '../time';
+import { arrivalState, FADE_PLANES, layerFade } from './arrival';
+import { FRAMES, framingOf } from './frame';
+import { createLayersOffice } from './layers';
+import type { OfficeScene } from './live';
+import { breathe, endStep, startStep } from './steps';
+import { createOfficeView, type OfficeView } from './view';
+import type { Cartel, WallPicture } from './wall';
+import { avifShown } from '../../lib/avif';
+
+// The framing a section's width calls for, which a kept scene must share.
+export { framingOf };
+
+/** What preparing the office's view needs to know. */
+export interface ViewOptions {
+  moment: Moment;
+  still: boolean;
+}
+
+interface PictureData {
+  src: string;
+  /** The same picture in AVIF, lighter (`src/lib/avif.ts`). */
+  avif?: string;
+  focus?: string;
+  cartel?: Cartel;
+  link?: string;
+}
+
+const focusOf = (focus: string | undefined): [number, number] => {
+  const [x = 50, y = 50] = (focus ?? '50% 50%').split(' ').map((part) => parseFloat(part));
+  return [x, y];
+};
+
+/** The layers instead of the live scene: no WebGL, the same arrival in CSS. */
+export async function prepareLayers(
+  section: HTMLElement,
+  host: HTMLElement,
+  options: ViewOptions & {
+    /** Taking over from the live scene in the middle of the arrival: drawn at that point only, as it shows. */
+    at?: number;
+  },
+): Promise<OfficeView> {
+  return viewOffice(section, host, await prepareLayersScene(section, host, options), options);
+}
+
+/** The layers alone, their pictures loaded and decoded, without the HTML laid over them. */
+export function prepareLayersScene(
+  section: HTMLElement,
+  host: HTMLElement,
+  options: Pick<ViewOptions, 'moment'>,
+): Promise<OfficeScene> {
+  const framing = framingOf(section.clientWidth);
+  return createLayersOffice({
+    moment: options.moment,
+    framing,
+    frame: FRAMES[framing],
+    base: host.dataset.layers ?? '',
+  });
+}
+
+/** Points of the arrival where the room, then the desk, are half faded in. */
+function fadingArrivals(framing: ReturnType<typeof framingOf>): number[] {
+  const found: number[] = [];
+  for (const z of [FADE_PLANES.room, FADE_PLANES.desk]) {
+    for (let k = 0; k <= 200; k += 1) {
+      const fade = layerFade(arrivalState(k / 200, FRAMES[framing], false, framing === 'mobile').camZ, z);
+      if (fade > 0.2 && fade < 0.8) {
+        found.push(k / 200);
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Lays the HTML of the office (the screen, the pictures, their cartels) over `scene`, a live scene or its layers, and
+ * draws it once out of sight.
+ */
+export async function viewOffice(
+  section: HTMLElement,
+  host: HTMLElement,
+  scene: OfficeScene,
+  options: ViewOptions & {
+    at?: number;
+    /** A scene kept from a former visit of the home: already on the GPU, it needs no drawing out of sight. */
+    kept?: boolean;
+  },
+): Promise<OfficeView> {
+  const avif = await avifShown();
+  // In a task of its own: a promise (a picture's decoding, a shader's compiling) can settle during a frame, and laying
+  // the view in the page reads its size, which would force a layout in the middle of that frame.
+  await new Promise((resolve) => setTimeout(resolve));
+  startStep();
+  const framing = framingOf(section.clientWidth);
+  const pools = new Map<string, WallPicture[]>(
+    Object.entries(JSON.parse(host.dataset.pictures ?? '{}') as Record<string, PictureData[]>).map(([frame, pool]) => [
+      frame,
+      pool.map((picture) => ({
+        src: avif && picture.avif ? picture.avif : picture.src,
+        focus: focusOf(picture.focus),
+        cartel: picture.cartel ?? null,
+        link: picture.link ?? null,
+      })),
+    ]),
+  );
+  const view = createOfficeView(host, scene, {
+    moment: options.moment,
+    framing,
+    still: options.still,
+    screen: host.querySelector<HTMLTemplateElement>('template[data-screen-template]'),
+    links: host.closest('section') ?? section,
+    locale: document.documentElement.lang,
+    pools,
+    planetName: 'B 612',
+    linkLabel: host.dataset.linkLabel ?? 'Instagram',
+  });
+  section.getBoundingClientRect();
+  // One draw at rest, out of sight: textures, shadow maps and buffers go to the GPU now, not on the way in. Then where
+  // the room, and the desk, fade in through their off-screen pass, whose target is made at its size. Each draw in a
+  // task of its own, between two frames, and the page's style and layout settled in that task: left for the next
+  // frame, the journey's first read there (the glide's scroll) would have to do it in the middle of that frame.
+  // Taking over on screen, it is drawn where the arrival is, and nowhere else: the other points would show.
+  let done = 'view';
+  const draws = options.kept ? [] : options.at === undefined ? [1, ...fadingArrivals(framing), 0] : [options.at];
+  for (const arrival of draws) {
+    await breathe(done);
+    view.update(arrival, performance.now(), 16);
+    section.getBoundingClientRect();
+    done = `draw at ${arrival.toFixed(2)}`;
+  }
+  endStep(done);
+  return view;
+}
