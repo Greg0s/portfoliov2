@@ -25,7 +25,7 @@ import {
 import { addLights, CENTER } from './lights';
 import { isMesh, loadPlanetModel, meshIn, type PlanetModel } from './load';
 import { foxWind } from './fox';
-import { createWind, type WindState } from './wind';
+import { createWind, foxAngles, roseAngle, SCARF_LOOP, type WindState } from './wind';
 import { scenePixelRatio } from '../resolution';
 import { drawsInSoftware } from '../quality';
 import { coldSource } from '../cold';
@@ -47,6 +47,11 @@ export interface LivePlanet {
   canvas: HTMLCanvasElement;
   /** Draws a frame: `delta` ms of wind since the last one (0 holds the pose). */
   render(delta: number): void;
+  /**
+   * Draws each part at its own time on the wind's clock, in ms, the wind fully risen: for the planet's loops, rendered
+   * at build one part at a time (`scripts/render-planet-loops.ts`).
+   */
+  renderPose?(times: PartTimes): void;
   resize(size: number, mobile: boolean): void;
   /**
    * Whether its programs linked slowly, one after the other (no parallel compiling, two links of 200 ms and more):
@@ -58,6 +63,14 @@ export interface LivePlanet {
   /** Calls `callback` (one at a time, `null` for none) if its WebGL context is lost. */
   whenLost(callback: (() => void) | null): void;
   dispose(): void;
+}
+
+/** Each moving part's time on the wind's clock, in ms. */
+export interface PartTimes {
+  scarf: number;
+  rose: number;
+  tail: number;
+  ears: number;
 }
 
 // When cold, the code every material shares is unlike any program the browser linked before (`src/scene/cold.ts`).
@@ -386,6 +399,12 @@ async function assemble(
         sway(windState.roseDeg * amount);
         fox(windState.tailDeg * amount, [windState.earsDeg[0] * amount, windState.earsDeg[1] * amount]);
       }
+      renderer.render(scene, camera);
+    },
+    renderPose(times) {
+      blow((times.scarf / SCARF_LOOP) % 1, 1);
+      sway(roseAngle(times.rose));
+      fox(foxAngles(times.tail).tailDeg, foxAngles(times.ears).earsDeg);
       renderer.render(scene, camera);
     },
     resize,
