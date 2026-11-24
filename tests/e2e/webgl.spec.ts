@@ -87,3 +87,24 @@ test('the live planet whose WebGL context is lost gives way to its image, then c
   await expect(page.locator('.planet-canvas')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
+
+test('the planet in loops shows without its model or its scene', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Safari does not play AV1 in 4:4:4: the live planet stays');
+  const errors = trackErrors(page);
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto('./?planete=images');
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-journey', 'on');
+  await page.mouse.move(200, 200);
+  await expect(html).toHaveAttribute('data-planet', 'live', { timeout: 30_000 });
+  await expect(page.locator('.planet-canvas')).toHaveCount(1);
+  // The still and the scarf come first, then the other parts.
+  await expect
+    .poll(
+      () => new Set(requests.filter((url) => /\/images\/planet\/loops\/\w+-(base\.avif|scarf\.mp4)$/.test(url))).size,
+    )
+    .toBe(2);
+  expect(requests.filter((url) => /\/models\/|\/planet\.[\w-]+\.js$/.test(url))).toEqual([]);
+  expect(errors).toEqual([]);
+});

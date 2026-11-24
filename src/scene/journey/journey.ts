@@ -536,8 +536,13 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // Its first seconds on screen are measured: kept too slow, it gives way to its image for the rest of the visit.
   let planetSampler: FrameSampler | null = null;
   // `?planete=live` keeps it whatever the rate, for tests and captures on machines without a GPU.
-  const planetForced = new URLSearchParams(location.search).get('planete') === 'live';
-  let planetSlow = !planetForced && isSlow('planet');
+  const planetParam = new URLSearchParams(location.search).get('planete');
+  const planetForced = planetParam === 'live';
+  // `?planete=images` (`echarpe`: the scarf alone) tries the planet in loops, rendered at build: no model, no Three.js
+  // (`src/scene/planet/loops.ts`). Where they cannot play, the live planet loads as usual.
+  const planetLoops = planetParam === 'images' || planetParam === 'echarpe';
+  let loopsFailed = false;
+  let planetSlow = !planetForced && !planetLoops && isSlow('planet');
 
   const PLANET_MODEL = withBase('/models/petit-prince.glb');
 
@@ -547,6 +552,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     planetLoading = true;
     // The planet of a former visit of the home, if any: ready at once.
     const kept = takePlanet();
+    if (planetLoops && !loopsFailed) {
+      loadLoops(container, kept);
+      return;
+    }
     // Drawn in software (a machine without a GPU, Lighthouse's), the image stays, and nothing more is downloaded.
     if (!kept && !planetForced && drawsInSoftware()) {
       planetLoading = false;
@@ -607,6 +616,38 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         // Without WebGL or the model, the fallback image stays (and a relief started ahead is let go).
         cancelRelief();
         if (!stopped && planetLoading) planetFailed = true;
+      });
+  }
+
+  /** The planet in loops; where they cannot play, the live planet loads at the next frame. */
+  function loadLoops(container: HTMLElement, kept: LivePlanet | null): void {
+    void Promise.all([import('../planet/loops'), import('../planet/handoff')])
+      .then(async ([{ createLoops, loopsPlay }, { planetHandoff }]) => {
+        if (kept) container.append(kept.canvas);
+        else if (!(await loopsPlay())) throw new Error('The loops do not play here.');
+        const created =
+          kept ??
+          (await createLoops(container, {
+            base: withBase('/images/planet/loops/'),
+            size: planetSize,
+            scarfOnly: planetParam === 'echarpe',
+          }));
+        if (stopped || !planetLoading) {
+          if (stopped && keeping) keepPlanet(created);
+          else created.dispose();
+          return;
+        }
+        livePlanet?.dispose();
+        livePlanet = created;
+        created.whenLost(onPlanetLost);
+        handoff = planetHandoff(container, created.canvas);
+        planetSampler = null;
+        performance.mark('journey:planet-ready');
+        redraw = true;
+      })
+      .catch(() => {
+        loopsFailed = true;
+        planetLoading = false;
       });
   }
 

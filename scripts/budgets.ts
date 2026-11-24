@@ -121,6 +121,19 @@ for (const { dir, pattern, limit, label } of perFile) {
 const sets: { dir: string; pattern: RegExp; limit: number; label: string }[] = [
   { dir: 'images/screen', pattern: /\.(?:avif|webp)$/, limit: 1536 * KB, label: 'screen captures' },
   { dir: 'images/taskbar', pattern: /\.(?:svg|webp)$/, limit: 40 * KB, label: 'taskbar icons' },
+  // The planet in loops (`?planete=images`): its still and its four videos, per framing.
+  {
+    dir: 'images/planet/loops',
+    pattern: /\/desktop-[^/]+\.(?:avif|mp4)$/,
+    limit: 220 * KB,
+    label: 'planet loops, desktop',
+  },
+  {
+    dir: 'images/planet/loops',
+    pattern: /\/mobile-[^/]+\.(?:avif|mp4)$/,
+    limit: 140 * KB,
+    label: 'planet loops, mobile',
+  },
 ];
 for (const { dir, pattern, limit, label } of sets) {
   const files = listFiles(join(dist, dir)).filter((path) => pattern.test(path));
