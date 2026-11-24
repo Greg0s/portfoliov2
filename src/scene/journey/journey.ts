@@ -1276,6 +1276,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       glideTo(1);
       return;
     }
+    // On a computer, the planet in the office's sky leads back to the ring of projects around it.
+    if (element?.closest('.office-planet-button[data-to-projects]')) {
+      glideTo(1);
+      return;
+    }
     const link = element?.closest<HTMLAnchorElement>('a.card');
     const item = link?.closest<HTMLElement>('[data-project]');
     if (!item) return;

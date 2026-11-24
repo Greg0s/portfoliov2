@@ -44,6 +44,14 @@ const anchor = (fragment: keyof typeof fragments): string => withBase(`${home}#$
     gap: 12px 32px;
     min-height: var(--header-height);
     padding-inline: var(--gutter);
+    /* The bar is see-through: between its links, the pointer reaches the scene below (the office's planet). */
+    pointer-events: none;
+  }
+
+  .name,
+  .links,
+  .menu-button {
+    pointer-events: auto;
   }
 
   .links {

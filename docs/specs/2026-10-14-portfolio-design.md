@@ -179,7 +179,7 @@ Le relief de la planète et les cheveux du prince viennent du matériau dans Ble
 
 ### 6.4 La planète dans le parcours
 
-- **En s'éloignant**, la planète glisse vers le centre et devient une petite lumière floue, qu'on retrouve dans le ciel du bureau avec « B 612 » au survol. Une fois qu'elle n'est plus qu'une lumière floue, la scène 3D s'arrête et une image la remplace en fondu, au même point : on ne paie le rendu en temps réel que tant que la planète se voit.
+- **En s'éloignant**, la planète glisse vers le centre et devient une petite lumière floue, qu'on retrouve dans le ciel du bureau avec « B 612 » au survol ; sur ordinateur, un clic sur elle ramène à l'anneau des projets. Une fois qu'elle n'est plus qu'une lumière floue, la scène 3D s'arrête et une image la remplace en fondu, au même point : on ne paie le rendu en temps réel que tant que la planète se voit.
 - Three.js et la scène sont importés dynamiquement après le premier affichage, jamais sur le chemin critique. La planète vivante se charge dès le début du parcours, une fois que le contexte WebGL des étoiles a dit si l'appareil a une carte graphique (rien de plus n'est téléchargé sur un rendu logiciel, celui de Lighthouse compris) : l'arrivée l'allume déjà vivante, sans image figée ni à-coup quand elle prend le relais (11 novembre 2026).
 - **Image de repli** : pour chaque période, un rendu fixe en WebP (environ 45 Ko) s'affiche tout de suite. Il reste en place sans JavaScript, sans WebGL ou avec `?gl=0`, et la scène vivante le remplace en fondu quand elle est prête.
 - Rendu en pause quand l'onglet est caché ; densité de pixels plafonnée à 2 (1,5 sur mobile) ; carte d'ombres de 2 048 px.
