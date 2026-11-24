@@ -1804,21 +1804,29 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // ---------- The live office ----------
 
   // It is prepared from the first project on (from the opening on a computer, at once on `#contact`), and drawn while the
-  // contact shows. On a phone, which links its programs one by one, that takes seconds: begun at the middle of the
-  // journey, it was not ready for a visitor going through the projects at a swipe each. Its first seconds on screen are
-  // measured: lagging, it first draws at a little less resolution on a dense screen; kept too slow, it gives way to its
-  // layers, which also stand in without WebGL, and for the arrival when it is still not ready after a short loading
-  // pause.
+  // contact shows. Its first seconds on screen are measured: lagging, it first draws at a little less resolution on a
+  // dense screen; kept too slow, it gives way to its layers, which also stand in without WebGL, and for the arrival
+  // when it is still not ready. A phone's office is its layers from the start (`layersOnly`).
   const OFFICE_START = anchors[1] ?? 0.1;
   /** On a computer, how long after the ambient motions start the office starts getting ready at the opening, in ms. */
   const OFFICE_EARLY_DELAY = 2500;
   let ambientAt = 0;
   // Not ready by the middle of the journey, its layers get ready too.
   const OFFICE_WARM = SHOWCASE_AT;
-  // `?office=live` keeps the live office whatever the rate; `?office=layers` shows the layers.
+  // `?office=live` keeps the live office whatever the rate, a phone's too; `?office=layers` shows the layers.
   const officeMode = new URLSearchParams(location.search).get('office');
+  /**
+   * Whether the office is its layers on this screen from the start: a phone's (Grégoire, 24 November 2026). The head
+   * follows only a mouse, so at rest a phone's live office shows the very picture its layers show, and only the
+   * backing through the window differs, for half a second of the arrival. Its preparation held the ring (1.6 s of long
+   * frames over 12 s on a phone slowed 4 times, against 0.13 s for the layers), and it drew half a million triangles a
+   * frame during the arrival. A phone then loads neither its code nor the planet's model for the rose.
+   */
+  const layersOnly = (): boolean => scene.view.mobile && officeMode !== 'live';
   let officeView: OfficeView | null = null;
   let officeLoading = false;
+  /** Whether the office getting ready is its layers: decoding their pictures holds no frame. */
+  let officeLoadingLayers = false;
   let officeSampler: FrameSampler | null = null;
   let officeSlow = officeMode === 'layers' || !options.webgl || (officeMode !== 'live' && isSlow('office'));
   let officeFailed = false;
@@ -1851,39 +1859,43 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     officeStartedAt = performance.now();
     officeFromKept = hasKept().office !== null;
     officeFraming = scene.view.mobile ? 'mobile' : 'desktop';
-    const layers = officeSlow;
+    const layers = officeSlow || layersOnly();
+    officeLoadingLayers = layers;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
     const abort = new AbortController();
     officeAbort = abort;
     // Out of the frame: preparing reads the section's size, which would force a layout in the middle of a frame.
+    // The layers' module imports no three.js: a phone never loads the live scene's code, which a computer fetches at
+    // once. (One import or the other in a single expression would preload what both need, whichever is taken.)
+    if (!layers) void import('../office/warmup');
     void new Promise((resolve) => setTimeout(resolve))
-      .then(() => import('../office/warmup'))
-      .then(async ({ prepareOfficeScene, prepareLayersScene, viewOffice, framingOf, SlowOffice }) => {
+      .then(() => import('../office/warmup-layers'))
+      .then(async ({ prepareLayersScene, viewOffice, framingOf }) => {
         const framing = framingOf(host.clientWidth);
         // The scene of a former visit of the home, if it fits: only its HTML is laid again.
         let kind: 'live' | 'layers' = layers ? 'layers' : 'live';
         const kept = takeOffice(framing, moment, kind);
         // Let go for not fitting, or lost: the office is made afresh, and its layers may then be needed.
         officeFromKept = kept !== null;
-        const made: OfficeScene =
-          kept ??
-          (await (layers
-            ? prepareLayersScene(host, host, { moment })
-            : prepareOfficeScene(host, {
-                modelUrl: withBase('/models/petit-prince.glb'),
-                moment,
-                still: options.still,
-                forced: officeMode === 'live',
-                signal: abort.signal,
-              }).catch((error: unknown) => {
-                if (error instanceof SlowOffice) {
-                  officeSlow = true;
-                  markSlow('office');
-                  kind = 'layers';
-                  return prepareLayersScene(host, host, { moment });
-                }
-                throw error;
-              })));
+        const live = async (): Promise<OfficeScene> => {
+          const { prepareOfficeScene, SlowOffice } = await import('../office/warmup');
+          return prepareOfficeScene(host, {
+            modelUrl: withBase('/models/petit-prince.glb'),
+            moment,
+            still: options.still,
+            forced: officeMode === 'live',
+            signal: abort.signal,
+          }).catch((error: unknown) => {
+            if (error instanceof SlowOffice) {
+              officeSlow = true;
+              markSlow('office');
+              kind = 'layers';
+              return prepareLayersScene(host, host, { moment });
+            }
+            throw error;
+          });
+        };
+        const made: OfficeScene = kept ?? (await (layers ? prepareLayersScene(host, host, { moment }) : live()));
         /** Whether the home was left meanwhile: the scene is kept for the way back, or let go. */
         const left = (scene: OfficeScene): boolean => {
           if (!stopped && officeLoading && !abort.signal.aborted) return false;
@@ -1919,10 +1931,11 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         // Ready before the arrival: the layers standing by are no longer needed.
         freeStandIn();
         officeView = created;
-        officeSampler = officeSlow || officeMode === 'live' ? null : frameSampler();
+        // Only the live scene is measured: its layers are what it would give way to.
+        officeSampler = kind === 'layers' || officeMode === 'live' ? null : frameSampler();
         html.dataset.office = 'live';
         // Which one draws it, for the measurement run: the live scene or its layers.
-        html.dataset.officeScene = officeSlow ? 'layers' : 'live';
+        html.dataset.officeScene = kind;
         performance.mark('journey:office-ready');
         redraw = true;
       })
@@ -1944,7 +1957,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const host = office;
     standInLoading = true;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
-    void import('../office/warmup')
+    void import('../office/warmup-layers')
       .then(({ prepareLayers, framingOf }) => {
         standInScene = { framing: framingOf(host.clientWidth), moment, kind: 'layers' };
         return prepareLayers(host, host, { moment, still: options.still });
@@ -2030,21 +2043,22 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       const from = early ? 0 : OFFICE_START - 0.01;
       // On the ring, the planet, which shows there, is put together first: back from a case study, the planet, the
       // office and its layers all got ready at once, and held the ring's first seconds (Grégoire, 4 November 2026). A
-      // visitor heading for the contact gets the office at once (see the frame loop).
-      if (!officeFailed && !planetComing() && (u >= OFFICE_WARM - 0.01 || (u >= from && !planetMeasured))) {
-        loadOffice();
-      }
+      // visitor heading for the contact gets the office at once (see the frame loop). A phone's layers wait for
+      // nothing: decoding their pictures holds no frame, and the contact is one swipe from the ring.
+      const due = layersOnly()
+        ? u >= from
+        : !planetComing() && (u >= OFFICE_WARM - 0.01 || (u >= from && !planetMeasured));
+      if (!officeFailed && due) loadOffice();
       // Its layers get ready too only if the live office is slow to come: a few seconds after it started, or as soon
-      // as the visitor heads for the contact. On a phone, as soon as the ring shows, whether the live office started or
-      // not (it waits for the planet): the contact is one swipe away, and the live office, which links its programs
-      // one by one there, is seldom ready in time on a first visit. The layers, pictures already loaded ahead, then
-      // play the arrival rather than a loading pause (Grégoire, 10 November 2026).
+      // as the visitor heads for the contact. They then play the arrival rather than a loading pause. (A phone's office
+      // is its layers already.)
       if (
         u >= OFFICE_WARM - 0.01 &&
         !officeSlow &&
+        !layersOnly() &&
         officeMode !== 'live' &&
-        (officeLoading || scene.view.mobile) &&
-        (scene.view.mobile || pastRing(target) || now - officeStartedAt > STAND_IN_DELAY)
+        officeLoading &&
+        (pastRing(target) || now - officeStartedAt > STAND_IN_DELAY)
       ) {
         loadStandIn();
       }
@@ -2096,7 +2110,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     const host = office;
     officeReplacing = true;
     const moment = html.dataset.moment === 'aube' ? 'aube' : 'crepuscule';
-    void import('../office/warmup')
+    void import('../office/warmup-layers')
       .then(({ prepareLayers, framingOf }) => {
         standInScene = { framing: framingOf(host.clientWidth), moment, kind: 'layers' };
         return prepareLayers(host, host, { moment, still: options.still, at: arrival });
@@ -2169,7 +2183,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
    */
   const preparing = (): boolean =>
     (planetLoading && !livePlanet && !planetSlow && !planetFailed) ||
-    (officeLoading && !officeView && !officeFailed) ||
+    (officeLoading && !officeView && !officeFailed && !officeLoadingLayers) ||
     officeReplacing;
   /** Whether the live office is still getting ready, not found too slow: worth waiting for at the arrival. */
   const officeComing = (): boolean => officeLoading && !officeView && !officeFailed && !officeSlow;
