@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { arrivalState, layerFade } from '../../src/scene/office/arrival';
-import { coverFit, FRAMES, planetIn } from '../../src/scene/office/frame';
+import { coverFit, FRAMES, PLANET_TOP, planetIn } from '../../src/scene/office/frame';
 import { buildTownGeometry, TOWN_PARTS, type TownGeometry } from '../../src/scene/office/town';
 import { squareToQuad, type Quad } from '../../src/lib/quad';
 
@@ -117,14 +117,22 @@ describe('the planet in the sky', () => {
     expect(planetIn(desktop, coverFit(desktop, 1280, 1024))).toEqual(desktop.planet);
   });
 
-  it('comes down on wide, short screens, to 114 px from the top', () => {
+  it('comes down on wide, short screens just enough to stay whole, and no further', () => {
     for (const [width, height] of [
       [1536, 730],
       [1366, 650],
+    ] as const) {
+      expect(onScreen(width, height)).toBeCloseTo(PLANET_TOP, 5);
+    }
+    // Already low enough: left where the frame puts it.
+    for (const [width, height] of [
       [1920, 1080],
+      [1280, 720],
       [2560, 1300],
     ] as const) {
-      expect(onScreen(width, height)).toBeCloseTo(114, 5);
+      const fit = coverFit(desktop, width, height);
+      expect(planetIn(desktop, fit)).toEqual(desktop.planet);
+      expect(onScreen(width, height)).toBeGreaterThan(PLANET_TOP);
     }
   });
 
