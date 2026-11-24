@@ -16,7 +16,7 @@ import { quadMatrix } from '../../lib/quad';
 import { draw } from '../../lib/wall';
 import { blackout } from '../../motion/blackout';
 import { reachedBySwitch } from '../../motion/language';
-import { rng } from './common';
+import { rng } from './steps';
 import type { Moment } from '../time';
 
 /** The screen's picture, 1280 × 800 like the 16:10 monitor. */
