@@ -846,11 +846,7 @@ test('?office=live arrives at the seat in the live office, and logs no error', a
 test('the arrival waits a few seconds at most for the live office, showing that it loads', async ({ page }) => {
   test.slow();
   const errors = trackErrors(page);
-  // Forced live, with its depth held back for long: the office is not ready, and the wait runs to its end.
-  await page.route('**/relief.json', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 15_000));
-    await route.continue().catch(() => undefined);
-  });
+  // Forced live, the office takes far longer than that to get ready without a GPU: the wait runs to its end.
   await openJourney(page, './?office=live&pause=1');
   const home = page.locator('[data-journey-root]');
   await page.keyboard.press('End');
@@ -859,7 +855,8 @@ test('the arrival waits a few seconds at most for the live office, showing that 
   const held = Date.now();
   await expect(home).not.toHaveAttribute('data-loading', { timeout: 10_000 });
   expect(Date.now() - held).toBeLessThan(4500);
-  // Every frame of the arrival drawn in software: on CI's shared machines, its 3.5 s may take far longer.
+  // The live office goes on getting ready without a GPU, every frame of the arrival drawn in software: on CI's shared
+  // machines, the 3.5 s of the arrival may take far longer.
   await expectAnchor(page, CONTACT, 45_000);
   await expect(page.locator('html')).toHaveAttribute('data-office-arrival', /.+/);
   expect(errors).toEqual([]);

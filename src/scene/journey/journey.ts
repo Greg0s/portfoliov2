@@ -53,7 +53,7 @@ import type { Renderer } from '../renderer';
 import type { Handoff } from '../planet/handoff';
 import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
-import type { OfficeScene } from '../office/scene';
+import type { OfficeScene } from '../office/live';
 import { withBase } from '../../lib/url';
 import {
   contextAhead,
@@ -1801,13 +1801,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   // Not passive either: a tap the journey clicks itself holds the browser's own click back.
   window.addEventListener('touchend', onTouchEnd, { passive: false });
   window.addEventListener('touchcancel', onTouchCancel, { passive: true });
-  // ---------- The office ----------
+  // ---------- The live office ----------
 
   // It is prepared from the first project on (from the opening on a computer, at once on `#contact`), and drawn while the
-  // contact shows: its layers lifted in relief (`src/scene/office/relief.ts`), still called the live office here, as
-  // against its CSS layers. Its first seconds on screen are measured: lagging, it first draws at a little less
-  // resolution on a dense screen; kept too slow, it gives way to its CSS layers, which also stand in without WebGL, and
-  // for the arrival when it is still not ready after a short loading pause.
+  // contact shows. On a phone, which links its programs one by one, that takes seconds: begun at the middle of the
+  // journey, it was not ready for a visitor going through the projects at a swipe each. Its first seconds on screen are
+  // measured: lagging, it first draws at a little less resolution on a dense screen; kept too slow, it gives way to its
+  // layers, which also stand in without WebGL, and for the arrival when it is still not ready after a short loading
+  // pause.
   const OFFICE_START = anchors[1] ?? 0.1;
   /** On a computer, how long after the ambient motions start the office starts getting ready at the opening, in ms. */
   const OFFICE_EARLY_DELAY = 2500;
@@ -1869,6 +1870,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
           (await (layers
             ? prepareLayersScene(host, host, { moment })
             : prepareOfficeScene(host, {
+                modelUrl: withBase('/models/petit-prince.glb'),
                 moment,
                 still: options.still,
                 forced: officeMode === 'live',
@@ -2032,16 +2034,17 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       if (!officeFailed && !planetComing() && (u >= OFFICE_WARM - 0.01 || (u >= from && !planetMeasured))) {
         loadOffice();
       }
-      // Its layers get ready too only if the office in relief is slow to come: a few seconds after it started, or as
-      // soon as the visitor heads for the contact. It needs no more than its pictures, loaded in well under a second
-      // on a phone: the layers no longer get ready there as soon as the ring shows, as they did for the live office,
-      // which linked its programs one by one for seconds (Grégoire, 10 November 2026).
+      // Its layers get ready too only if the live office is slow to come: a few seconds after it started, or as soon
+      // as the visitor heads for the contact. On a phone, as soon as the ring shows, whether the live office started or
+      // not (it waits for the planet): the contact is one swipe away, and the live office, which links its programs
+      // one by one there, is seldom ready in time on a first visit. The layers, pictures already loaded ahead, then
+      // play the arrival rather than a loading pause (Grégoire, 10 November 2026).
       if (
         u >= OFFICE_WARM - 0.01 &&
         !officeSlow &&
         officeMode !== 'live' &&
-        officeLoading &&
-        (pastRing(target) || now - officeStartedAt > STAND_IN_DELAY)
+        (officeLoading || scene.view.mobile) &&
+        (scene.view.mobile || pastRing(target) || now - officeStartedAt > STAND_IN_DELAY)
       ) {
         loadStandIn();
       }

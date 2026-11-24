@@ -8,7 +8,7 @@ import { arrivalState, type ArrivalState } from './arrival';
 import { coverFit, FRAMES, planetIn, type Fit, type FrameSpec } from './frame';
 import type { Framing } from './framings';
 import { drawJump, jumpStars, prepareJump } from './jump';
-import type { Head, OfficeScene, PictureSource } from './scene';
+import type { Head, OfficeScene, PictureSource } from './live';
 import { MOMENTS } from './moments';
 import { createScreen, type Screen } from './screen';
 import { createCartels, type WallPicture } from './wall';
