@@ -112,12 +112,13 @@ export function noteContext(gl: WebGL2RenderingContext): void {
 }
 
 /**
- * The attributes Three.js asks a context for in `createRenderer()` (`src/scene/renderer.ts`): a context made ahead with
- * them is the one Three.js then takes, unchanged.
+ * The attributes the stars' renderer asks a context for in `createRenderer()` (`src/scene/renderer.ts`): a context made
+ * ahead with them is the one it then takes, unchanged. No depth buffer: the stars do not test depth, and a full-screen
+ * one costs GPU memory for nothing (20 MB on a dense computer screen).
  */
 export const RENDERER_CONTEXT: WebGLContextAttributes = {
   alpha: true,
-  depth: true,
+  depth: false,
   stencil: false,
   antialias: false,
   premultipliedAlpha: true,
@@ -127,9 +128,9 @@ export const RENDERER_CONTEXT: WebGLContextAttributes = {
 };
 
 /**
- * Makes the journey's WebGL context before Three.js has loaded, on the canvas its renderer will take, and notes what
- * draws it: whether the device has a GPU is known at once, and the live planet starts loading alongside Three.js
- * rather than after it. `null` without WebGL 2 (the renderer then finds out on its own).
+ * Makes the journey's WebGL context before the renderer's code has loaded, on the canvas its renderer will take, and
+ * notes what draws it: whether the device has a GPU is known at once, and the planet starts loading alongside the
+ * renderer rather than after it. `null` without WebGL 2 (the renderer then finds out on its own).
  */
 export function contextAhead(): HTMLCanvasElement | null {
   const canvas = document.createElement('canvas');

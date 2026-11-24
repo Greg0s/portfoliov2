@@ -14,6 +14,7 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   Scene,
+  ShaderChunk,
   Texture,
   Vector2,
   Vector3,
@@ -27,6 +28,7 @@ import { foxWind } from './fox';
 import { createWind, type WindState } from './wind';
 import { scenePixelRatio } from '../resolution';
 import { drawsInSoftware } from '../quality';
+import { coldSource } from '../cold';
 import type { Arrays } from '../workers/relief';
 import type { ReplyTo } from '../workers/client';
 import { cancelRelief, reliefFor, startRelief } from './prepare';
@@ -57,6 +59,9 @@ export interface LivePlanet {
   whenLost(callback: (() => void) | null): void;
   dispose(): void;
 }
+
+// When cold, the code every material shares is unlike any program the browser linked before (`src/scene/cold.ts`).
+ShaderChunk.common = coldSource(ShaderChunk.common);
 
 /** A program link this long, in ms, says a modest GPU (as for the office, `src/scene/office/live.ts`). */
 const SLOW_LINK = 200;

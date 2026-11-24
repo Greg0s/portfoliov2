@@ -1,6 +1,6 @@
 /**
  * The scenes kept from one visit of the home to the next, within the page's document (the client router swaps the
- * pages, the scripts stay): the WebGL renderer of the stars (with their field, whose program the new field shares),
+ * pages, the scripts stay): the WebGL renderer of the stars (with their program, linked already),
  * the ring's sky in WebGL (its two canvases and their linked programs), the live planet, and the office's scene (live,
  * or its layers). A case study and back would otherwise prepare them all again, the slowest wait of a visit (main spec §6.4).
  * They are paused while kept: nothing draws them until the home takes them back.
@@ -14,7 +14,6 @@ import type { Framing } from './office/framings';
 import type { Renderer } from './renderer';
 import type { Moment } from './time';
 import type { SkyPainter } from './showcase/sky';
-import type { StarField } from './stars/stars';
 
 /** A canvas of the ring's sky and its WebGL painter. */
 export interface KeptSkyCanvas {
@@ -42,44 +41,29 @@ const note = (what: string): void => {
 };
 
 let renderer: Renderer | null = null;
-let stars: StarField | null = null;
 let sky: KeptSky | null = null;
 let planet: LivePlanet | null = null;
 let office: KeptOffice | null = null;
 
 /**
- * Keeps the renderer, with its stars' field still in its scene: the field of the next visit is made before this one is
- * let go (`takeStars()`), so that it finds their program already linked, rather than link it again on its first frame.
+ * Keeps the renderer, without its stars' field but with their program: the field of the next visit finds it linked
+ * already, rather than link it again on its first frame.
  */
-export function keepRenderer(kept: Renderer, field: StarField | null = null): void {
-  stars?.dispose();
+export function keepRenderer(kept: Renderer): void {
   renderer?.dispose();
+  kept.field = null;
   kept.canvas.remove();
   renderer = kept;
-  stars = field;
   note('renderer');
-}
-
-/** The former visit's stars' field, to let go once the new one has been drawn (null if none). */
-export function takeStars(): StarField | null {
-  const taken = stars;
-  stars = null;
-  return taken;
 }
 
 export function takeRenderer(): Renderer | null {
   const taken = renderer;
   renderer = null;
-  if (!taken) {
-    stars?.dispose();
-    stars = null;
-    return null;
-  }
+  if (!taken) return null;
   // Its context lost while it was kept, and not back: a new one is made.
   if (taken.lost) {
     note('lost-renderer');
-    stars?.dispose();
-    stars = null;
     taken.dispose();
     return null;
   }
@@ -177,13 +161,11 @@ export function hasKept(): {
 
 export function dropKept(): void {
   if (renderer || sky || planet || office) note('drop');
-  stars?.dispose();
   renderer?.dispose();
   if (sky) disposeSky(sky);
   planet?.dispose();
   office?.scene.dispose();
   renderer = planet = null;
-  stars = null;
   sky = null;
   office = null;
 }

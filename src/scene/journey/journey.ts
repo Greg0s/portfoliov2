@@ -47,9 +47,9 @@ import { drift, swing } from '../../motion/float';
 import { isMenuOpen } from '../../motion/menu';
 import { followPointer, tiltToward } from '../../motion/tilt';
 import { onTick } from '../../motion/ticker';
-import type { Matrix4 } from 'three';
 import type { StarField } from '../stars/stars';
 import type { Renderer } from '../renderer';
+import type { Mat4 } from './camera3d';
 import type { Handoff } from '../planet/handoff';
 import type { LivePlanet } from '../planet/planet';
 import type { OfficeView } from '../office/view';
@@ -78,7 +78,6 @@ import {
   takeOffice,
   takePlanet,
   takeRenderer,
-  takeStars,
   type KeptOffice,
 } from '../keep';
 import { CARTEL_GAP, fitRing, type Pose, type RingRoom } from '../showcase/ring';
@@ -443,16 +442,14 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
 
   layout();
 
-  // ---------- Stars, drawn in WebGL once Three.js has loaded ----------
+  // ---------- Stars, drawn in WebGL once their code has loaded ----------
 
   let renderer: Renderer | null = null;
   let stars: StarField | null = null;
-  /** The stars' field of a former visit, let go once the new one is drawn (`src/scene/keep.ts`). */
-  let retiring: StarField | null = null;
   let stopped = false;
   /** Whether the scenes are kept as the journey stops (the home is left for another page), rather than let go. */
   let keeping = false;
-  let swayMatrixOf: ((sway: Sway) => Matrix4) | null = null;
+  let swayMatrixOf: ((sway: Sway) => Mat4) | null = null;
   /**
    * Whether the stars' WebGL context was made, or could not be: the live planet waits for it, which tells it, without a
    * context of its own, whether the device draws in software (see `drawsInSoftware()`).
@@ -461,8 +458,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   /** Whether the stars showed in the frame drawn last on their canvas: faded out, they are drawn once more, then not. */
   let starsDrawnShown = true;
   /**
-   * The stars' context, made before Three.js has loaded (none when a former visit's renderer comes back): it says at
-   * once whether the device has a GPU, and the live planet loads alongside Three.js rather than after it.
+   * The stars' context, made before their code has loaded (none when a former visit's renderer comes back): it says at
+   * once whether the device has a GPU, and the live planet loads alongside their code rather than after it.
    */
   let canvasAhead = options.webgl && !hasKept().renderer ? contextAhead() : null;
   if (canvasAhead) starsSettled = true;
@@ -477,11 +474,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         const ahead = canvasAhead;
         canvasAhead = null;
         if (kept) {
+          // Its stars' program comes back linked: the new field takes it over rather than link it again in the middle
+          // of the way back.
           renderer = kept;
-          // The former visit's stars' field leaves the scene, but is let go only once the new one has been drawn: its
-          // program, the same, is then taken over rather than linked again in the middle of the way back.
-          retiring = takeStars();
-          if (retiring) kept.scene.remove(retiring.points);
           stage.prepend(kept.canvas);
           kept.resize(scene.view);
           ahead?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
@@ -494,9 +489,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
           }
         }
         stars = createStars(scene.stars, scene.view, renderer.pixelRatio);
-        renderer.scene.add(stars.points);
+        renderer.field = stars;
         swayMatrixOf = swayMatrix;
-        stars.points.matrixAutoUpdate = false;
         html.dataset.stars = 'webgl';
         redraw = true;
       },
@@ -506,13 +500,12 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
   function rebuildStars(): void {
     if (!renderer || !stars) return;
     renderer.resize(scene.view);
-    renderer.scene.remove(stars.points);
+    renderer.field = null;
     stars.dispose();
     void import('../stars/stars').then(({ createStars }) => {
       if (stopped || !renderer) return;
       stars = createStars(scene.stars, scene.view, renderer.pixelRatio);
-      stars.points.matrixAutoUpdate = false;
-      renderer.scene.add(stars.points);
+      renderer.field = stars;
       redraw = true;
     });
   }
@@ -554,7 +547,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
       markSlow('planet');
       return;
     }
-    // Its model downloads and its relief builds while Three.js and its code still load.
+    // Its model downloads and its relief builds while Three.js and the planet's code still load.
     if (!kept) {
       void modelData(PLANET_MODEL).catch(() => undefined);
       startRelief(scene.view.mobile);
@@ -1738,11 +1731,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
         farFade: 1 - smoothstep(0.15, 0.75, tEnd),
         nearOpacity: (0.55 + 0.45 * light.stars) * starsK * others,
       });
-      stars.points.matrix.copy(swayMatrixOf(sway));
-      stars.points.matrixWorldNeedsUpdate = true;
+      stars.setMatrix(swayMatrixOf(sway));
       renderer.render();
-      retiring?.dispose();
-      retiring = null;
     }
 
     // Where the camera rests, for the navigation and the tests.
@@ -2333,13 +2323,9 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     root.removeEventListener('pointerover', onOver);
     setJourney(null);
     showcase.stop(keep);
-    retiring?.dispose();
-    retiring = null;
-    if (keep && renderer) keepRenderer(renderer, stars);
-    else {
-      stars?.dispose();
-      renderer?.dispose();
-    }
+    stars?.dispose();
+    if (keep && renderer) keepRenderer(renderer);
+    else renderer?.dispose();
     freePlanet(keep);
     freeOffice(keep);
     markers.forEach((marker) => {
