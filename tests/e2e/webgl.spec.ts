@@ -108,3 +108,19 @@ test('the planet in loops shows without its model or its scene', async ({ page, 
   expect(requests.filter((url) => /\/models\/|\/planet\.[\w-]+\.js$/.test(url))).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('drawn in software, the planet keeps its image and fetches neither its loops nor its model', async ({ page }) => {
+  const errors = trackErrors(page);
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto('./');
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-journey', 'on');
+  await page.mouse.move(200, 200);
+  await expect(html).toHaveAttribute('data-planet-settled', 'image', { timeout: 10_000 });
+  await page.waitForTimeout(1500);
+  expect(
+    requests.filter((url) => /\/images\/planet\/loops\/|\/models\/|\/(loops|planet)\.[\w-]+\.js$/.test(url)),
+  ).toEqual([]);
+  expect(errors).toEqual([]);
+});
