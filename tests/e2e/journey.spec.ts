@@ -787,6 +787,22 @@ test('?gl=0 shows the office over its layers', async ({ page }) => {
   await expect(page.locator('.office-canvas')).toHaveCount(0);
 });
 
+test('a phone arrives over the layers of the office, without loading the live scene', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'a computer keeps the live office, which follows the mouse');
+  const errors = trackErrors(page);
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  // Without `?office`: a phone's office is its layers from the start (main spec §6.5, 24 November 2026).
+  await openJourney(page, './#contact');
+  await expectAnchor(page, CONTACT);
+  await expect(page.locator('html')).toHaveAttribute('data-office-scene', 'layers', { timeout: 20_000 });
+  await expect(page.locator('.office-layers .office-layer-image')).toHaveCount(3);
+  await expect(page.locator('.office-canvas')).toHaveCount(0);
+  // Neither the live scene's code, nor the town's worker, nor the planet's model for the rose.
+  expect(requests.filter((url) => /\/warmup\.[\w-]+\.js$|town\.worker|\/models\//.test(url))).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
 test('the address bar coming and going leaves the contact at the end of its arrival', async ({ page }) => {
   await openJourney(page, './?office=layers#contact');
   await expectAnchor(page, CONTACT);
