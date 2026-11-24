@@ -4,8 +4,7 @@
  * blur and opacity (sharp within ±10 %, blurred up to 12 px, fading down to about 0.25 as it recedes).
  *
  * One projection serves the CSS and WebGL: `projectCss` is what the browser does with the cards' transforms, and
- * `camera3d.ts` is the same camera for Three.js, so that the stars, the planet and the cards share one space. This
- * module stays free of Three.js, which the page loads later.
+ * `camera3d.ts` is the same camera for WebGL, so that the stars and the cards share one space.
  */
 import type { CardPlace, Star, View, World } from './layout';
 

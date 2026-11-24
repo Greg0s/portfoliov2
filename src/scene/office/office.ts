@@ -15,6 +15,7 @@ import {
   OrthographicCamera,
   PlaneGeometry,
   Scene,
+  ShaderChunk,
   ShaderMaterial,
   SRGBColorSpace,
   Vector2,
@@ -26,6 +27,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { LightPMREMGenerator } from '../pmrem';
+import { coldSource } from '../cold';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { buildCity, type City } from './city';
 import { bakeContactShadows, contactPlane } from './contact';
@@ -69,6 +71,9 @@ export interface Office {
   warm(renderer: WebGLRenderer, camera: Camera, layer: Layer): void;
   dispose(): void;
 }
+
+// When cold, the code every material shares is unlike any program the browser linked before (`src/scene/cold.ts`).
+ShaderChunk.common = coldSource(ShaderChunk.common);
 
 let rectAreaReady = false;
 

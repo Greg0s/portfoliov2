@@ -1,16 +1,24 @@
 /**
  * The stars' shaders (main spec §7.4, measurement §5): one cloud of points for the far and the near stars, with the
- * far stars' twinkle computed here rather than as animated HTML elements, which slowed the journey on phones.
+ * far stars' twinkle computed here rather than as animated HTML elements, which slowed the journey on phones. GLSL ES
+ * 3.00, for WebGL 2 without Three.js (`src/scene/renderer.ts`).
  */
 
-export const vertexShader = /* glsl */ `
-  attribute float aNear;
-  attribute float aSize;
-  attribute float aAlpha;
-  attribute float aBig;
-  attribute vec2 aTwinkle;
-  attribute float aKeep;
-  attribute vec3 aColor;
+export const vertexShader = /* glsl */ `#version 300 es
+  precision highp float;
+  precision highp int;
+
+  in vec3 position;
+  in float aNear;
+  in float aSize;
+  in float aAlpha;
+  in float aBig;
+  in vec2 aTwinkle;
+  in float aKeep;
+  in vec3 aColor;
+
+  uniform mat4 modelViewMatrix;
+  uniform mat4 projectionMatrix;
 
   uniform float uTime;
   uniform float uDepth;
@@ -24,10 +32,10 @@ export const vertexShader = /* glsl */ `
   uniform float uNearOpacity;
   uniform float uPixelRatio;
 
-  varying float vAlpha;
-  varying float vCore;
-  varying float vBig;
-  varying vec3 vColor;
+  out float vAlpha;
+  out float vCore;
+  out float vBig;
+  out vec3 vColor;
 
   float smoothstep01(float edge0, float edge1, float x) {
     float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -65,11 +73,15 @@ export const vertexShader = /* glsl */ `
   }
 `;
 
-export const fragmentShader = /* glsl */ `
-  varying float vAlpha;
-  varying float vCore;
-  varying float vBig;
-  varying vec3 vColor;
+export const fragmentShader = /* glsl */ `#version 300 es
+  precision highp float;
+  precision highp int;
+
+  in float vAlpha;
+  in float vCore;
+  in float vBig;
+  in vec3 vColor;
+  out vec4 fragColor;
 
   void main() {
     float d = length(gl_PointCoord - 0.5) * 2.0;
@@ -78,6 +90,6 @@ export const fragmentShader = /* glsl */ `
     float glow = vBig > 0.5 ? 0.35 * exp(-pow(max(0.0, d - vCore) / (vCore * 1.2), 2.0)) : 0.0;
     float a = vAlpha * max(core, glow);
     if (a < 0.002) discard;
-    gl_FragColor = vec4(vColor * a, a);
+    fragColor = vec4(vColor * a, a);
   }
 `;

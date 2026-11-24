@@ -57,6 +57,20 @@ test('the journey starts on the opening and logs no error', async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+test('the stars draw without Three.js', async ({ page }) => {
+  // Every chunk that holds Three.js fails to load: the stars, in plain WebGL 2, draw all the same, and a visit whose
+  // planet and office show as pictures never downloads it (24 November 2026).
+  await page.route(/\/_astro\/[^/]+\.js$/, async (route) => {
+    const response = await route.fetch();
+    const body = await response.text();
+    if (body.includes('THREE.WebGLRenderer')) await route.abort();
+    else await route.fulfill({ response, body });
+  });
+  await openJourney(page);
+  await expect(page.locator('html')).toHaveAttribute('data-stars', 'webgl');
+  await expect(page.locator('.scene-canvas')).toHaveCount(1);
+});
+
 test('a visit starts in the dark, then the planet, the name, the job, the header and the call show', async ({
   page,
 }) => {

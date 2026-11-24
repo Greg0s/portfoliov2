@@ -1,12 +1,13 @@
 /**
  * The journey's stars (journey spec §4): about 90 far stars that twinkle and barely move, and about 56 near stars
- * along the camera's path that stream toward the planet, in one `Points` geometry drawn by the shared renderer. The
- * trails of the office's jump (step 7) reuse it.
+ * along the camera's path that stream toward the planet, in one cloud of points drawn by the journey's renderer
+ * (`src/scene/renderer.ts`), in plain WebGL 2. The trails of the office's jump (step 7) reuse it.
  */
-import { BufferAttribute, BufferGeometry, NormalBlending, Points, ShaderMaterial } from 'three';
 import { accentAt, mixRgb } from '../accent';
-import { fragmentShader, vertexShader } from './stars.glsl';
+import { multiply, type Mat4 } from '../journey/camera3d';
 import type { Star, View } from '../journey/layout';
+import type { Drawable, Renderer } from '../renderer';
+import { fragmentShader, vertexShader } from './stars.glsl';
 
 export interface StarsState {
   time: number;
@@ -19,12 +20,16 @@ export interface StarsState {
   nearOpacity: number;
 }
 
-export interface StarField {
-  points: Points;
+export interface StarField extends Drawable {
   resize(view: View, pixelRatio: number): void;
   update(state: StarsState): void;
+  /** The swayed world matrix (`swayMatrix()`), column-major. */
+  setMatrix(matrix: Mat4): void;
   dispose(): void;
 }
+
+/** Each attribute: its name in the shader, its size, its values. */
+type Attributes = [string, number, Float32Array][];
 
 export function createStars(stars: readonly Star[], view: View, pixelRatio: number): StarField {
   const count = stars.length;
@@ -43,7 +48,7 @@ export function createStars(stars: readonly Star[], view: View, pixelRatio: numb
   };
   stars.forEach((star, i) => {
     if (hash(i, 1.7) < 0.36) color.set(mixRgb([1, 1, 1], accentAt(hash(i, 8.3)), 0.8), i * 3);
-    // Near stars in the Three.js world (y up); far stars in px from the vanishing point (y down).
+    // Near stars in the WebGL world (y up); far stars in px from the vanishing point (y down).
     position.set(star.near ? [star.x, -star.y, star.z] : [star.x, star.y, 0], i * 3);
     near[i] = star.near ? 1 : 0;
     size[i] = star.size;
@@ -52,69 +57,122 @@ export function createStars(stars: readonly Star[], view: View, pixelRatio: numb
     twinkle.set([star.twinkleDuration || 1, star.twinkleDelay], i * 2);
     keep[i] = star.keep ? 1 : 0;
   });
+  const attributes: Attributes = [
+    ['position', 3, position],
+    ['aNear', 1, near],
+    ['aSize', 1, size],
+    ['aAlpha', 1, alpha],
+    ['aBig', 1, big],
+    ['aTwinkle', 2, twinkle],
+    ['aKeep', 1, keep],
+    ['aColor', 3, color],
+  ];
 
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(position, 3));
-  geometry.setAttribute('aNear', new BufferAttribute(near, 1));
-  geometry.setAttribute('aSize', new BufferAttribute(size, 1));
-  geometry.setAttribute('aAlpha', new BufferAttribute(alpha, 1));
-  geometry.setAttribute('aBig', new BufferAttribute(big, 1));
-  geometry.setAttribute('aTwinkle', new BufferAttribute(twinkle, 2));
-  geometry.setAttribute('aKeep', new BufferAttribute(keep, 1));
-  geometry.setAttribute('aColor', new BufferAttribute(color, 3));
+  const uniforms: Record<string, number | number[]> = {
+    uTime: 0,
+    uDepth: 0,
+    uPerspective: view.perspective,
+    uViewport: [view.width, view.height],
+    uVanish: [view.vpX, view.vpY],
+    uFarScale: 1,
+    uFarShift: [0, 0],
+    uFarOpacity: 1,
+    uFarFade: 1,
+    uNearOpacity: 1,
+    uPixelRatio: pixelRatio,
+  };
+  let matrix: Mat4 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
-  const material = new ShaderMaterial({
-    vertexShader,
-    fragmentShader,
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-    // The fragment shader writes premultiplied colours.
-    blending: NormalBlending,
-    premultipliedAlpha: true,
-    uniforms: {
-      uTime: { value: 0 },
-      uDepth: { value: 0 },
-      uPerspective: { value: view.perspective },
-      uViewport: { value: [view.width, view.height] },
-      uVanish: { value: [view.vpX, view.vpY] },
-      uFarScale: { value: 1 },
-      uFarShift: { value: [0, 0] },
-      uFarOpacity: { value: 1 },
-      uFarFade: { value: 1 },
-      uNearOpacity: { value: 1 },
-      uPixelRatio: { value: pixelRatio },
-    },
-  });
-  const points = new Points(geometry, material);
-  // The vertex shader places the far stars itself: the bounding sphere means nothing to them.
-  points.frustumCulled = false;
-  const u = material.uniforms;
+  // What it put on the GPU, for the renderer's context of that generation: made again after a lost context.
+  let made: {
+    renderer: Renderer;
+    generation: number;
+    vao: WebGLVertexArrayObject;
+    buffers: WebGLBuffer[];
+    program: WebGLProgram;
+    locations: Map<string, WebGLUniformLocation | null>;
+  } | null = null;
+
+  const release = (): void => {
+    if (!made) return;
+    const { gl } = made.renderer;
+    if (!gl.isContextLost()) {
+      gl.deleteVertexArray(made.vao);
+      for (const buffer of made.buffers) gl.deleteBuffer(buffer);
+    }
+    made = null;
+  };
+
+  const make = (renderer: Renderer): NonNullable<typeof made> => {
+    release();
+    const { gl } = renderer;
+    // The program is the renderer's: the field of the next visit of the home takes it back already linked.
+    const program = renderer.program('stars', vertexShader, fragmentShader);
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    const buffers = attributes.map(([name, itemSize, values]) => {
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW);
+      const location = gl.getAttribLocation(program, name);
+      if (location >= 0) {
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribPointer(location, itemSize, gl.FLOAT, false, 0, 0);
+      }
+      return buffer;
+    });
+    gl.bindVertexArray(null);
+    const locations = new Map(
+      [...Object.keys(uniforms), 'modelViewMatrix', 'projectionMatrix'].map((name) => [
+        name,
+        gl.getUniformLocation(program, name),
+      ]),
+    );
+    return { renderer, generation: renderer.generation, vao, buffers, program, locations };
+  };
 
   return {
-    points,
     resize(next, ratio) {
-      if (u.uPerspective) u.uPerspective.value = next.perspective;
-      if (u.uViewport) u.uViewport.value = [next.width, next.height];
-      if (u.uVanish) u.uVanish.value = [next.vpX, next.vpY];
-      if (u.uPixelRatio) u.uPixelRatio.value = ratio;
+      uniforms.uPerspective = next.perspective;
+      uniforms.uViewport = [next.width, next.height];
+      uniforms.uVanish = [next.vpX, next.vpY];
+      uniforms.uPixelRatio = ratio;
     },
     update(state) {
-      const set = (name: string, value: unknown): void => {
-        const uniform = u[name];
-        if (uniform) uniform.value = value;
-      };
-      set('uTime', state.time);
-      set('uDepth', state.depth);
-      set('uFarScale', state.farScale);
-      set('uFarShift', [state.farShiftX, state.farShiftY]);
-      set('uFarOpacity', state.farOpacity);
-      set('uFarFade', state.farFade);
-      set('uNearOpacity', state.nearOpacity);
+      uniforms.uTime = state.time;
+      uniforms.uDepth = state.depth;
+      uniforms.uFarScale = state.farScale;
+      uniforms.uFarShift = [state.farShiftX, state.farShiftY];
+      uniforms.uFarOpacity = state.farOpacity;
+      uniforms.uFarFade = state.farFade;
+      uniforms.uNearOpacity = state.nearOpacity;
     },
-    dispose() {
-      geometry.dispose();
-      material.dispose();
+    setMatrix(next) {
+      matrix = next;
     },
+    draw(renderer) {
+      if (made?.renderer !== renderer || made.generation !== renderer.generation) made = make(renderer);
+      const { gl } = renderer;
+      const { program, locations, vao } = made;
+      gl.useProgram(program);
+      for (const [name, value] of Object.entries(uniforms)) {
+        const location = locations.get(name) ?? null;
+        if (typeof value === 'number') gl.uniform1f(location, value);
+        else gl.uniform2f(location, value[0] ?? 0, value[1] ?? 0);
+      }
+      // The camera's view times the swayed world, and its projection, as the shader takes them.
+      gl.uniformMatrix4fv(locations.get('modelViewMatrix') ?? null, false, multiply(renderer.view, matrix));
+      gl.uniformMatrix4fv(locations.get('projectionMatrix') ?? null, false, renderer.projection);
+      gl.disable(gl.DEPTH_TEST);
+      gl.depthMask(false);
+      gl.enable(gl.BLEND);
+      // The fragment shader writes premultiplied colours.
+      gl.blendEquation(gl.FUNC_ADD);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.bindVertexArray(vao);
+      gl.drawArrays(gl.POINTS, 0, count);
+      gl.bindVertexArray(null);
+    },
+    dispose: release,
   };
 }
