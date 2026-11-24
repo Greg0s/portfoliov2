@@ -1,0 +1,96 @@
+{
+  "desktop": {
+    "size": 1200,
+    "base": "desktop-base.avif",
+    "feather": 8,
+    "parts": [
+      {
+        "name": "scarf",
+        "src": "desktop-scarf.mp4",
+        "x": 660,
+        "y": 216,
+        "w": 360,
+        "h": 244,
+        "period": 6000,
+        "frames": 180
+      },
+      {
+        "name": "ears",
+        "src": "desktop-ears.mp4",
+        "x": 418,
+        "y": 142,
+        "w": 224,
+        "h": 190,
+        "period": 2600,
+        "frames": 78
+      },
+      {
+        "name": "tail",
+        "src": "desktop-tail.mp4",
+        "x": 376,
+        "y": 368,
+        "w": 184,
+        "h": 134,
+        "period": 4200,
+        "frames": 126
+      },
+      {
+        "name": "rose",
+        "src": "desktop-rose.mp4",
+        "x": 200,
+        "y": 530,
+        "w": 120,
+        "h": 108,
+        "period": 6000,
+        "frames": 180
+      }
+    ]
+  },
+  "mobile": {
+    "size": 720,
+    "base": "mobile-base.avif",
+    "feather": 5,
+    "parts": [
+      {
+        "name": "scarf",
+        "src": "mobile-scarf.mp4",
+        "x": 396,
+        "y": 130,
+        "w": 216,
+        "h": 148,
+        "period": 6000,
+        "frames": 180
+      },
+      {
+        "name": "ears",
+        "src": "mobile-ears.mp4",
+        "x": 250,
+        "y": 84,
+        "w": 136,
+        "h": 116,
+        "period": 2600,
+        "frames": 78
+      },
+      {
+        "name": "tail",
+        "src": "mobile-tail.mp4",
+        "x": 226,
+        "y": 220,
+        "w": 112,
+        "h": 82,
+        "period": 4200,
+        "frames": 126
+      },
+      {
+        "name": "rose",
+        "src": "mobile-rose.mp4",
+        "x": 120,
+        "y": 318,
+        "w": 72,
+        "h": 66,
+        "period": 6000,
+        "frames": 180
+      }
+    ]
+  }
+}
