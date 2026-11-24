@@ -306,6 +306,8 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
   const button = el('button', 'office-planet-button', planet);
   button.type = 'button';
   button.tabIndex = -1;
+  // On a computer, the planet leads back to the projects around it (the journey glides there on its click).
+  if (!mob) button.dataset.toProjects = '';
   const label = el('div', 'office-planet-label', planet);
   el('span', 'office-planet-line', label);
   el('span', '', label).textContent = options.planetName;

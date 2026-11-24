@@ -169,6 +169,10 @@
   pointer-events: none;
 }
 
+.office-planet-button[data-to-projects] {
+  cursor: pointer;
+}
+
 .office-planet-label {
   position: absolute;
   left: 22px;
