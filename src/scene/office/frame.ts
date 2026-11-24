@@ -83,3 +83,17 @@ export function coverFit(spec: Pick<FrameSpec, 'w' | 'h'>, width: number, height
   const k = Math.max(width / spec.w, height / spec.h);
   return { k, x: (width - spec.w * k) / 2, y: (height - spec.h * k) / 2 };
 }
+
+/**
+ * Where the planet sits in the frame once the frame covers the section. On a computer, a screen wider than the frame's
+ * 16:10 crops the sky's top, and the planet went up under the header (it was at 6 px on a 1536 × 730 laptop): it
+ * comes down to stay at least as low on screen as in the frame at its own size, 114 px, the gap it keeps above the
+ * contact's text (152 px from the top). The jump and the sky's breath are drawn around it, so the arrival keeps its
+ * shape.
+ */
+export function planetIn(spec: Pick<FrameSpec, 'w' | 'planet'>, fit: Fit): [number, number] {
+  const [x, y] = spec.planet;
+  if (spec.w < 768) return [x, y];
+  const lowest = (y - fit.y) / fit.k;
+  return [x, Math.max(y, lowest)];
+}

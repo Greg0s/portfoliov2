@@ -5,7 +5,7 @@
  * The HTML is placed in the frame's pixels, as in the mockup, and the frame covers the contact section.
  */
 import { arrivalState, type ArrivalState } from './arrival';
-import { coverFit, FRAMES, type Fit, type FrameSpec } from './frame';
+import { coverFit, FRAMES, planetIn, type Fit, type FrameSpec } from './frame';
 import type { Framing } from './framings';
 import { drawJump, jumpStars, prepareJump } from './jump';
 import type { Head, OfficeScene, PictureSource } from './scene';
@@ -146,7 +146,8 @@ function firstDraw(pools: ReadonlyMap<string, readonly WallPicture[]>): Map<stri
 
 export function createOfficeView(section: HTMLElement, live: OfficeScene, options: ViewOptions): OfficeView {
   const { framing, moment } = options;
-  const frame = FRAMES[framing];
+  // Its own copy: the planet comes down on screens that crop the sky's top (`planetIn`, set on each resize).
+  const frame: FrameSpec = { ...FRAMES[framing], planet: [...FRAMES[framing].planet] };
   const M = MOMENTS[moment];
   const rest = live.rest;
   const horizon = rest.horizon;
@@ -258,7 +259,6 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
   const shoot = streak(frame.shoot, 'office-shoot');
   const welcome = streak(frame.welcome, 'office-welcome');
   const breath = el('div', 'office-round office-breath', tilt);
-  Object.assign(breath.style, { left: px(frame.planet[0] - 16), top: px(frame.planet[1] - 16) });
 
   // ---- In front of the canvas: the screen, then the planet's button.
   const screen = el('div', 'office-screen', front);
@@ -302,7 +302,14 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
   const cartels = createCartels(front, root, rest, framing, frame, options.linkLabel);
   const skyFront = el('div', 'office-layer', front);
   const planet = el('div', 'office-planet', skyFront);
-  Object.assign(planet.style, { left: px(frame.planet[0]), top: px(frame.planet[1]) });
+  /** How far the planet came down from its place in the frame (`planetIn`). */
+  const lowered = (): number => frame.planet[1] - FRAMES[framing].planet[1];
+  const placePlanet = (): void => {
+    const [x, y] = frame.planet;
+    Object.assign(breath.style, { left: px(x - 16), top: px(y - 16) });
+    Object.assign(planet.style, { left: px(x), top: px(y) });
+  };
+  placePlanet();
   const button = el('button', 'office-planet-button', planet);
   button.type = 'button';
   button.tabIndex = -1;
@@ -421,6 +428,8 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
     const width = section.clientWidth;
     const height = section.clientHeight;
     fit = coverFit(frame, width, height);
+    frame.planet = planetIn(FRAMES[framing], fit);
+    placePlanet();
     const transform = `translate(${px(fit.x)}, ${px(fit.y)}) scale(${fit.k.toFixed(5)})`;
     back.style.transform = transform;
     front.style.transform = transform;
@@ -478,7 +487,11 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
       setStyle(skyFront, 'transform', shift(frame.par.far));
       const [sx, sy] = state.jump.shake;
       setStyle(tilt, 'transform', `translate(${sx.toFixed(2)}px, ${(sy + state.tiltSkyY).toFixed(1)}px)`);
-      setStyle(planet, 'transform', `translate(${sx.toFixed(2)}px, ${(sy + state.tiltSkyY).toFixed(1)}px)`);
+      // A planet brought down (`planetIn`) still starts the arrival where the journey left it, in the middle of the
+      // screen, and rises a little less than the sky to its place.
+      const lift = frame.tiltSky > 0 ? (lowered() * state.tiltSkyY) / frame.tiltSky : 0;
+      setStyle(planet, 'transform', `translate(${sx.toFixed(2)}px, ${(sy + state.tiltSkyY - lift).toFixed(1)}px)`);
+      setStyle(breath, 'translate', `0px ${(-lift).toFixed(1)}px`);
       // The sky rises from the horizon, like a quick sunrise.
       const yH = L + skyFade;
       const soft = 0.45 * yH;
@@ -508,7 +521,8 @@ export function createOfficeView(section: HTMLElement, live: OfficeScene, option
         if (state.jump.on) {
           const ratio = jumpCanvas.width / jumpW;
           jumpCtx.setTransform(ratio, 0, 0, ratio, jumpMargin * ratio, (frame.tiltSky + jumpMargin) * ratio);
-          drawJump(jumpCtx, details.jump, frame, state);
+          const [jx, jy] = frame.planet;
+          drawJump(jumpCtx, details.jump, { ...frame, planet: [jx, jy - lift] }, state);
         }
       }
       setStyle(jumpCanvas, 'opacity', state.jump.on ? state.jump.opacity.toFixed(3) : '0');
