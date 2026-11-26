@@ -4,7 +4,7 @@
  * with the four pages in four tabs, the hovered one in front; the email opens Thunderbird instead, and Firefox shrinks
  * back. A page left under the mouse scrolls slowly down after 1.1 s, to its end in 5 to 12 s (at most 140 px/s); the
  * windows shrink back 0.6 s after the mouse leaves the links. On desktop, the visitor can also click: Firefox's and
- * Thunderbird's icons in the taskbar open or close their window, and Firefox's tabs bring their page to the front
+ * Thunderbird's icons in the taskbar open or close their window, and Firefox's tabs bring their page to the front, and a window's minimize or close button sends it back to the taskbar
  * (Grégoire's choice, 26 November 2026). A hover still takes over, and once the mouse leaves the links the screen goes
  * back to what the visitor chose. The Recycle Bin asks whether to empty itself, hands
  * « Oui » over to the office (which goes dark and draws new pictures, and a new wallpaper), then owns up that nothing
@@ -178,6 +178,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     if (app === 'firefox') chosen = open && open !== 'Email' ? '' : (shown as ScreenPage);
     else if (app === 'mail') chosen = open === 'Email' ? '' : 'Email';
     else if (tab && PAGES.includes(tab)) chosen = tab;
+    else if (target?.closest('[data-window="minimize"], [data-window="close"]')) chosen = '';
     else return;
     show(chosen);
   };

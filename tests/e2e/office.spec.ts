@@ -106,6 +106,14 @@ test.describe('on desktop', () => {
     await expect(desktop).toHaveAttribute('data-open', 'firefox');
     await desktop.locator('[data-app="firefox"]').dispatchEvent('click');
     await expect(desktop).toHaveAttribute('data-open', '');
+
+    // The windows' minimize and close buttons send them back to the taskbar.
+    await desktop.locator('[data-app="firefox"]').dispatchEvent('click');
+    await desktop.locator('.firefox [data-window="close"]').dispatchEvent('click');
+    await expect(desktop).toHaveAttribute('data-open', '');
+    await desktop.locator('[data-app="mail"]').dispatchEvent('click');
+    await desktop.locator('.mail [data-window="minimize"]').dispatchEvent('click');
+    await expect(desktop).toHaveAttribute('data-open', '');
     expect(errors).toEqual([]);
   });
 
