@@ -3,7 +3,10 @@
  * hovering a link of the contact opens its page in Firefox, from its icon in the taskbar to the full screen in 0.4 s,
  * with the four pages in four tabs, the hovered one in front; the email opens Thunderbird instead, and Firefox shrinks
  * back. A page left under the mouse scrolls slowly down after 1.1 s, to its end in 5 to 12 s (at most 140 px/s); the
- * windows shrink back 0.6 s after the mouse leaves the links. The Recycle Bin asks whether to empty itself, hands
+ * windows shrink back 0.6 s after the mouse leaves the links. On desktop, the visitor can also click: Firefox's and
+ * Thunderbird's icons in the taskbar open or close their window, and Firefox's tabs bring their page to the front, and a window's minimize or close button sends it back to the taskbar
+ * (Grégoire's choice, 26 November 2026). A hover still takes over, and once the mouse leaves the links the screen goes
+ * back to what the visitor chose. The Recycle Bin asks whether to empty itself, hands
  * « Oui » over to the office (which goes dark and draws new pictures, and a new wallpaper), then owns up that nothing
  * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones, with no mouse to hover the links,
  * a tap on the screen opens the pages in turn (Grégoire's choice, 5 November 2026): the first tap opens LinkedIn as a
@@ -79,6 +82,8 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
 
   // ---- Windows: which one is open, and the tab in front (kept while Firefox shrinks back).
   let open: ScreenPage | '' = '';
+  /** What the visitor chose by clicking (desktop): the screen comes back to it after a hover. */
+  let chosen: ScreenPage | '' = '';
   let live = false;
   let shown = 'LinkedIn';
   let scrollTimer = 0;
@@ -154,7 +159,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     if (!pageOf(event.target)) return;
     window.clearTimeout(closeTimer);
     closeTimer = window.setTimeout(() => {
-      show('');
+      show(chosen);
     }, CLOSE_AFTER);
   };
   if (!options.mobile) {
@@ -163,6 +168,21 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     links.addEventListener('focusin', enter);
     links.addEventListener('focusout', leave);
   }
+
+  // ---- Clicks on the desktop: the taskbar's icons open or close their window, Firefox's tabs pick their page.
+  const choose = (event: Event): void => {
+    if (!live || options.mobile) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const app = target?.closest<HTMLElement>('[data-app]')?.dataset.app;
+    const tab = target?.closest<HTMLElement>('[data-tab]')?.dataset.tab as ScreenPage | undefined;
+    if (app === 'firefox') chosen = open && open !== 'Email' ? '' : (shown as ScreenPage);
+    else if (app === 'mail') chosen = open === 'Email' ? '' : 'Email';
+    else if (tab && PAGES.includes(tab)) chosen = tab;
+    else if (target?.closest('[data-window="minimize"], [data-window="close"]')) chosen = '';
+    else return;
+    show(chosen);
+  };
+  if (!options.mobile) element.addEventListener('click', choose);
 
   // ---- The phones' taps on the screen: a page, then the desktop, then the next page.
   let nextTap = 0;
@@ -237,7 +257,9 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
       live = next;
       // The screen takes the phones' taps only once the camera is at rest.
       if (options.mobile) element.style.pointerEvents = live ? 'auto' : 'none';
+      element.toggleAttribute('data-screen-live', live && !options.mobile);
       if (!live) {
+        chosen = '';
         show('');
         if (dialog) setDialog('');
       }
@@ -264,6 +286,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
       window.clearTimeout(closeTimer);
       window.clearTimeout(doneTimer);
       element.removeEventListener('click', tap);
+      element.removeEventListener('click', choose);
       window.clearInterval(clockTimer);
       links.removeEventListener('pointerover', enter);
       links.removeEventListener('pointerout', leave);

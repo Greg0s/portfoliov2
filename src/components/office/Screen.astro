@@ -81,6 +81,50 @@ const binIcon = image('taskbar/recycle-bin.webp');
       <span>{label('screen.bin')}</span>
     </div>
 
+    <!-- The Recycle Bin's dialogs sit under the windows: a link hovered while one is open brings its window in front. -->
+    <div class="dialog" data-dialog="ask">
+      <div class="dialog-title">
+        <span>{label('screen.bin')}</span>
+        <span class="close" data-answer="no">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 1l8 8M9 1L1 9"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="dialog-body">
+        <img src={binIcon} alt="" width="32" height="32" />
+        <span>{label('screen.empty')}</span>
+      </div>
+      <div class="dialog-buttons">
+        <span class="button accent" data-answer="yes">
+          {label('screen.yes')}
+        </span>
+        <span class="button" data-answer="no">
+          {label('screen.no')}
+        </span>
+      </div>
+    </div>
+
+    <div class="dialog wide" data-dialog="done">
+      <div class="dialog-title">
+        <span>{label('screen.bin')}</span>
+        <span class="close" data-answer="ok">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 1l8 8M9 1L1 9"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="dialog-body">
+        <img src={binIcon} alt="" width="32" height="32" />
+        <span>{label('screen.emptied')}</span>
+      </div>
+      <div class="dialog-buttons">
+        <span class="button accent" data-answer="ok">
+          {label('screen.ok')}
+        </span>
+      </div>
+    </div>
+
     <div class="firefox" data-firefox>
       <div class="tabs">
         {PAGES.map((page) => (
@@ -96,11 +140,16 @@ const binIcon = image('taskbar/recycle-bin.webp');
           <path d="M16 10v12M10 16h12"></path>
         </svg>
         <span class="grow"></span>
-        <svg width="138" height="42" viewBox="0 0 138 42" class="controls">
-          <path d="M18 21h10"></path>
-          <rect x="64.5" y="16.5" width="9" height="9"></rect>
-          <path d="M110 16.5l9 9M119 16.5l-9 9"></path>
-        </svg>
+        <span class="window-controls">
+          <span class="window-button" data-window="minimize"></span>
+          <span class="window-button" data-window="maximize"></span>
+          <span class="window-button" data-window="close"></span>
+          <svg width="138" height="42" viewBox="0 0 138 42" class="controls">
+            <path d="M18 21h10"></path>
+            <rect x="64.5" y="16.5" width="9" height="9"></rect>
+            <path d="M110 16.5l9 9M119 16.5l-9 9"></path>
+          </svg>
+        </span>
       </div>
       <div class="toolbar">
         <svg width="28" height="28" viewBox="0 0 28 28">
@@ -157,11 +206,16 @@ const binIcon = image('taskbar/recycle-bin.webp');
         <span class="favicon-mail" style={icon(3, 18)}></span>
         <span>{label('screen.compose')}</span>
         <span class="grow"></span>
-        <svg width="138" height="40" viewBox="0 0 138 40" class="controls">
-          <path d="M18 20h10"></path>
-          <rect x="64.5" y="15.5" width="9" height="9"></rect>
-          <path d="M110 15.5l9 9M119 15.5l-9 9"></path>
-        </svg>
+        <span class="window-controls">
+          <span class="window-button" data-window="minimize"></span>
+          <span class="window-button" data-window="maximize"></span>
+          <span class="window-button" data-window="close"></span>
+          <svg width="138" height="40" viewBox="0 0 138 40" class="controls">
+            <path d="M18 20h10"></path>
+            <rect x="64.5" y="15.5" width="9" height="9"></rect>
+            <path d="M110 15.5l9 9M119 15.5l-9 9"></path>
+          </svg>
+        </span>
       </div>
       <div class="mail-bar">
         <span class="send">
@@ -194,53 +248,14 @@ const binIcon = image('taskbar/recycle-bin.webp');
       </div>
     </div>
 
-    <div class="dialog" data-dialog="ask">
-      <div class="dialog-title">
-        <span>{label('screen.bin')}</span>
-        <span class="close" data-answer="no">
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <path d="M1 1l8 8M9 1L1 9"></path>
-          </svg>
-        </span>
-      </div>
-      <div class="dialog-body">
-        <img src={binIcon} alt="" width="32" height="32" />
-        <span>{label('screen.empty')}</span>
-      </div>
-      <div class="dialog-buttons">
-        <span class="button accent" data-answer="yes">
-          {label('screen.yes')}
-        </span>
-        <span class="button" data-answer="no">
-          {label('screen.no')}
-        </span>
-      </div>
-    </div>
-
-    <div class="dialog wide" data-dialog="done">
-      <div class="dialog-title">
-        <span>{label('screen.bin')}</span>
-        <span class="close" data-answer="ok">
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <path d="M1 1l8 8M9 1L1 9"></path>
-          </svg>
-        </span>
-      </div>
-      <div class="dialog-body">
-        <img src={binIcon} alt="" width="32" height="32" />
-        <span>{label('screen.emptied')}</span>
-      </div>
-      <div class="dialog-buttons">
-        <span class="button accent" data-answer="ok">
-          {label('screen.ok')}
-        </span>
-      </div>
-    </div>
-
     <div class="taskbar"></div>
     <div class="apps">
-      {APPS.map((_, index) => (
-        <span class="app" style={icon(index, 26)} />
+      {APPS.map((name, index) => (
+        <span
+          class="app"
+          data-app={name === 'Firefox' ? 'firefox' : name === 'Thunderbird' ? 'mail' : undefined}
+          style={icon(index, 26)}
+        />
       ))}
     </div>
     <span class="pill" data-pill="firefox"></span>
@@ -468,6 +483,62 @@ const binIcon = image('taskbar/recycle-bin.webp');
   .controls {
     stroke-width: 1 !important;
     stroke-linecap: butt !important;
+  }
+
+  /* The windows' three buttons, as in Windows 11: minimize and close send the window back to the taskbar (Grégoire's
+     choice, 26 November 2026); maximize does nothing, the window being full already. Desktop only, camera at rest. */
+  .window-controls {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-self: stretch;
+    align-items: center;
+  }
+
+  .window-controls svg {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .window-button {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 46px;
+    transition: background-color 120ms ease;
+  }
+
+  [data-window='minimize'] {
+    left: 0;
+  }
+
+  [data-window='maximize'] {
+    left: 46px;
+  }
+
+  [data-window='close'] {
+    left: 92px;
+  }
+
+  :global([data-screen-live]) .window-button {
+    pointer-events: auto;
+  }
+
+  :global([data-screen-live]) .window-button:hover {
+    background-color: rgb(255 255 255 / 8%);
+  }
+
+  :global([data-screen-live]) .mail .window-button:hover {
+    background-color: rgb(0 0 0 / 6%);
+  }
+
+  :global([data-screen-live]) [data-window='close']:hover,
+  :global([data-screen-live]) .mail [data-window='close']:hover {
+    background-color: #c42b1c;
+  }
+
+  :global([data-screen-live]) .window-controls:has([data-window='close']:hover) path:last-child {
+    stroke: #fff;
   }
 
   .toolbar {
@@ -812,6 +883,30 @@ const binIcon = image('taskbar/recycle-bin.webp');
     flex: none;
     width: 26px;
     height: 26px;
+  }
+
+  /* Firefox's and Thunderbird's icons and Firefox's tabs answer the mouse once the camera rests (desktop only). */
+  :global([data-screen-live]) [data-app],
+  :global([data-screen-live]) .tab {
+    pointer-events: auto;
+  }
+
+  :global([data-screen-live]) [data-app] {
+    border-radius: 4px;
+    box-shadow: 0 0 0 7px transparent;
+    transition:
+      background-color 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  :global([data-screen-live]) [data-app]:hover {
+    background-color: rgb(255 255 255 / 8%);
+    box-shadow: 0 0 0 7px rgb(255 255 255 / 8%);
+  }
+
+  :global([data-screen-live]) .tab:not([data-active]):hover {
+    background: rgb(255 255 255 / 8%);
+    color: #fbfbfe;
   }
 
   .pill {
