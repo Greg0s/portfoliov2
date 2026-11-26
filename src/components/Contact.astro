@@ -79,6 +79,13 @@ const links = [
     width: 560px;
     text-align: center;
     translate: -50% 0;
+    pointer-events: none;
+  }
+
+  /* The block is 560 px wide, its lines narrower: only the lines take the mouse, so the screen behind the empty sides
+     answers it (the tabs of Firefox under its right edge, Grégoire's report of 26 November 2026). */
+  .text > :global(*) {
+    pointer-events: auto;
   }
 
   .text::before {
