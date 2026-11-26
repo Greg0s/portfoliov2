@@ -240,8 +240,12 @@ const binIcon = image('taskbar/recycle-bin.webp');
 
     <div class="taskbar"></div>
     <div class="apps">
-      {APPS.map((_, index) => (
-        <span class="app" style={icon(index, 26)} />
+      {APPS.map((name, index) => (
+        <span
+          class="app"
+          data-app={name === 'Firefox' ? 'firefox' : name === 'Thunderbird' ? 'mail' : undefined}
+          style={icon(index, 26)}
+        />
       ))}
     </div>
     <span class="pill" data-pill="firefox"></span>
@@ -813,6 +817,30 @@ const binIcon = image('taskbar/recycle-bin.webp');
     flex: none;
     width: 26px;
     height: 26px;
+  }
+
+  /* Firefox's and Thunderbird's icons and Firefox's tabs answer the mouse once the camera rests (desktop only). */
+  :global([data-screen-live]) [data-app],
+  :global([data-screen-live]) .tab {
+    pointer-events: auto;
+  }
+
+  :global([data-screen-live]) [data-app] {
+    border-radius: 4px;
+    box-shadow: 0 0 0 7px transparent;
+    transition:
+      background-color 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  :global([data-screen-live]) [data-app]:hover {
+    background-color: rgb(255 255 255 / 8%);
+    box-shadow: 0 0 0 7px rgb(255 255 255 / 8%);
+  }
+
+  :global([data-screen-live]) .tab:not([data-active]):hover {
+    background: rgb(255 255 255 / 8%);
+    color: #fbfbfe;
   }
 
   .pill {

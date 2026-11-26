@@ -79,6 +79,36 @@ test.describe('on desktop', () => {
     expect(errors).toEqual([]);
   });
 
+  test('clicks open the windows and pick the tabs, and a hover hands back to them', async ({ page }) => {
+    const errors = trackErrors(page);
+    await openOffice(page);
+    const desktop = page.locator('.office-screen .desktop');
+    await expect(desktop).toHaveAttribute('data-screen-live', '');
+    // Clicks dispatched, as for the bin: the head drifting toward the mouse keeps the target moving.
+    await desktop.locator('[data-app="firefox"]').dispatchEvent('click');
+    await expect(desktop).toHaveAttribute('data-open', 'firefox');
+    await desktop.locator('.tab[data-tab="GitHub"]').dispatchEvent('click');
+    await expect(desktop.locator('.tab[data-active]')).toHaveAttribute('data-tab', 'GitHub');
+
+    // A hover takes over, then the screen goes back to what the visitor chose.
+    await page.locator('a[data-screen-page="Instagram"]').hover();
+    await expect(desktop.locator('.tab[data-active]')).toHaveAttribute('data-tab', 'Instagram');
+    await page.mouse.move(700, 860);
+    await expect(desktop.locator('.tab[data-active]')).toHaveAttribute('data-tab', 'GitHub');
+    await expect(desktop).toHaveAttribute('data-open', 'firefox');
+
+    // Thunderbird's icon opens the mail app, and closes it on a second click; Firefox's closes Firefox.
+    await desktop.locator('[data-app="mail"]').dispatchEvent('click');
+    await expect(desktop).toHaveAttribute('data-open', 'mail');
+    await desktop.locator('[data-app="mail"]').dispatchEvent('click');
+    await expect(desktop).toHaveAttribute('data-open', '');
+    await desktop.locator('[data-app="firefox"]').dispatchEvent('click');
+    await expect(desktop).toHaveAttribute('data-open', 'firefox');
+    await desktop.locator('[data-app="firefox"]').dispatchEvent('click');
+    await expect(desktop).toHaveAttribute('data-open', '');
+    expect(errors).toEqual([]);
+  });
+
   test('emptying the Recycle Bin goes dark, draws again, then owns up that nothing happened', async ({ page }) => {
     // Umami's stand-in: the bin's opening and its emptying are counted (src/motion/analytics.ts).
     await page.addInitScript(() => {
