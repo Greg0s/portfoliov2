@@ -83,9 +83,10 @@ const links = [
   }
 
   /* The block is 560 px wide, its lines narrower: only the lines take the mouse, so the screen behind the empty sides
-     answers it (the tabs of Firefox under its right edge, Grégoire's report of 26 November 2026). */
+     answers it (the tabs of Firefox under its right edge, Grégoire's report of 26 November 2026). The lines follow the
+     section, which the journey keeps from the mouse until the office has arrived (`--contact-events`). */
   .text > :global(*) {
-    pointer-events: auto;
+    pointer-events: var(--contact-events, auto);
   }
 
   .text::before {
