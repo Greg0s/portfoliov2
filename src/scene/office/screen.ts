@@ -6,7 +6,7 @@
  * windows shrink back 0.6 s after the mouse leaves the links. On desktop, the visitor can also click: Firefox's and
  * Thunderbird's icons in the taskbar open or close their window, and Firefox's tabs bring their page to the front, and a window's minimize or close button sends it back to the taskbar
  * (Grégoire's choice, 26 November 2026). A hover still takes over, and once the mouse leaves the links the screen goes
- * back to what the visitor chose. The Recycle Bin asks whether to empty itself, hands
+ * back to the bare desktop, whatever was clicked before (his choice of the same day). The Recycle Bin asks whether to empty itself, hands
  * « Oui » over to the office (which goes dark and draws new pictures, and a new wallpaper), then owns up that nothing
  * happened. The wallpaper is one of Grégoire's photos, drawn at random. On phones, with no mouse to hover the links,
  * a tap on the screen opens the pages in turn (Grégoire's choice, 5 November 2026): the first tap opens LinkedIn as a
@@ -82,7 +82,7 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
 
   // ---- Windows: which one is open, and the tab in front (kept while Firefox shrinks back).
   let open: ScreenPage | '' = '';
-  /** What the visitor chose by clicking (desktop): the screen comes back to it after a hover. */
+  /** What the visitor chose by clicking (desktop), until a hover of the links clears it. */
   let chosen: ScreenPage | '' = '';
   let live = false;
   let shown = 'LinkedIn';
@@ -129,6 +129,8 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     open = page;
     window.clearTimeout(scrollTimer);
     element.dataset.open = page === 'Email' ? 'mail' : page ? 'firefox' : '';
+    // The Recycle Bin waits while a window is open: its dialog would open behind it.
+    refreshBin();
     if (page === 'Email') element.toggleAttribute('data-mail-seen', true);
     if (!page || page === 'Email') return;
     // A tab brought to the front starts again from the top.
@@ -159,7 +161,8 @@ export function createScreen(template: HTMLTemplateElement, links: ParentNode, o
     if (!pageOf(event.target)) return;
     window.clearTimeout(closeTimer);
     closeTimer = window.setTimeout(() => {
-      show(chosen);
+      chosen = '';
+      show('');
     }, CLOSE_AFTER);
   };
   if (!options.mobile) {

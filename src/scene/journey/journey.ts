@@ -1731,7 +1731,10 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     // The end: the office arrives, then the contact. The live office plays its own arrival; its image fades in.
     drawOffice(now, u, arrival);
     if (contact) {
-      set(contact, 'pointer-events', arrival > 0.95 ? 'auto' : 'none');
+      const events = arrival > 0.95 ? 'auto' : 'none';
+      set(contact, 'pointer-events', events);
+      // The contact text's lines take the mouse back from their block (Contact.astro): they follow the section.
+      set(contact, '--contact-events', events);
       if (officeView) {
         const textK = officeView.state.textK;
         set(contact, 'opacity', arrival > 0 ? '1' : '0');

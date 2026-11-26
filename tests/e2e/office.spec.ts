@@ -90,12 +90,11 @@ test.describe('on desktop', () => {
     await desktop.locator('.tab[data-tab="GitHub"]').dispatchEvent('click');
     await expect(desktop.locator('.tab[data-active]')).toHaveAttribute('data-tab', 'GitHub');
 
-    // A hover takes over, then the screen goes back to what the visitor chose.
+    // A hover takes over, then the screen goes back to the bare desktop, whatever was clicked before.
     await page.locator('a[data-screen-page="Instagram"]').hover();
     await expect(desktop.locator('.tab[data-active]')).toHaveAttribute('data-tab', 'Instagram');
     await page.mouse.move(700, 860);
-    await expect(desktop.locator('.tab[data-active]')).toHaveAttribute('data-tab', 'GitHub');
-    await expect(desktop).toHaveAttribute('data-open', 'firefox');
+    await expect(desktop).toHaveAttribute('data-open', '');
 
     // Thunderbird's icon opens the mail app, and closes it on a second click; Firefox's closes Firefox.
     await desktop.locator('[data-app="mail"]').dispatchEvent('click');

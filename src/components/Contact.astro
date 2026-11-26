@@ -79,6 +79,14 @@ const links = [
     width: 560px;
     text-align: center;
     translate: -50% 0;
+    pointer-events: none;
+  }
+
+  /* The block is 560 px wide, its lines narrower: only the lines take the mouse, so the screen behind the empty sides
+     answers it (the tabs of Firefox under its right edge, Grégoire's report of 26 November 2026). The lines follow the
+     section, which the journey keeps from the mouse until the office has arrived (`--contact-events`). */
+  .text > :global(*) {
+    pointer-events: var(--contact-events, auto);
   }
 
   .text::before {
