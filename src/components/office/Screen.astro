@@ -81,6 +81,50 @@ const binIcon = image('taskbar/recycle-bin.webp');
       <span>{label('screen.bin')}</span>
     </div>
 
+    <!-- The Recycle Bin's dialogs sit under the windows: a link hovered while one is open brings its window in front. -->
+    <div class="dialog" data-dialog="ask">
+      <div class="dialog-title">
+        <span>{label('screen.bin')}</span>
+        <span class="close" data-answer="no">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 1l8 8M9 1L1 9"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="dialog-body">
+        <img src={binIcon} alt="" width="32" height="32" />
+        <span>{label('screen.empty')}</span>
+      </div>
+      <div class="dialog-buttons">
+        <span class="button accent" data-answer="yes">
+          {label('screen.yes')}
+        </span>
+        <span class="button" data-answer="no">
+          {label('screen.no')}
+        </span>
+      </div>
+    </div>
+
+    <div class="dialog wide" data-dialog="done">
+      <div class="dialog-title">
+        <span>{label('screen.bin')}</span>
+        <span class="close" data-answer="ok">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 1l8 8M9 1L1 9"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="dialog-body">
+        <img src={binIcon} alt="" width="32" height="32" />
+        <span>{label('screen.emptied')}</span>
+      </div>
+      <div class="dialog-buttons">
+        <span class="button accent" data-answer="ok">
+          {label('screen.ok')}
+        </span>
+      </div>
+    </div>
+
     <div class="firefox" data-firefox>
       <div class="tabs">
         {PAGES.map((page) => (
@@ -191,49 +235,6 @@ const binIcon = image('taskbar/recycle-bin.webp');
           <span class="hint">{label('screen.addSubject')}</span>
         </span>
         <span class="caret"></span>
-      </div>
-    </div>
-
-    <div class="dialog" data-dialog="ask">
-      <div class="dialog-title">
-        <span>{label('screen.bin')}</span>
-        <span class="close" data-answer="no">
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <path d="M1 1l8 8M9 1L1 9"></path>
-          </svg>
-        </span>
-      </div>
-      <div class="dialog-body">
-        <img src={binIcon} alt="" width="32" height="32" />
-        <span>{label('screen.empty')}</span>
-      </div>
-      <div class="dialog-buttons">
-        <span class="button accent" data-answer="yes">
-          {label('screen.yes')}
-        </span>
-        <span class="button" data-answer="no">
-          {label('screen.no')}
-        </span>
-      </div>
-    </div>
-
-    <div class="dialog wide" data-dialog="done">
-      <div class="dialog-title">
-        <span>{label('screen.bin')}</span>
-        <span class="close" data-answer="ok">
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <path d="M1 1l8 8M9 1L1 9"></path>
-          </svg>
-        </span>
-      </div>
-      <div class="dialog-body">
-        <img src={binIcon} alt="" width="32" height="32" />
-        <span>{label('screen.emptied')}</span>
-      </div>
-      <div class="dialog-buttons">
-        <span class="button accent" data-answer="ok">
-          {label('screen.ok')}
-        </span>
       </div>
     </div>
 
