@@ -37,8 +37,7 @@ export function projectNumber(order: number): string {
   return String(order).padStart(2, '0');
 }
 
-/** A project's tag: `2024 — Exposition interactive`, or `2026 — Projet perso · Bilan personnalisé de données`. */
+/** A project's tag: `2024 — Three.js · génératif`. */
 export function projectTag(project: Project): string {
-  const { origin, kind } = project.text.data;
-  return `${String(project.data.year)} — ${origin ? `${origin} · ${kind}` : kind}`;
+  return `${String(project.data.year)} — ${project.text.data.kind}`;
 }
