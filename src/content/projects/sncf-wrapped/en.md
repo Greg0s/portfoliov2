@@ -1,8 +1,11 @@
 ---
 title: SNCF Wrapped
+origin: Personal project
 kind: Personalised data recap
 role: Concept, design and development
 summary: Your year on the train told screen by screen, without any data leaving your browser.
+lede: 'A personal project, not affiliated with SNCF: your year on the train told screen by screen, without any data leaving your browser.'
+notice: Independent project, not affiliated with SNCF.
 coverAlt: The SNCF Wrapped home in a browser, “Le palmarès de vos années de voyage”, and its pink card to share on a phone.
 outcomes:
   - A complete wrapped that stages the raw data

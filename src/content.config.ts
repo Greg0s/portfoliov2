@@ -83,6 +83,13 @@ const projectTexts = defineCollection({
     .strictObject({
       title: z.string().min(1),
       kind: z.string().min(1),
+      /**
+       * Where the project comes from, when the name alone could mislead ("Projet perso" for SNCF Wrapped, made on its
+       * own, not for SNCF): it opens the tag, before the kind.
+       */
+      origin: z.string().min(1).max(24).optional(),
+      /** A short line under the case study's media, for a project that bears a brand it isn't affiliated with. */
+      notice: z.string().min(1).max(80).optional(),
       role: z.string().min(1),
       /** The short description of the card's label, also the page's meta description. */
       summary: z.string().min(1).max(200),
