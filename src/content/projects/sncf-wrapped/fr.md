@@ -2,7 +2,7 @@
 title: SNCF Wrapped
 kind: Bilan personnalisé de données
 role: Conception, design et développement
-summary: 'Projet perso : votre année en train racontée écran par écran, sans qu’aucune donnée ne quitte votre navigateur.'
+summary: 'Projet perso : votre année en train racontée écran par écran, sans que vos données quittent le navigateur.'
 coverAlt: L'accueil de SNCF Wrapped dans un navigateur, « Le palmarès de vos années de voyage », et sa carte à partager rose sur un téléphone.
 outcomes:
   - Un wrapped complet mettant en scène les données brutes
