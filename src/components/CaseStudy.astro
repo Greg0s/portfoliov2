@@ -33,8 +33,7 @@ interface Props {
 
 const { locale, project, projects } = Astro.props;
 const label = t(locale);
-const { title, lede, summary, notice, coverAlt, period, stats, outcomes, references, did, challenges } =
-  project.text.data;
+const { title, lede, summary, coverAlt, period, stats, outcomes, references, did, challenges } = project.text.data;
 const { cover, coverFocus, colors, order, band, links } = project.data;
 const { Content } = await render(project.text);
 // The context's links to other sites open in a new tab, like every other outside link of the case study.
@@ -145,7 +144,6 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
 
       <div class="sheet">
         <div class="intro">
-          {notice && <p class="notice">{notice}</p>}
           <h1>{title}</h1>
           <p class="tag">{projectTag(project)}</p>
           <p class="lede">{lede ?? summary}</p>
@@ -719,23 +717,6 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     line-height: 0.95;
   }
 
-  /*
-   * The discreet line under the media, for a project that bears a brand it isn't affiliated with: on a computer, on
-   * the right, on the tag's line (title 88 px at 0.95, gap 24 px, tag 10 px up), clear of the media; on a phone, just
-   * under the media.
-   */
-  .notice {
-    position: absolute;
-    top: calc(var(--intro-top) + 96px);
-    right: var(--gutter);
-    max-width: 22em;
-    font-size: 13px;
-    line-height: 1.4;
-    text-align: right;
-    color: var(--color-muted);
-    opacity: 0.8;
-  }
-
   .lede {
     max-width: 34em;
     font-size: 21px;
@@ -1072,12 +1053,6 @@ const keep = (value: string): string => value.replaceAll(' ', '\u00a0');
     .intro {
       gap: 16px;
       padding-top: 32px;
-    }
-
-    .notice {
-      position: static;
-      margin-bottom: 4px;
-      text-align: left;
     }
 
     h1 {
