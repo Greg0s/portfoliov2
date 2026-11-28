@@ -5,6 +5,7 @@
  * worlds and the stars. The HTML stays the one of the list (no JavaScript, "reduce motion"): the journey only places
  * it, so a screen reader reads the projects in order, then the contact.
  */
+import { loadingStyle, startLoading } from '../../motion/loading';
 import { anchors, cameraDepth, endClock, endProgress, endProgressAt, RING, RING_DEPTH, SCREENS } from './anchors';
 import {
   cardLook,
@@ -297,6 +298,8 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     // The sky in WebGL, with the stars; `?ciel=2d` keeps the 2D canvases, to compare the two drawings.
     options.webgl && new URLSearchParams(location.search).get('ciel') !== '2d',
   );
+  // The loading pause's proposals (`?chargement=1` to `5`), in place of its pill.
+  const stopLoading = startLoading(root, world3d, loadingStyle(location.search), { orbit: () => showcase.orbit() });
   /** The screen's height the track was laid out for, in px. */
   let screen = 0;
   /** The screen's height the track's length was last set for: it follows the address bar, unlike `screen`. */
@@ -2363,6 +2366,7 @@ export function startJourney(root: HTMLElement, options: JourneyOptions): (keep?
     canvasAhead?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
     canvasAhead = null;
     stopTick();
+    stopLoading();
     stopGlideTick();
     holdWhileTurning(false);
     endGlide();

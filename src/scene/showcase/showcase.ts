@@ -62,6 +62,11 @@ export interface Showcase {
   ring(view: View): Ring;
   draw(frame: Frame): void;
   resize(view: View): void;
+  /**
+   * The ring's line as last drawn (181 points around it, the front first), in CSS px, and the planet's disc: for the
+   * loading's comet (`src/motion/loading.ts`). Null before the ring was drawn at its stop.
+   */
+  orbit(): { x: number[]; y: number[]; z: number[]; planet: Frame['planet'] } | null;
   /** Stops the ring; with `keep`, its sky in WebGL is kept for the next visit of the home (`src/scene/keep.ts`). */
   stop(keep?: boolean): void;
 }
@@ -519,7 +524,24 @@ export function createShowcase(
     drawHalf(near, 'near', null, null, frame.planet);
   }
 
+  /** The planet's disc and the zoom when the ring was last drawn in full; undefined until then. */
+  let orbitPlanet: Frame['planet'] | undefined;
+  let orbitZoom = { k: 1, x: 0, y: 0 };
+
   const showcase: Showcase = {
+    orbit: () =>
+      orbitPlanet === undefined
+        ? null
+        : {
+            x: Array.from(placed.lx, (x) => x * orbitZoom.k + orbitZoom.x),
+            y: Array.from(placed.ly, (y) => y * orbitZoom.k + orbitZoom.y),
+            z: Array.from(placed.lz),
+            planet: orbitPlanet && {
+              x: orbitPlanet.x * orbitZoom.k + orbitZoom.x,
+              y: orbitPlanet.y * orbitZoom.k + orbitZoom.y,
+              r: orbitPlanet.r * orbitZoom.k,
+            },
+          },
     selected: () => wrap(target),
     settled: () => !moving,
     offsetOf: (i) => offset(i, turn.x, n),
@@ -604,6 +626,8 @@ export function createShowcase(
         farPainter.begin(ratio * zoom.k, ratio * (zoom.x - farLeft), ratio * (zoom.y - farTop));
       }
       drawRing(painter, farPainter, box, frame);
+      orbitPlanet = frame.presence > 0.9 ? frame.planet : undefined;
+      orbitZoom = zoom;
     },
     resize,
     stop(keep = false) {

@@ -18,6 +18,20 @@ const EAR_SWING = 3;
 /** How far behind the right ear the left one moves, in loops. */
 const EAR_LAG = 0.18;
 
+/**
+ * A held gust (`?chargement=1`, `src/motion/loading.ts`): while the page pauses to finish a scene, the wind rises over
+ * the planet, faster than a passing gust, and falls back once the pause ends.
+ */
+const STORM_RATE = 2.2;
+const STORM_RISE = 500;
+const STORM_FALL = 900;
+let stormy = false;
+
+/** Raises the held gust on every wind (the planet's loops or the live planet), or lets it fall. */
+export function setStorm(on: boolean): void {
+  stormy = on;
+}
+
 /** How long each moving part takes to come back to where it was, in ms on the wind's clock. */
 export const LOOPS = { scarf: SCARF_LOOP, rose: 2 * ROSE_SWING, tail: TAIL_LOOP, ears: EAR_LOOP } as const;
 
@@ -59,6 +73,7 @@ export function createWind(random: () => number = Math.random): Wind {
   let nextGust = 7000 + random() * 7000;
   let gustStart = -Infinity;
   let rate = 1;
+  let storm = 0;
 
   return {
     advance(delta) {
@@ -72,7 +87,9 @@ export function createWind(random: () => number = Math.random): Wind {
         inGust < 0 || inGust > GUST_LENGTH + GUST_EASE
           ? 0
           : Math.min(1, inGust / GUST_EASE, (GUST_LENGTH + GUST_EASE - inGust) / GUST_EASE);
-      rate = 1 + (GUST_RATE - 1) * k;
+      storm = stormy ? Math.min(1, storm + delta / STORM_RISE) : Math.max(0, storm - delta / STORM_FALL);
+      const held = storm * storm * (3 - 2 * storm);
+      rate = Math.max(1 + (GUST_RATE - 1) * k, 1 + (STORM_RATE - 1) * held);
       windTime += delta * rate;
       return { scarfPhase: (windTime / SCARF_LOOP) % 1, roseDeg: roseAngle(windTime), ...foxAngles(windTime) };
     },
